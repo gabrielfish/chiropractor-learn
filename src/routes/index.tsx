@@ -99,7 +99,7 @@ function LandingPage() {
             <Link to="/login">
               <Button variant="ghost" className="text-foreground">Sign In</Button>
             </Link>
-            <Link to="/login">
+            <Link to="/signup">
               <Button className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold">Sign Up</Button>
             </Link>
             <Button
@@ -181,7 +181,7 @@ function LandingPage() {
             Search and watch Ryan Rieder's complete teaching library — unlimited access, built exclusively for chiropractors.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link to="/login">
+            <Link to="/signup">
               <Button size="lg" className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold h-12 px-8 w-full sm:w-auto">
                 Sign Up
               </Button>
@@ -258,7 +258,7 @@ function LandingPage() {
           Join the chiropractors using DCPG to build stronger, more profitable practices.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link to="/login">
+          <Link to="/signup">
             <Button size="lg" className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold h-12 px-8 w-full sm:w-auto">
               Sign Up
             </Button>

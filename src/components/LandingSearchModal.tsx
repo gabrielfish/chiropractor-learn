@@ -137,11 +137,14 @@ export function LandingSearchModal({
             >
               Sign In
             </Link>
-            <a href="/signup">
+            <Link
+              to="/signup"
+              onClick={() => onOpenChange(false)}
+            >
               <Button className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold">
                 Sign Up for Access
               </Button>
-            </a>
+            </Link>
           </div>
         </div>
       </DialogContent>

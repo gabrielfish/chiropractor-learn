@@ -92,7 +92,7 @@ function AdminPage() {
           <Link to="/dashboard" className="block px-3 py-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent">View as member</Link>
         </nav>
         <button onClick={signOut} className="flex items-center gap-2 text-sm text-sidebar-foreground/70 hover:text-sidebar-foreground">
-          <LogOut className="h-4 w-4" /> Sign out
+          <LogOut className="h-4 w-4" /> Sign Out
         </button>
       </aside>
 
