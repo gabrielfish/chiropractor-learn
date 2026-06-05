@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, FileText, Award, Search, Users, BookOpen, Quote } from "lucide-react";
+import { LandingSearchModal } from "@/components/LandingSearchModal";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -75,6 +76,7 @@ const features = [
 
 function LandingPage() {
   const [idx, setIdx] = useState(0);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => setIdx((i) => (i + 1) % testimonials.length), 6000);
@@ -94,6 +96,15 @@ function LandingPage() {
             <Link to="/login">
               <Button variant="ghost" className="text-foreground">Sign In</Button>
             </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Search courses"
+              onClick={() => setSearchOpen(true)}
+              className="text-foreground hover:text-gold"
+            >
+              <Search className="h-5 w-5" />
+            </Button>
             <Link to="/login">
               <Button className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold">Sign Up</Button>
             </Link>
@@ -211,6 +222,8 @@ function LandingPage() {
           <div>Built for chiropractors by Ryan Rieder's team.</div>
         </div>
       </footer>
+
+      <LandingSearchModal open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   );
 }
