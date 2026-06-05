@@ -96,6 +96,15 @@ function LandingPage() {
             <Link to="/login">
               <Button variant="ghost" className="text-foreground">Sign In</Button>
             </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Search courses"
+              onClick={() => setSearchOpen(true)}
+              className="text-foreground hover:text-gold"
+            >
+              <Search className="h-5 w-5" />
+            </Button>
             <Link to="/login">
               <Button className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold">Sign Up</Button>
             </Link>
