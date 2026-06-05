@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, FileText, Award, Search, Users, BookOpen, Quote } from "lucide-react";
+import { Play, FileText, Award, Search, Users, BookOpen, Quote, Menu, X } from "lucide-react";
 import { LandingSearchModal } from "@/components/LandingSearchModal";
 
 export const Route = createFileRoute("/")({
@@ -77,6 +77,7 @@ const features = [
 function LandingPage() {
   const [idx, setIdx] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => setIdx((i) => (i + 1) % testimonials.length), 6000);
@@ -90,9 +91,11 @@ function LandingPage() {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-baseline gap-2">
             <span className="font-display text-2xl font-extrabold text-primary tracking-tight">DCPG</span>
-            <span className="font-display text-sm text-gold font-bold tracking-wide">Membership Portal</span>
+            <span className="font-display text-sm text-gold font-bold tracking-wide hidden sm:inline">Membership Portal</span>
           </Link>
-          <div className="flex items-center gap-2">
+
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-2">
             <Link to="/login">
               <Button variant="ghost" className="text-foreground">Sign In</Button>
             </Link>
@@ -108,6 +111,59 @@ function LandingPage() {
             >
               <Search className="h-5 w-5" />
             </Button>
+          </div>
+
+          {/* Mobile nav */}
+          <div className="flex md:hidden items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Search courses"
+              onClick={() => setSearchOpen(true)}
+              className="text-foreground hover:text-gold"
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              onClick={() => setMobileMenuOpen((o) => !o)}
+              className="text-foreground hover:text-gold"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile menu dropdown */}
+        <div
+          className={`md:hidden overflow-hidden transition-all duration-300 ease-out ${
+            mobileMenuOpen ? "max-h-64 opacity-100" : "max-h-0 opacity-0"
+          }`}
+        >
+          <div className="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-1 border-t border-border">
+            <Link
+              to="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-foreground font-medium py-3 px-2 rounded-lg hover:bg-muted transition-colors"
+            >
+              Home
+            </Link>
+            <Link
+              to="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-foreground font-medium py-3 px-2 rounded-lg hover:bg-muted transition-colors"
+            >
+              Sign In
+            </Link>
+            <Link
+              to="/signup"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-gold font-semibold py-3 px-2 rounded-lg hover:bg-muted transition-colors"
+            >
+              Sign Up
+            </Link>
           </div>
         </div>
       </header>
