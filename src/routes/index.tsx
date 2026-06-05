@@ -86,7 +86,7 @@ function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Top nav */}
-      <header className="border-b border-border">
+      <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-baseline gap-2">
             <span className="font-display text-2xl font-extrabold text-primary tracking-tight">DCPG</span>
@@ -95,6 +95,9 @@ function LandingPage() {
           <div className="flex items-center gap-2">
             <Link to="/login">
               <Button variant="ghost" className="text-foreground">Sign In</Button>
+            </Link>
+            <Link to="/login">
+              <Button className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold">Sign Up</Button>
             </Link>
             <Button
               variant="ghost"
@@ -105,9 +108,6 @@ function LandingPage() {
             >
               <Search className="h-5 w-5" />
             </Button>
-            <Link to="/login">
-              <Button className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold">Sign Up</Button>
-            </Link>
           </div>
         </div>
       </header>
