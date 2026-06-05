@@ -127,7 +127,7 @@ export function LandingSearchModal({
         {/* Footer CTA */}
         <div className="border-t border-border bg-muted/40 p-5 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">
-            Unlock 68+ courses and the full DCPG library.
+            Unlock unlimited courses and the full DCPG library.
           </p>
           <div className="flex items-center gap-3">
             <Link

@@ -45,7 +45,7 @@ const features = [
   {
     icon: <Play className="h-6 w-6" />,
     title: "Video lessons",
-    desc: "Stream Ryan's full teaching catalogue on any device, anytime.",
+    desc: "Watch Ryan's full teaching catalogue on any device, anytime.",
   },
   {
     icon: <FileText className="h-6 w-6" />,
@@ -60,7 +60,7 @@ const features = [
   {
     icon: <Search className="h-6 w-6" />,
     title: "Searchable library",
-    desc: "Find any lesson, topic, or resource across 68+ courses instantly.",
+    desc: "Find any lesson, topic, or resource across unlimited courses instantly.",
   },
   {
     icon: <Users className="h-6 w-6" />,
@@ -178,7 +178,7 @@ function LandingPage() {
             Ryan Rieder's complete teaching library, built for chiropractors who want to grow.
           </h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10">
-            Search and stream Ryan Rieder's complete teaching library — unlimited access, built exclusively for chiropractors.
+            Search and watch Ryan Rieder's complete teaching library — unlimited access, built exclusively for chiropractors.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link to="/login">
