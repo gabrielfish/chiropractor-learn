@@ -46,8 +46,8 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --font-sans: "Lato", system-ui, sans-serif;
-  --font-display: "Nunito", system-ui, sans-serif;
+  --font-sans: "Geist", system-ui, sans-serif;
+  --font-display: "Fraunces", system-ui, sans-serif;
 
   --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
   --shadow-card-hover: 0 10px 25px -5px rgb(27 46 75 / 0.10), 0 4px 10px -3px rgb(27 46 75 / 0.05);
