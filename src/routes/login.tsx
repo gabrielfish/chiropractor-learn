@@ -1,11 +1,11 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Play, FileText, Award, User } from "lucide-react";
+import { Play, FileText, Award, User, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
