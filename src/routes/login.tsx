@@ -1,11 +1,11 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Play, FileText, Award, User } from "lucide-react";
+import { Play, FileText, Award, User, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -98,6 +98,11 @@ function LoginPage() {
       {/* Left panel */}
       <div className="flex-1 md:basis-3/5 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
+          <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-8">
+            <ArrowLeft className="h-4 w-4" />
+            Back to home
+          </Link>
+
           <div className="mb-10">
             <div className="font-display text-4xl font-extrabold text-primary tracking-tight">DCPG</div>
             <div className="font-display text-lg text-gold font-bold tracking-wide">Membership Portal</div>
@@ -129,7 +134,10 @@ function LoginPage() {
           <div className="my-8 border-t border-border" />
 
           <p className="text-sm text-muted-foreground">
-            Don't have an account? <span className="text-foreground font-medium">Contact your DCPG team.</span>
+            Don't have an account?{" "}
+            <Link to="/signup" className="text-foreground font-medium hover:underline">
+              Sign Up
+            </Link>
           </p>
         </div>
       </div>
