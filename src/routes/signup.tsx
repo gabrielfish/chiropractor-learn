@@ -10,6 +10,7 @@ import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 
 export const Route = createFileRoute("/signup")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Sign up — DCPG Membership Portal" },
