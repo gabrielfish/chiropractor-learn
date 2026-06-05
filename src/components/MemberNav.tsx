@@ -23,7 +23,7 @@ export function MemberNav({ initialQuery = "" }: { initialQuery?: string }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    navigate({ to: "/", replace: true });
+    navigate({ to: "/login", replace: true });
   };
 
   return (

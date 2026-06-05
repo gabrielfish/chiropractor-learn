@@ -1,139 +1,216 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { Play, FileText, Award } from "lucide-react";
+import { Play, FileText, Award, Search, Users, BookOpen, Quote } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Sign in — DCPG Membership Portal" },
-      { name: "description", content: "Sign in to access Ryan Rieder's complete chiropractic teaching library." },
+      { title: "DCPG Membership Portal — Ryan Rieder's chiropractic teaching library" },
+      {
+        name: "description",
+        content:
+          "Ryan Rieder's complete teaching library, built for chiropractors who want to grow. Video lessons, PDFs, and resources in one portal.",
+      },
+      { property: "og:title", content: "DCPG Membership Portal" },
+      {
+        property: "og:description",
+        content: "Ryan Rieder's complete teaching library, built for chiropractors who want to grow.",
+      },
     ],
   }),
-  component: LoginPage,
+  component: LandingPage,
 });
 
-async function routeByRole() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
-  const { data: roles } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.id);
-  const roleSet = new Set((roles ?? []).map((r) => r.role));
-  if (roleSet.has("super_admin") || roleSet.has("author")) {
-    throw redirect({ to: "/admin" });
-  }
-  throw redirect({ to: "/dashboard" });
-}
+const testimonials = [
+  {
+    quote:
+      "DCPG transformed how I run my practice. The Mastermind sessions alone paid for themselves in a month.",
+    name: "Dr. Sarah Chen, DC",
+  },
+  {
+    quote:
+      "Ryan's teaching is direct, practical, and rooted in real chiropractic practice. My new patient numbers doubled.",
+    name: "Dr. James Patel, DC",
+  },
+  {
+    quote:
+      "Having the entire library searchable in one place changed how my team trains. It's the best investment I've made.",
+    name: "Dr. Maria Alvarez, DC",
+  },
+];
 
-function LoginPage() {
-  const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+const features = [
+  {
+    icon: <Play className="h-6 w-6" />,
+    title: "Video lessons",
+    desc: "Stream Ryan's full teaching catalogue on any device, anytime.",
+  },
+  {
+    icon: <FileText className="h-6 w-6" />,
+    title: "PDFs & downloads",
+    desc: "Done-for-you templates, scripts, and protocols ready to use.",
+  },
+  {
+    icon: <BookOpen className="h-6 w-6" />,
+    title: "Complete books",
+    desc: "Download Ryan's published books and reference guides.",
+  },
+  {
+    icon: <Search className="h-6 w-6" />,
+    title: "Searchable library",
+    desc: "Find any lesson, topic, or resource across 68+ courses instantly.",
+  },
+  {
+    icon: <Users className="h-6 w-6" />,
+    title: "Built for chiropractors",
+    desc: "Every lesson is purpose-built for growing a chiropractic practice.",
+  },
+  {
+    icon: <Award className="h-6 w-6" />,
+    title: "Earn certificates",
+    desc: "Track your progress and earn recognition as you complete tracks.",
+  },
+];
+
+function LandingPage() {
+  const [idx, setIdx] = useState(0);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (data.user) {
-        try { await routeByRole(); } catch (r) { throw r; }
-      }
-    }).catch(() => {});
+    const id = setInterval(() => setIdx((i) => (i + 1) % testimonials.length), 6000);
+    return () => clearInterval(id);
   }, []);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Welcome back");
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
-    const roleSet = new Set((roles ?? []).map((r) => r.role));
-    if (roleSet.has("super_admin") || roleSet.has("author")) {
-      navigate({ to: "/admin" });
-    } else {
-      navigate({ to: "/dashboard" });
-    }
-  };
-
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Left panel */}
-      <div className="flex-1 md:basis-3/5 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md">
-          <div className="mb-10">
-            <div className="font-display text-4xl font-extrabold text-primary tracking-tight">DCPG</div>
-            <div className="font-display text-lg text-gold font-bold tracking-wide">Membership Portal</div>
+    <div className="min-h-screen bg-background">
+      {/* Top nav */}
+      <header className="border-b border-border">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-baseline gap-2">
+            <span className="font-display text-2xl font-extrabold text-primary tracking-tight">DCPG</span>
+            <span className="font-display text-sm text-gold font-bold tracking-wide">Membership Portal</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <Link to="/login">
+              <Button variant="ghost" className="text-foreground">Sign In</Button>
+            </Link>
+            <Link to="/login">
+              <Button className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold">Sign Up</Button>
+            </Link>
           </div>
+        </div>
+      </header>
 
-          <h1 className="font-display text-3xl md:text-4xl font-extrabold text-foreground leading-tight mb-3">
+      {/* Hero */}
+      <section className="bg-primary text-primary-foreground">
+        <div className="max-w-5xl mx-auto px-6 py-20 md:py-28 text-center">
+          <div className="inline-block mb-6 px-3 py-1 rounded-full bg-gold/20 text-gold text-xs font-semibold tracking-wide uppercase">
+            With Ryan Rieder
+          </div>
+          <h1 className="font-display text-4xl md:text-6xl font-extrabold leading-tight mb-6">
             Ryan Rieder's complete teaching library, built for chiropractors who want to grow.
           </h1>
-          <p className="text-muted-foreground mb-8">
-            Search 68+ courses, watch video lessons, download resources, and grow your practice.
+          <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10">
+            Stream 68+ courses, download proven resources, and access the full DCPG library — anywhere, anytime.
           </p>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-            </div>
-            <Button type="submit" disabled={loading} className="w-full bg-gold text-gold-foreground hover:bg-gold/90 h-11 font-semibold">
-              {loading ? "Signing in…" : "Sign In"}
-            </Button>
-          </form>
-
-          <button className="mt-3 text-sm text-muted-foreground hover:text-primary">Forgot password?</button>
-
-          <div className="my-8 border-t border-border" />
-
-          <p className="text-sm text-muted-foreground">
-            Don't have an account? <span className="text-foreground font-medium">Contact your DCPG team.</span>
-          </p>
-        </div>
-      </div>
-
-      {/* Right panel */}
-      <div className="hidden md:flex md:basis-2/5 bg-primary text-primary-foreground items-center justify-center px-10 py-12">
-        <div className="max-w-sm">
-          <blockquote className="font-display text-2xl leading-snug mb-3">
-            "DCPG transformed how I run my practice. The Mastermind sessions alone paid for themselves in a month."
-          </blockquote>
-          <p className="text-sm text-primary-foreground/70 mb-12">— Dr. Sarah Chen, DC</p>
-
-          <div className="space-y-5">
-            <Feature icon={<Play className="h-5 w-5" />} title="Video lessons" desc="Watch on any device, anytime." />
-            <Feature icon={<FileText className="h-5 w-5" />} title="PDF resources" desc="Done-for-you templates and scripts." />
-            <Feature icon={<Award className="h-5 w-5" />} title="Certificates" desc="Earn recognition as you complete tracks." />
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link to="/login">
+              <Button size="lg" className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold h-12 px-8 w-full sm:w-auto">
+                Sign Up
+              </Button>
+            </Link>
+            <Link to="/login">
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-12 px-8 w-full sm:w-auto border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
+              >
+                Sign In
+              </Button>
+            </Link>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
+      </section>
 
-function Feature({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
-  return (
-    <div className="flex items-start gap-3">
-      <div className="rounded-lg bg-gold/20 text-gold p-2 flex items-center justify-center">{icon}</div>
-      <div>
-        <div className="font-semibold">{title}</div>
-        <div className="text-sm text-primary-foreground/70">{desc}</div>
-      </div>
+      {/* Features */}
+      <section className="max-w-6xl mx-auto px-6 py-20">
+        <div className="text-center mb-14">
+          <h2 className="font-display text-3xl md:text-4xl font-extrabold text-foreground mb-3">
+            Everything you need to grow your practice
+          </h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            One portal. Every lesson, resource, and book Ryan has ever taught — searchable and ready when you are.
+          </p>
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {features.map((f) => (
+            <div
+              key={f.title}
+              className="rounded-xl border border-border p-6 bg-card hover:border-gold/50 transition-colors"
+            >
+              <div className="rounded-lg bg-gold/15 text-gold p-3 inline-flex mb-4">{f.icon}</div>
+              <div className="font-display text-lg font-bold text-foreground mb-1">{f.title}</div>
+              <div className="text-sm text-muted-foreground">{f.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="bg-muted/40 border-y border-border">
+        <div className="max-w-3xl mx-auto px-6 py-20 text-center">
+          <Quote className="h-10 w-10 text-gold mx-auto mb-6" />
+          <blockquote
+            key={idx}
+            className="font-display text-2xl md:text-3xl text-foreground leading-snug mb-6 animate-in fade-in duration-500"
+          >
+            "{testimonials[idx].quote}"
+          </blockquote>
+          <p className="text-sm text-muted-foreground font-medium">— {testimonials[idx].name}</p>
+          <div className="flex justify-center gap-2 mt-8">
+            {testimonials.map((_, i) => (
+              <button
+                key={i}
+                aria-label={`Show testimonial ${i + 1}`}
+                onClick={() => setIdx(i)}
+                className={`h-2 w-2 rounded-full transition-colors ${
+                  i === idx ? "bg-gold" : "bg-border"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="max-w-4xl mx-auto px-6 py-20 text-center">
+        <h2 className="font-display text-3xl md:text-4xl font-extrabold text-foreground mb-4">
+          Ready to grow your practice?
+        </h2>
+        <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
+          Join the chiropractors using DCPG to build stronger, more profitable practices.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link to="/login">
+            <Button size="lg" className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold h-12 px-8 w-full sm:w-auto">
+              Sign Up
+            </Button>
+          </Link>
+          <Link to="/login">
+            <Button size="lg" variant="outline" className="h-12 px-8 w-full sm:w-auto">
+              Sign In
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border">
+        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
+          <div>© {new Date().getFullYear()} DCPG Membership Portal. All rights reserved.</div>
+          <div>Built for chiropractors by Ryan Rieder's team.</div>
+        </div>
+      </footer>
     </div>
   );
 }
