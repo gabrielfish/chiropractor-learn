@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, FileText, Award, Search, Users, BookOpen, Quote } from "lucide-react";
+import { Play, FileText, Award, Search, Users, BookOpen, Quote, Menu, X } from "lucide-react";
 import { LandingSearchModal } from "@/components/LandingSearchModal";
 
 export const Route = createFileRoute("/")({
