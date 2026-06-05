@@ -112,7 +112,7 @@ function LoginPage() {
             Ryan Rieder's complete teaching library, built for chiropractors who want to grow.
           </h1>
           <p className="text-muted-foreground mb-8">
-            Search 68+ courses, watch video lessons, download resources, and grow your practice.
+            Search unlimited courses, watch video lessons, download resources, and grow your practice.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
