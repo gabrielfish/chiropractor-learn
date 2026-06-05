@@ -47,7 +47,7 @@ export function LandingSearchModal({
             autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search courses, lessons, and resources…"
+            placeholder="Search Ryan's unlimited free resources and the full DCPG teaching library"
             className="flex-1 bg-transparent border-0 outline-none text-base placeholder:text-primary-foreground/50 text-primary-foreground"
           />
           <button
