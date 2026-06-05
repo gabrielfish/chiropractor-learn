@@ -99,7 +99,7 @@ function LandingPage() {
             <Link to="/login">
               <Button variant="ghost" className="text-foreground">Sign In</Button>
             </Link>
-            <Link to="/login">
+            <Link to="/signup">
               <Button className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold">Sign Up</Button>
             </Link>
             <Button
