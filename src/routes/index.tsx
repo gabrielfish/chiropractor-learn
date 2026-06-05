@@ -122,7 +122,7 @@ function LandingPage() {
             Ryan Rieder's complete teaching library, built for chiropractors who want to grow.
           </h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10">
-            Stream 68+ courses, download proven resources, and access the full DCPG library — anywhere, anytime.
+            Search and stream Ryan Rieder's complete teaching library — unlimited access, built exclusively for chiropractors.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link to="/login">
