@@ -150,7 +150,7 @@ function LandingPage() {
             >
               Home
             </Link>
-ue3f4            <Link
+            <Link
               to="/login"
               onClick={() => setMobileMenuOpen(false)}
               className="text-foreground font-medium py-3 px-2 rounded-lg hover:bg-muted transition-colors"
