@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Play, FileText, Award } from "lucide-react";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Sign in — DCPG Membership Portal" },
