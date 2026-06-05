@@ -31,11 +31,38 @@ async function routeByRole() {
   throw redirect({ to: "/dashboard" });
 }
 
+const TESTIMONIALS = [
+  {
+    quote: "DCPG transformed how I run my practice. The Mastermind sessions alone paid for themselves in a month.",
+    author: "Dr. Sarah Chen, DC",
+  },
+  {
+    quote: "Ryan's New Patient Avalanche course brought 23 new patients in 6 weeks. Game changer.",
+    author: "Dr. James Kowalski, DC",
+  },
+  {
+    quote: "I finally understand how to market my practice. The Facebook Ads training is worth every penny.",
+    author: "Dr. Michelle Torres, DC",
+  },
+  {
+    quote: "The Front Desk Training alone transformed my team. My CA calls it her bible.",
+    author: "Dr. David Park, DC",
+  },
+];
+
 function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveIndex((i) => (i + 1) % TESTIMONIALS.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
