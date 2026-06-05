@@ -56,7 +56,7 @@ export function MemberNav({ initialQuery = "" }: { initialQuery?: string }) {
           <DropdownMenuContent align="end">
             <DropdownMenuItem><User className="h-4 w-4 mr-2" />Profile</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={signOut}><LogOut className="h-4 w-4 mr-2" />Sign out</DropdownMenuItem>
+            <DropdownMenuItem onClick={signOut}><LogOut className="h-4 w-4 mr-2" />Sign Out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
