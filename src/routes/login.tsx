@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Play, FileText, Award } from "lucide-react";
+import { Play, FileText, Award, User } from "lucide-react";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -31,11 +31,38 @@ async function routeByRole() {
   throw redirect({ to: "/dashboard" });
 }
 
+const TESTIMONIALS = [
+  {
+    quote: "DCPG transformed how I run my practice. The Mastermind sessions alone paid for themselves in a month.",
+    author: "Dr. Sarah Chen, DC",
+  },
+  {
+    quote: "Ryan's New Patient Avalanche course brought 23 new patients in 6 weeks. Game changer.",
+    author: "Dr. James Kowalski, DC",
+  },
+  {
+    quote: "I finally understand how to market my practice. The Facebook Ads training is worth every penny.",
+    author: "Dr. Michelle Torres, DC",
+  },
+  {
+    quote: "The Front Desk Training alone transformed my team. My CA calls it her bible.",
+    author: "Dr. David Park, DC",
+  },
+];
+
 function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveIndex((i) => (i + 1) % TESTIMONIALS.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -109,11 +136,31 @@ function LoginPage() {
 
       {/* Right panel */}
       <div className="hidden md:flex md:basis-2/5 bg-primary text-primary-foreground items-center justify-center px-10 py-12">
-        <div className="max-w-sm">
-          <blockquote className="font-display text-2xl leading-snug mb-3">
-            "DCPG transformed how I run my practice. The Mastermind sessions alone paid for themselves in a month."
-          </blockquote>
-          <p className="text-sm text-primary-foreground/70 mb-12">— Dr. Sarah Chen, DC</p>
+        <div className="max-w-sm w-full">
+          {/* Headshot placeholder */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="h-24 w-24 rounded-full bg-gold/20 flex items-center justify-center mb-3 border-2 border-gold/40">
+              <User className="h-10 w-10 text-gold" />
+            </div>
+            <div className="font-display text-xl font-bold text-gold">Ryan Rieder</div>
+            <div className="text-sm text-primary-foreground/60">Founder, DCPG</div>
+          </div>
+
+          {/* Rotating testimonials */}
+          <div className="relative h-36 mb-10">
+            {TESTIMONIALS.map((t, i) => (
+              <div
+                key={i}
+                className="absolute inset-0 transition-opacity duration-700 ease-in-out"
+                style={{ opacity: i === activeIndex ? 1 : 0 }}
+              >
+                <blockquote className="font-display text-xl leading-snug mb-3">
+                  "{t.quote}"
+                </blockquote>
+                <p className="text-sm text-primary-foreground/70">— {t.author}</p>
+              </div>
+            ))}
+          </div>
 
           <div className="space-y-5">
             <Feature icon={<Play className="h-5 w-5" />} title="Video lessons" desc="Watch on any device, anytime." />
