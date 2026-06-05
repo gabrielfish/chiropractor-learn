@@ -95,12 +95,8 @@ function ContentDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // increment views
-  useEffect(() => {
-    if (contentQ.data) {
-      supabase.rpc("noop"); // placeholder; ignore
-    }
-  }, [contentQ.data]);
+
+
 
   const item = contentQ.data;
   if (contentQ.isLoading) {
