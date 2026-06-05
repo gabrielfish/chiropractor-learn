@@ -14,16 +14,269 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          order: number
+          slug: string
+        }
+        Insert: {
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          order?: number
+          slug: string
+        }
+        Update: {
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          order?: number
+          slug?: string
+        }
+        Relationships: []
+      }
+      comments: {
+        Row: {
+          body: string
+          content_id: string
+          created_at: string
+          flagged: boolean
+          id: string
+          parent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          body: string
+          content_id: string
+          created_at?: string
+          flagged?: boolean
+          id?: string
+          parent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string
+          content_id?: string
+          created_at?: string
+          flagged?: boolean
+          id?: string
+          parent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content: {
+        Row: {
+          author_id: string | null
+          book_name: string | null
+          book_url: string | null
+          category_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          pdf_name: string | null
+          pdf_url: string | null
+          published_at: string | null
+          status: Database["public"]["Enums"]["content_status"]
+          tags: string[]
+          thumbnail_url: string | null
+          title: string
+          video_duration: string | null
+          video_url: string | null
+          views: number
+        }
+        Insert: {
+          author_id?: string | null
+          book_name?: string | null
+          book_url?: string | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          pdf_name?: string | null
+          pdf_url?: string | null
+          published_at?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          tags?: string[]
+          thumbnail_url?: string | null
+          title: string
+          video_duration?: string | null
+          video_url?: string | null
+          views?: number
+        }
+        Update: {
+          author_id?: string | null
+          book_name?: string | null
+          book_url?: string | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          pdf_name?: string | null
+          pdf_url?: string | null
+          published_at?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          tags?: string[]
+          thumbnail_url?: string | null
+          title?: string
+          video_duration?: string | null
+          video_url?: string | null
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          job_title: string | null
+          last_login: string | null
+          phone: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          job_title?: string | null
+          last_login?: string | null
+          phone?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          job_title?: string | null
+          last_login?: string | null
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          content_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          content_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          content_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progress_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "super_admin" | "author" | "member"
+      content_status: "draft" | "published"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +403,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["super_admin", "author", "member"],
+      content_status: ["draft", "published"],
+    },
   },
 } as const
