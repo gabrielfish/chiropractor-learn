@@ -222,6 +222,8 @@ function LandingPage() {
           <div>Built for chiropractors by Ryan Rieder's team.</div>
         </div>
       </footer>
+
+      <LandingSearchModal open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   );
 }
