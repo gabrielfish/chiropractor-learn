@@ -76,6 +76,7 @@ const features = [
 
 function LandingPage() {
   const [idx, setIdx] = useState(0);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => setIdx((i) => (i + 1) % testimonials.length), 6000);
