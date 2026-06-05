@@ -75,7 +75,7 @@ function Dashboard() {
             <h2 className="font-display text-xl font-bold mb-4">Browse by category</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {(categoriesQ.data ?? []).map((c) => {
-                const Icon = (Icons as Record<string, React.ComponentType<{ className?: string }>>)[c.icon ?? "Folder"] ?? Icons.Folder;
+                const Icon = ((Icons as unknown as Record<string, typeof Icons.Folder>)[c.icon ?? "Folder"] ?? Icons.Folder);
                 return (
                   <Link
                     key={c.id}
