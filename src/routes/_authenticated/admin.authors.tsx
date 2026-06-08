@@ -101,7 +101,7 @@ function AuthorsPage() {
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-display font-bold text-foreground truncate">{a.full_name ?? "Unnamed author"}</h3>
+                      <h3 className="font-display font-bold text-foreground truncate">{a.full_name ?? "Unnamed team member"}</h3>
                       <Button size="sm" variant="ghost" onClick={() => setEditing(a)} className="text-muted-foreground hover:text-gold">
                         <Pencil className="h-4 w-4" />
                       </Button>
