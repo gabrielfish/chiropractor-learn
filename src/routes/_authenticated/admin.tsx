@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { FileDropzone } from "@/components/FileDropzone";
+import { uploadContentFile, youtubeThumbnail, slugify } from "@/lib/storage";
 import { toast } from "sonner";
 import { LogOut, Plus } from "lucide-react";
 
