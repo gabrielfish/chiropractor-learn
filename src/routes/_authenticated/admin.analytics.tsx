@@ -148,18 +148,18 @@ function AnalyticsPage() {
             <Card title="Top 10 Most Viewed Content">
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={topContentQ.data ?? []} layout="vertical" margin={{ left: 10, right: 16 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border))" />
+                  <XAxis type="number" stroke="var(--muted-foreground))" fontSize={12} />
                   <YAxis
                     type="category"
                     dataKey="title"
                     width={140}
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="var(--muted-foreground))"
                     fontSize={11}
                     tickFormatter={(v: string) => (v.length > 22 ? v.slice(0, 22) + "…" : v)}
                   />
-                  <Tooltip cursor={{ fill: "hsl(var(--muted))" }} />
-                  <Bar dataKey="views" fill="hsl(var(--gold))" radius={[0, 4, 4, 0]} />
+                  <Tooltip cursor={{ fill: "var(--muted))" }} />
+                  <Bar dataKey="views" fill="var(--gold))" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Card>
@@ -167,11 +167,11 @@ function AnalyticsPage() {
             <Card title="New Members — Last 12 Months">
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={signupsQ.data ?? []} margin={{ left: 10, right: 16 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} allowDecimals={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border))" />
+                  <XAxis dataKey="month" stroke="var(--muted-foreground))" fontSize={12} />
+                  <YAxis stroke="var(--muted-foreground))" fontSize={12} allowDecimals={false} />
                   <Tooltip />
-                  <Line type="monotone" dataKey="count" stroke="hsl(var(--gold))" strokeWidth={2} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="count" stroke="var(--gold))" strokeWidth={2} dot={{ r: 4 }} />
                 </LineChart>
               </ResponsiveContainer>
             </Card>
