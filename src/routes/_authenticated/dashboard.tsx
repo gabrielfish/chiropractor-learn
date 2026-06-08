@@ -254,3 +254,28 @@ function HeroSearch() {
   );
 }
 
+
+function CategoryGrid({ categories }: { categories: { id: string; name: string; icon?: string | null; slug?: string | null }[] | null | undefined }) {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      {(categories ?? []).map((c) => {
+        const Icon = ((Icons as unknown as Record<string, typeof Icons.Folder>)[c.icon ?? "Folder"] ?? Icons.Folder);
+        return (
+          <Link
+            key={c.id}
+            to="/dashboard"
+            search={{ q: c.name } as never}
+            className="group rounded-xl bg-card border border-border p-4 shadow-card hover:shadow-card-hover hover:border-gold transition-all flex items-center gap-3"
+          >
+            <div className="rounded-lg bg-primary/5 text-primary p-2.5 group-hover:bg-gold/10 group-hover:text-gold transition-colors">
+              <Icon className="h-5 w-5" />
+            </div>
+            <div className="font-display font-bold text-sm text-foreground leading-tight">
+              {c.name}
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
