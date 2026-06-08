@@ -29,7 +29,9 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 function AdminPage() {
   const qc = useQueryClient();
-  const { user } = Route.useRouteContext();
+  const { user, roles } = Route.useRouteContext() as { user: { id: string }; roles: string[] };
+  const isAuthorOnly = roles.includes("author") && !roles.includes("super_admin");
+  const notifyAuthorFn = useServerFn(notifyAuthorPublished);
   const [form, setForm] = useState({
     title: "", description: "", category_id: "", video_url: "",
     pdf_url: "", thumbnail_url: "",
@@ -117,7 +119,15 @@ function AdminPage() {
       setUseCustomThumb(false);
       qc.invalidateQueries({ queryKey: ["admin", "content"] });
       qc.invalidateQueries({ queryKey: ["content"] });
-      if (wasPublished && newId) setPublishedModal({ id: newId, title: newTitle });
+      if (wasPublished && newId) {
+        if (isAuthorOnly) {
+          // Author publishing — notify super admins, no modal
+          notifyAuthorFn({ data: { contentId: newId } }).catch(() => {});
+          toast.success("Published. Super admin has been notified.");
+        } else {
+          setPublishedModal({ id: newId, title: newTitle });
+        }
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
