@@ -261,6 +261,11 @@ function ContentDetail() {
           </aside>
         </div>
       </main>
+      <LessonCompleteModal
+        open={celebrateOpen}
+        onClose={() => setCelebrateOpen(false)}
+        lessonTitle={item.title}
+      />
     </div>
   );
 }
