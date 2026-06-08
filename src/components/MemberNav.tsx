@@ -16,8 +16,13 @@ export function MemberNav({ initialQuery = "" }: { initialQuery?: string }) {
   const navigate = useNavigate();
   const [q, setQ] = useState(initialQuery);
 
-  const onSearch = (e: FormEvent) => {
+  const onSearch = async (e: FormEvent) => {
     e.preventDefault();
+    const term = q.trim();
+    if (term) {
+      const { data } = await supabase.auth.getUser();
+      supabase.from("search_logs").insert({ query: term, user_id: data.user?.id ?? null }).then(() => {});
+    }
     navigate({ to: "/dashboard", search: { q } as never });
   };
 
