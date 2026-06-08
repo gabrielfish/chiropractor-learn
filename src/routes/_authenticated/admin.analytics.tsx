@@ -146,22 +146,26 @@ function AnalyticsPage() {
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <Card title="Top 10 Most Viewed Content">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={topContentQ.data ?? []} layout="vertical" margin={{ left: 10, right: 16 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border))" />
-                  <XAxis type="number" stroke="var(--muted-foreground))" fontSize={12} />
-                  <YAxis
-                    type="category"
-                    dataKey="title"
-                    width={140}
-                    stroke="var(--muted-foreground))"
-                    fontSize={11}
-                    tickFormatter={(v: string) => (v.length > 22 ? v.slice(0, 22) + "…" : v)}
-                  />
-                  <Tooltip cursor={{ fill: "var(--muted))" }} />
-                  <Bar dataKey="views" fill="var(--gold))" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {(topContentQ.data ?? []).length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={topContentQ.data ?? []} layout="vertical" margin={{ left: 10, right: 16 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border))" />
+                    <XAxis type="number" stroke="var(--muted-foreground))" fontSize={12} />
+                    <YAxis
+                      type="category"
+                      dataKey="title"
+                      width={140}
+                      stroke="var(--muted-foreground))"
+                      fontSize={11}
+                      tickFormatter={(v: string) => (v.length > 22 ? v.slice(0, 22) + "…" : v)}
+                    />
+                    <Tooltip cursor={{ fill: "var(--muted))" }} />
+                    <Bar dataKey="views" fill="var(--gold))" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyChartMessage />
+              )}
             </Card>
 
             <Card title="New Members — Last 12 Months">
