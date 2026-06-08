@@ -23,7 +23,7 @@ export function AdminSidebar({ active }: { active: "content" | "analytics" | "au
           <FileText className="h-4 w-4" /> Content
         </Link>
         <Link to="/admin/authors" className={`${itemBase} ${active === "authors" ? itemActive : itemIdle}`}>
-          <Users className="h-4 w-4" /> Authors
+          <Users className="h-4 w-4" /> Team Members
         </Link>
         <Link to="/admin/analytics" className={`${itemBase} ${active === "analytics" ? itemActive : itemIdle}`}>
           <BarChart3 className="h-4 w-4" /> Analytics
