@@ -34,7 +34,7 @@ function Dashboard() {
     queryFn: async () => {
       let req = supabase
         .from("content")
-        .select("*, category:categories(name,slug), author:profiles(full_name)")
+        .select("*, category:categories(name,slug), author:profiles(full_name,avatar_url,job_title)")
         .eq("status", "published")
         .order("published_at", { ascending: false });
       if (query) {
