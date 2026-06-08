@@ -25,7 +25,7 @@ async function routeByRole() {
     .select("role")
     .eq("user_id", user.id);
   const roleSet = new Set((roles ?? []).map((r) => r.role));
-  if (roleSet.has("super_admin") || roleSet.has("author")) {
+  if (roleSet.has("super_admin")) {
     throw redirect({ to: "/admin" });
   }
   throw redirect({ to: "/dashboard" });
@@ -86,7 +86,7 @@ function LoginPage() {
     if (!user) return;
     const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
     const roleSet = new Set((roles ?? []).map((r) => r.role));
-    if (roleSet.has("super_admin") || roleSet.has("author")) {
+    if (roleSet.has("super_admin")) {
       navigate({ to: "/admin" });
     } else {
       navigate({ to: "/dashboard" });
