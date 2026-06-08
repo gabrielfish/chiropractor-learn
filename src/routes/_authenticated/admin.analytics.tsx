@@ -13,8 +13,8 @@ export const Route = createFileRoute("/_authenticated/admin/analytics")({
   head: () => ({ meta: [{ title: "Analytics — DCPG Admin" }] }),
   beforeLoad: ({ context }) => {
     const roles = (context as { roles?: string[] }).roles ?? [];
-    if (!roles.includes("super_admin") && !roles.includes("author")) {
-      throw redirect({ to: "/dashboard" });
+    if (!roles.includes("super_admin")) {
+      throw redirect({ to: "/admin" });
     }
   },
   component: AnalyticsPage,
