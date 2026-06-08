@@ -94,26 +94,7 @@ function Dashboard() {
         {!query && (
           <section className="mb-12">
             <h2 className="font-display text-xl font-bold mb-4">Browse by category</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {(categoriesQ.data ?? []).map((c) => {
-                const Icon = ((Icons as unknown as Record<string, typeof Icons.Folder>)[c.icon ?? "Folder"] ?? Icons.Folder);
-                return (
-                  <Link
-                    key={c.id}
-                    to="/dashboard"
-                    search={{ q: c.name } as never}
-                    className="group rounded-xl bg-card border border-border p-4 shadow-card hover:shadow-card-hover hover:border-gold transition-all flex items-center gap-3"
-                  >
-                    <div className="rounded-lg bg-primary/5 text-primary p-2.5 group-hover:bg-gold/10 group-hover:text-gold transition-colors">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <div className="font-display font-bold text-sm text-foreground leading-tight">
-                      {c.name}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
+            <CategoryGrid categories={categoriesQ.data} />
           </section>
         )}
 
@@ -189,11 +170,29 @@ function Dashboard() {
               ))}
             </div>
           ) : (contentQ.data ?? []).length === 0 ? (
-            <div className="text-center py-16 rounded-xl bg-card border border-border">
-              <p className="text-muted-foreground">
-                {query ? `No results for "${query}".` : "No content published yet. Check back soon."}
-              </p>
-            </div>
+            query ? (
+              <div className="text-center py-12">
+                <div className="mx-auto mb-6 w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center">
+                  <Search className="h-8 w-8 text-gold" />
+                </div>
+                <h3 className="font-display text-xl font-bold text-foreground mb-2">
+                  No results for "{query}"
+                </h3>
+                <p className="text-muted-foreground max-w-md mx-auto mb-10">
+                  Try shorter keywords — for example search "new patient" instead of "how to get new patients"
+                </p>
+                <div className="text-left">
+                  <h4 className="font-display text-lg font-bold text-foreground mb-4">Browse by category instead</h4>
+                  <CategoryGrid categories={categoriesQ.data} />
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-16 rounded-xl bg-card border border-border">
+                <p className="text-muted-foreground">
+                  No content published yet. Check back soon.
+                </p>
+              </div>
+            )
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {(contentQ.data ?? []).map((item) => (
@@ -255,3 +254,28 @@ function HeroSearch() {
   );
 }
 
+
+function CategoryGrid({ categories }: { categories: { id: string; name: string; icon?: string | null; slug?: string | null }[] | null | undefined }) {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      {(categories ?? []).map((c) => {
+        const Icon = ((Icons as unknown as Record<string, typeof Icons.Folder>)[c.icon ?? "Folder"] ?? Icons.Folder);
+        return (
+          <Link
+            key={c.id}
+            to="/dashboard"
+            search={{ q: c.name } as never}
+            className="group rounded-xl bg-card border border-border p-4 shadow-card hover:shadow-card-hover hover:border-gold transition-all flex items-center gap-3"
+          >
+            <div className="rounded-lg bg-primary/5 text-primary p-2.5 group-hover:bg-gold/10 group-hover:text-gold transition-colors">
+              <Icon className="h-5 w-5" />
+            </div>
+            <div className="font-display font-bold text-sm text-foreground leading-tight">
+              {c.name}
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
