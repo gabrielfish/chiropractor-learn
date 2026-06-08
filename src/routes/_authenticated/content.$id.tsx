@@ -35,6 +35,7 @@ function ContentDetail() {
   const { user } = Route.useRouteContext();
   const qc = useQueryClient();
   const [commentBody, setCommentBody] = useState("");
+  const [celebrateOpen, setCelebrateOpen] = useState(false);
 
   const contentQ = useQuery({
     queryKey: ["content", id],
