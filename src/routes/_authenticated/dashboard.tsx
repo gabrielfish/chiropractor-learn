@@ -6,7 +6,6 @@ import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { MemberNav } from "@/components/MemberNav";
 import { ContentCard } from "@/components/ContentCard";
-import { ContentCard } from "@/components/ContentCard";
 import * as Icons from "lucide-react";
 
 const searchSchema = z.object({ q: z.string().optional() });
