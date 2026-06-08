@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Download, FileText, Book, ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { LessonCompleteModal } from "@/components/LessonCompleteModal";
 
 export const Route = createFileRoute("/_authenticated/content/$id")({
   head: () => ({ meta: [{ title: "Lesson — DCPG Membership Portal" }] }),
@@ -34,6 +35,7 @@ function ContentDetail() {
   const { user } = Route.useRouteContext();
   const qc = useQueryClient();
   const [commentBody, setCommentBody] = useState("");
+  const [celebrateOpen, setCelebrateOpen] = useState(false);
 
   const contentQ = useQuery({
     queryKey: ["content", id],
@@ -79,8 +81,8 @@ function ContentDetail() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Marked complete");
       qc.invalidateQueries({ queryKey: ["progress", id, user.id] });
+      setCelebrateOpen(true);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -259,6 +261,11 @@ function ContentDetail() {
           </aside>
         </div>
       </main>
+      <LessonCompleteModal
+        open={celebrateOpen}
+        onClose={() => setCelebrateOpen(false)}
+        lessonTitle={item.title}
+      />
     </div>
   );
 }
