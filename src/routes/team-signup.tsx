@@ -84,10 +84,10 @@ function TeamSignupPage() {
 
         <div className="flex items-center gap-2 text-gold mb-2">
           <ShieldCheck className="h-5 w-5" />
-          <span className="text-sm font-semibold uppercase tracking-wider">Authors only</span>
+          <span className="text-sm font-semibold uppercase tracking-wider">Team members only</span>
         </div>
         <h1 className="font-display text-3xl md:text-4xl font-extrabold text-foreground leading-tight mb-2">
-          Activate your author account
+          Activate your team member account
         </h1>
         <p className="text-muted-foreground mb-8">
           Team members publish content directly to the DCPG library. You need an access code from your admin to continue.
