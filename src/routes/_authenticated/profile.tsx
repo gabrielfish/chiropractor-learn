@@ -17,6 +17,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { FileDropzone } from "@/components/FileDropzone";
+import { uploadAvatar } from "@/lib/storage";
+import {
   getMyProfile,
   updateMyProfile,
   updateNotifications,
