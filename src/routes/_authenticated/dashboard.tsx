@@ -129,3 +129,47 @@ function Dashboard() {
     </div>
   );
 }
+
+const SEARCH_PLACEHOLDERS = [
+  "Search for marketing strategies...",
+  "Find Ryan's Facebook Ads training...",
+  "How do I grow my new patient numbers...",
+  "Search quarterly meeting training...",
+];
+
+function HeroSearch() {
+  const navigate = useNavigate();
+  const [q, setQ] = useState("");
+  const [phIdx, setPhIdx] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setPhIdx((i) => (i + 1) % SEARCH_PLACEHOLDERS.length), 3000);
+    return () => clearInterval(t);
+  }, []);
+
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    navigate({ to: "/dashboard", search: { q } as never });
+  };
+
+  return (
+    <form onSubmit={onSubmit} className="relative w-full max-w-2xl mx-auto">
+      <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+      <input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder={SEARCH_PLACEHOLDERS[phIdx]}
+        aria-label="Search library"
+        style={{ fontSize: "18px" }}
+        className="w-full h-14 pl-14 pr-32 rounded-full border-2 border-border bg-card shadow-card transition-all focus:outline-none focus:border-gold focus:ring-4 focus:ring-gold/20 placeholder:text-muted-foreground/70"
+      />
+      <button
+        type="submit"
+        className="absolute right-2 top-1/2 -translate-y-1/2 h-10 px-5 rounded-full bg-gold text-gold-foreground font-semibold text-sm hover:bg-gold/90 transition-colors"
+      >
+        Search
+      </button>
+    </form>
+  );
+}
+
