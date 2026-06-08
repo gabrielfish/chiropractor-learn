@@ -8,17 +8,22 @@ import { LandingSearchModal } from "@/components/LandingSearchModal";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "DCPG Membership Portal — Ryan Rieder's chiropractic teaching library" },
+      { title: "DCPG Membership Portal — Ryan Rieder's Teaching Library for Chiropractors" },
       {
         name: "description",
-        content:
-          "Ryan Rieder's complete teaching library, built for chiropractors who want to grow. Video lessons, PDFs, and resources in one portal.",
+        content: "Search and watch Ryan Rieder's complete teaching library — unlimited access built exclusively for chiropractors.",
       },
-      { property: "og:title", content: "DCPG Membership Portal" },
-      {
-        property: "og:description",
-        content: "Ryan Rieder's complete teaching library, built for chiropractors who want to grow.",
-      },
+      { property: "og:title", content: "DCPG Membership Portal — Ryan Rieder's Teaching Library for Chiropractors" },
+      { property: "og:description", content: "Search and watch Ryan Rieder's complete teaching library — unlimited access built exclusively for chiropractors." },
+      { property: "og:image", content: "https://learn.dcpracticegrowth.com/ryan-rieder.webp" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://learn.dcpracticegrowth.com" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "DCPG Membership Portal — Ryan Rieder's Teaching Library for Chiropractors" },
+      { name: "twitter:description", content: "Search and watch Ryan Rieder's complete teaching library — unlimited access built exclusively for chiropractors." },
+      { name: "twitter:image", content: "https://learn.dcpracticegrowth.com/ryan-rieder.webp" },
     ],
   }),
   component: LandingPage,
@@ -59,6 +64,13 @@ const testimonials = [
       "My God, this has been a game changer. New patients increased from 25 to 77 per month — without burnout or gimmicks.",
     name: "Wendy McCloud",
     clinic: "WDC Physiotherapy UK",
+  },
+  {
+    stat: "121 Leads at £1 Each",
+    quote:
+      "Grand Opening ad generated 121 leads at £1 per lead. Everyone who responded bought a plan — ridiculous ROI!",
+    name: "Dr. Mats Flodin",
+    clinic: "Roslagens Kiropraktik Sweden",
   },
 ];
 
@@ -204,8 +216,17 @@ function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="bg-primary text-primary-foreground">
-        <div className="max-w-5xl mx-auto px-6 py-20 md:py-28 text-center">
+      <section className="relative text-primary-foreground overflow-hidden">
+        {/* Ryan's photo background */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('/ryan-rieder.webp')" }}
+          aria-hidden="true"
+        />
+        {/* Dark navy overlay so text stays readable */}
+        <div className="absolute inset-0 bg-primary/85" aria-hidden="true" />
+        {/* Content sits above both layers */}
+        <div className="relative max-w-5xl mx-auto px-6 py-20 md:py-28 text-center">
           <div className="inline-block mb-6 px-3 py-1 rounded-full bg-gold/20 text-gold text-xs font-semibold tracking-wide uppercase">
             With Ryan Rieder
           </div>
