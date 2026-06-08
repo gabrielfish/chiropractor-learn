@@ -169,15 +169,19 @@ function AnalyticsPage() {
             </Card>
 
             <Card title="New Members — Last 12 Months">
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={signupsQ.data ?? []} margin={{ left: 10, right: 16 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border))" />
-                  <XAxis dataKey="month" stroke="var(--muted-foreground))" fontSize={12} />
-                  <YAxis stroke="var(--muted-foreground))" fontSize={12} allowDecimals={false} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="count" stroke="var(--gold))" strokeWidth={2} dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
+              {(signupsQ.data ?? []).length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={signupsQ.data ?? []} margin={{ left: 10, right: 16 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border))" />
+                    <XAxis dataKey="month" stroke="var(--muted-foreground))" fontSize={12} />
+                    <YAxis stroke="var(--muted-foreground))" fontSize={12} allowDecimals={false} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="count" stroke="var(--gold))" strokeWidth={2} dot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyChartMessage />
+              )}
             </Card>
           </div>
 
