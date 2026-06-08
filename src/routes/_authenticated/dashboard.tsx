@@ -52,7 +52,7 @@ function Dashboard() {
       }
       let req = supabase
         .from("content")
-        .select("*, category:categories(name,slug), author:profiles(full_name,avatar_url,job_title)")
+        .select("*, category:categories(name,slug)")
         .eq("status", "published")
         .order("published_at", { ascending: false });
       if (term) {
@@ -68,7 +68,19 @@ function Dashboard() {
       }
       const { data, error } = await req.limit(24);
       if (error) throw error;
-      return data;
+      const authorIds = Array.from(new Set((data ?? []).map((d) => d.author_id).filter(Boolean) as string[]));
+      let authorsById = new Map<string, { full_name: string | null; avatar_url: string | null; job_title: string | null }>();
+      if (authorIds.length) {
+        const { data: authors } = await supabase
+          .from("author_profiles_public")
+          .select("id,full_name,avatar_url,job_title")
+          .in("id", authorIds);
+        authorsById = new Map((authors ?? []).map((a) => [a.id as string, a]));
+      }
+      return (data ?? []).map((row) => ({
+        ...row,
+        author: row.author_id ? authorsById.get(row.author_id as string) ?? null : null,
+      }));
     },
   });
 
@@ -273,7 +285,9 @@ function HeroSearch({ inputRef }: { inputRef: React.RefObject<HTMLInputElement |
     const term = q.trim();
     if (term) {
       const { data } = await supabase.auth.getUser();
-      supabase.from("search_logs").insert({ query: term, user_id: data.user?.id ?? null }).then(() => {});
+      if (data.user?.id) {
+        supabase.from("search_logs").insert({ query: term, user_id: data.user.id }).then(() => {});
+      }
     }
     navigate({ to: "/dashboard", search: { q } as never });
   };
