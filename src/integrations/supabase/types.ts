@@ -252,6 +252,36 @@ export type Database = {
           },
         ]
       }
+      support_requests: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          member_id: string
+          message: string
+          status: string
+          subject: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          member_id: string
+          message: string
+          status?: string
+          subject: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          member_id?: string
+          message?: string
+          status?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
