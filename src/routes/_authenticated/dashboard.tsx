@@ -100,6 +100,66 @@ function Dashboard() {
           </section>
         )}
 
+        {/* Tools & Resources */}
+        {!query && (
+          <section className="mb-12">
+            <h2 className="font-display text-xl font-bold mb-4">Tools & Resources</h2>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                {
+                  title: "Website AI Audit Tool",
+                  description: "Get a free AI audit of your chiropractic website",
+                  button: "Open Tool",
+                  href: "https://audit.dcpracticegrowth.com/",
+                  icon: Icons.Globe,
+                },
+                {
+                  title: "Workshop AI Builder",
+                  description: "Build your next workshop with AI in minutes",
+                  button: "Open Tool",
+                  href: "https://workshop-builder.dcpracticegrowth.com/",
+                  icon: Icons.Sparkles,
+                },
+                {
+                  title: "Book A Call With Ryan",
+                  description: "Schedule a 1-on-1 strategy call with Ryan directly",
+                  button: "Book Now",
+                  href: "https://go.dcpracticegrowth.com/ryans-calendar",
+                  icon: Icons.Calendar,
+                },
+                {
+                  title: "Join The Inner Circle",
+                  description: "Connect with 300+ chiropractors in Ryan's private Facebook group",
+                  button: "Join Now",
+                  href: "https://www.facebook.com/groups/ryanriederinnercircle",
+                  icon: Icons.Users,
+                },
+              ].map((tool) => (
+                <a
+                  key={tool.title}
+                  href={tool.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group rounded-xl bg-card border border-border p-5 shadow-card hover:shadow-card-hover hover:border-gold transition-all flex flex-col"
+                >
+                  <div className="rounded-lg bg-primary/5 text-gold p-2.5 w-fit mb-3 group-hover:bg-gold/10 transition-colors">
+                    <tool.icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-display font-bold text-sm text-foreground leading-tight mb-1">
+                    {tool.title}
+                  </h3>
+                  <p className="text-muted-foreground text-xs leading-relaxed flex-1 mb-4">
+                    {tool.description}
+                  </p>
+                  <span className="inline-flex items-center justify-center rounded-lg bg-gold text-gold-foreground font-semibold text-xs px-4 py-2 hover:bg-gold/90 transition-colors">
+                    {tool.button}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Content */}
         <section>
           <h2 className="font-display text-xl font-bold mb-4">
