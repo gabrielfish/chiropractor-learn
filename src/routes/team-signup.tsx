@@ -16,7 +16,7 @@ export const Route = createFileRoute("/team-signup")({
   head: () => ({
     meta: [
       { title: "Team Sign up — DCPG Membership Portal" },
-      { name: "description", content: "Activate your DCPG team author account with your access code." },
+      { name: "description", content: "Activate your DCPG team member account with your access code." },
     ],
   }),
   component: TeamSignupPage,
