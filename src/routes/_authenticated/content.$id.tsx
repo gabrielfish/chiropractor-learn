@@ -81,8 +81,8 @@ function ContentDetail() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Marked complete");
       qc.invalidateQueries({ queryKey: ["progress", id, user.id] });
+      setCelebrateOpen(true);
     },
     onError: (e: Error) => toast.error(e.message),
   });
