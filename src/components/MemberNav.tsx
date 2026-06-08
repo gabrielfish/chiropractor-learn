@@ -1,6 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Search, LogOut, User, ChevronDown } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { LogOut, User, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,19 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-export function MemberNav({ initialQuery = "" }: { initialQuery?: string }) {
+export function MemberNav() {
   const navigate = useNavigate();
-  const [q, setQ] = useState(initialQuery);
-
-  const onSearch = async (e: FormEvent) => {
-    e.preventDefault();
-    const term = q.trim();
-    if (term) {
-      const { data } = await supabase.auth.getUser();
-      supabase.from("search_logs").insert({ query: term, user_id: data.user?.id ?? null }).then(() => {});
-    }
-    navigate({ to: "/dashboard", search: { q } as never });
-  };
 
   const signOut = async () => {
     await supabase.auth.signOut();
