@@ -1,16 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { FileDropzone } from "@/components/FileDropzone";
 import { uploadContentFile, youtubeThumbnail, slugify } from "@/lib/storage";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, Pencil, Archive, Trash2, RotateCcw, X } from "lucide-react";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { PublishNotificationModal } from "@/components/PublishNotificationModal";
 import { useServerFn } from "@tanstack/react-start";
@@ -21,22 +31,45 @@ export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminPage,
 });
 
+type ContentStatus = "draft" | "published" | "archived";
+
+type FormState = {
+  title: string;
+  description: string;
+  category_id: string;
+  video_url: string;
+  pdf_url: string;
+  thumbnail_url: string;
+  status: ContentStatus;
+};
+
+const emptyForm: FormState = {
+  title: "",
+  description: "",
+  category_id: "",
+  video_url: "",
+  pdf_url: "",
+  thumbnail_url: "",
+  status: "published",
+};
+
 function AdminPage() {
   const qc = useQueryClient();
   const { user, roles } = Route.useRouteContext() as { user: { id: string }; roles: string[] };
   const isAuthorOnly = roles.includes("author") && !roles.includes("super_admin");
+  const isSuperAdmin = roles.includes("super_admin");
   const notifyAuthorFn = useServerFn(notifyAuthorPublished);
-  const [form, setForm] = useState({
-    title: "", description: "", category_id: "", video_url: "",
-    pdf_url: "", thumbnail_url: "",
-    status: "published" as "draft" | "published",
-  });
+
+  const [form, setForm] = useState<FormState>(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [useCustomThumb, setUseCustomThumb] = useState(false);
   const [videoSource, setVideoSource] = useState<"youtube" | "upload">("youtube");
   const [addingCat, setAddingCat] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [savingCat, setSavingCat] = useState(false);
   const [publishedModal, setPublishedModal] = useState<{ id: string; title: string } | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"all" | ContentStatus>("all");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
 
   const categoriesQ = useQuery({
     queryKey: ["admin", "categories"],
@@ -59,9 +92,58 @@ function AdminPage() {
     },
   });
 
-  // Derived thumbnail: YouTube auto (only when using YouTube source) unless custom toggled
+  const filteredContent = useMemo(() => {
+    const rows = contentQ.data ?? [];
+    if (statusFilter === "all") return rows;
+    return rows.filter((r) => r.status === statusFilter);
+  }, [contentQ.data, statusFilter]);
+
+  const counts = useMemo(() => {
+    const rows = contentQ.data ?? [];
+    return {
+      all: rows.length,
+      published: rows.filter((r) => r.status === "published").length,
+      draft: rows.filter((r) => r.status === "draft").length,
+      archived: rows.filter((r) => r.status === "archived").length,
+    };
+  }, [contentQ.data]);
+
   const ytThumb = videoSource === "youtube" && !useCustomThumb ? youtubeThumbnail(form.video_url) : null;
   const effectiveThumb = useCustomThumb ? form.thumbnail_url : (ytThumb ?? form.thumbnail_url);
+
+  const resetForm = () => {
+    setForm(emptyForm);
+    setEditingId(null);
+    setUseCustomThumb(false);
+    setVideoSource("youtube");
+  };
+
+  const startEdit = (row: {
+    id: string;
+    title: string;
+    description: string | null;
+    category_id: string | null;
+    video_url: string | null;
+    pdf_url: string | null;
+    thumbnail_url: string | null;
+    status: ContentStatus;
+  }) => {
+    setEditingId(row.id);
+    setForm({
+      title: row.title ?? "",
+      description: row.description ?? "",
+      category_id: row.category_id ?? "",
+      video_url: row.video_url ?? "",
+      pdf_url: row.pdf_url ?? "",
+      thumbnail_url: row.thumbnail_url ?? "",
+      status: row.status,
+    });
+    const isYt = !!row.video_url && /youtu\.?be/.test(row.video_url);
+    setVideoSource(isYt ? "youtube" : row.video_url ? "upload" : "youtube");
+    const ytAuto = isYt ? youtubeThumbnail(row.video_url ?? "") : null;
+    setUseCustomThumb(!!row.thumbnail_url && row.thumbnail_url !== ytAuto);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const onAddCategory = async () => {
     const name = newCatName.trim();
@@ -88,35 +170,53 @@ function AdminPage() {
     }
   };
 
-  const create = useMutation({
+  const save = useMutation({
     mutationFn: async () => {
       if (!form.title.trim()) throw new Error("Title is required");
-      const { data: row, error } = await supabase.from("content").insert({
+      const payload = {
         title: form.title,
         description: form.description || null,
         category_id: form.category_id || null,
         video_url: form.video_url || null,
         pdf_url: form.pdf_url || null,
         thumbnail_url: effectiveThumb || null,
-        author_id: user.id,
         status: form.status,
-        published_at: form.status === "published" ? new Date().toISOString() : null,
-      }).select("id, title, status").single();
+      };
+      if (editingId) {
+        const { data: row, error } = await supabase
+          .from("content")
+          .update({
+            ...payload,
+            published_at: form.status === "published" ? new Date().toISOString() : null,
+          })
+          .eq("id", editingId)
+          .select("id, title, status")
+          .single();
+        if (error) throw error;
+        return { row, isNew: false };
+      }
+      const { data: row, error } = await supabase
+        .from("content")
+        .insert({
+          ...payload,
+          author_id: user.id,
+          published_at: form.status === "published" ? new Date().toISOString() : null,
+        })
+        .select("id, title, status")
+        .single();
       if (error) throw error;
-      return row;
+      return { row, isNew: true };
     },
-    onSuccess: (row) => {
-      toast.success("Content saved");
+    onSuccess: ({ row, isNew }) => {
+      toast.success(isNew ? "Content saved" : "Content updated");
       const wasPublished = row?.status === "published";
       const newId = row?.id ?? null;
       const newTitle = row?.title ?? "";
-      setForm({ title: "", description: "", category_id: "", video_url: "", pdf_url: "", thumbnail_url: "", status: "published" });
-      setUseCustomThumb(false);
+      resetForm();
       qc.invalidateQueries({ queryKey: ["admin", "content"] });
       qc.invalidateQueries({ queryKey: ["content"] });
-      if (wasPublished && newId) {
+      if (isNew && wasPublished && newId) {
         if (isAuthorOnly) {
-          // Author publishing — notify super admins in the background
           notifyAuthorFn({ data: { contentId: newId } }).catch(() => {});
         }
         setPublishedModal({ id: newId, title: newTitle });
@@ -125,12 +225,47 @@ function AdminPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const setStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: ContentStatus }) => {
+      const patch = status === "published"
+        ? { status, published_at: new Date().toISOString() }
+        : { status };
+      const { error } = await supabase.from("content").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      toast.success(vars.status === "archived" ? "Content archived" : "Content restored");
+      qc.invalidateQueries({ queryKey: ["admin", "content"] });
+      qc.invalidateQueries({ queryKey: ["content"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const del = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("content").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Content deleted");
+      setDeleteTarget(null);
+      if (editingId && deleteTarget?.id === editingId) resetForm();
+      qc.invalidateQueries({ queryKey: ["admin", "content"] });
+      qc.invalidateQueries({ queryKey: ["content"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const filterTabs: { key: "all" | ContentStatus; label: string; count: number }[] = [
+    { key: "all", label: "All", count: counts.all },
+    { key: "published", label: "Published", count: counts.published },
+    { key: "draft", label: "Draft", count: counts.draft },
+    { key: "archived", label: "Archived", count: counts.archived },
+  ];
 
   return (
     <div className="min-h-screen flex bg-background">
       <AdminSidebar active="content" />
-
-
 
       <main className="flex-1 p-6 md:p-10 overflow-x-hidden">
         <div className="max-w-4xl mx-auto">
@@ -138,7 +273,17 @@ function AdminPage() {
           <p className="text-muted-foreground mb-8">Upload lessons and manage your library.</p>
 
           <section className="rounded-xl bg-card border border-border p-6 shadow-card mb-10">
-            <h2 className="font-display text-lg font-bold mb-4 flex items-center gap-2"><Plus className="h-5 w-5 text-gold" /> New lesson</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-lg font-bold flex items-center gap-2">
+                {editingId ? <Pencil className="h-5 w-5 text-gold" /> : <Plus className="h-5 w-5 text-gold" />}
+                {editingId ? "Edit lesson" : "New lesson"}
+              </h2>
+              {editingId && (
+                <Button type="button" variant="ghost" size="sm" onClick={resetForm}>
+                  <X className="h-4 w-4 mr-1" /> Cancel edit
+                </Button>
+              )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2 space-y-1.5">
                 <Label>Title *</Label>
@@ -185,10 +330,11 @@ function AdminPage() {
                 <select
                   className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                   value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value as "draft" | "published" })}
+                  onChange={(e) => setForm({ ...form, status: e.target.value as ContentStatus })}
                 >
                   <option value="published">Published</option>
                   <option value="draft">Draft</option>
+                  {isSuperAdmin && <option value="archived">Archived</option>}
                 </select>
               </div>
               <div className="md:col-span-2 space-y-2">
@@ -292,14 +438,32 @@ function AdminPage() {
 
             </div>
             <div className="flex justify-end mt-5">
-              <Button onClick={() => create.mutate()} disabled={create.isPending} className="bg-gold text-gold-foreground hover:bg-gold/90">
-                {create.isPending ? "Saving…" : "Save lesson"}
+              <Button onClick={() => save.mutate()} disabled={save.isPending} className="bg-gold text-gold-foreground hover:bg-gold/90">
+                {save.isPending ? "Saving…" : editingId ? "Update lesson" : "Save lesson"}
               </Button>
             </div>
           </section>
 
           <section>
-            <h2 className="font-display text-lg font-bold mb-4">All content ({contentQ.data?.length ?? 0})</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h2 className="font-display text-lg font-bold">All content ({counts.all})</h2>
+              <div className="inline-flex rounded-md border border-border bg-muted p-1">
+                {filterTabs.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setStatusFilter(t.key)}
+                    className={`px-3 py-1.5 text-xs rounded font-medium transition-colors ${
+                      statusFilter === t.key
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {t.label} <span className="opacity-60">({t.count})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="rounded-xl bg-card border border-border overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-muted">
@@ -308,23 +472,82 @@ function AdminPage() {
                     <th className="px-4 py-3 font-medium">Category</th>
                     <th className="px-4 py-3 font-medium">Status</th>
                     <th className="px-4 py-3 font-medium">Created</th>
+                    {isSuperAdmin && <th className="px-4 py-3 font-medium text-right">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {(contentQ.data ?? []).map((c) => (
-                    <tr key={c.id} className="border-t border-border">
-                      <td className="px-4 py-3 font-medium">{c.title}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{c.category?.name ?? "—"}</td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${c.status === "published" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
-                          {c.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(c.created_at).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
-                  {(contentQ.data ?? []).length === 0 && (
-                    <tr><td colSpan={4} className="px-4 py-10 text-center text-muted-foreground">No content yet.</td></tr>
+                  {filteredContent.map((c) => {
+                    const statusClass =
+                      c.status === "published"
+                        ? "bg-success/15 text-success"
+                        : c.status === "archived"
+                          ? "bg-gold/15 text-gold"
+                          : "bg-muted text-muted-foreground";
+                    return (
+                      <tr key={c.id} className="border-t border-border">
+                        <td className="px-4 py-3 font-medium">{c.title}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{c.category?.name ?? "—"}</td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${statusClass}`}>
+                            {c.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(c.created_at).toLocaleDateString()}</td>
+                        {isSuperAdmin && (
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startEdit(c)}
+                                aria-label="Edit"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              {c.status === "archived" ? (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setStatus.mutate({ id: c.id, status: "published" })}
+                                  disabled={setStatus.isPending}
+                                  aria-label="Restore"
+                                  title="Restore to published"
+                                >
+                                  <RotateCcw className="h-4 w-4" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setStatus.mutate({ id: c.id, status: "archived" })}
+                                  disabled={setStatus.isPending}
+                                  aria-label="Archive"
+                                  title="Archive"
+                                >
+                                  <Archive className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeleteTarget({ id: c.id, title: c.title })}
+                                aria-label="Delete"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                  {filteredContent.length === 0 && (
+                    <tr><td colSpan={isSuperAdmin ? 5 : 4} className="px-4 py-10 text-center text-muted-foreground">No content in this view.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -339,6 +562,30 @@ function AdminPage() {
         title={publishedModal?.title ?? ""}
         onClose={() => setPublishedModal(null)}
       />
+
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete content?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete "{deleteTarget?.title}"? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={del.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={del.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteTarget) del.mutate(deleteTarget.id);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {del.isPending ? "Deleting…" : "Delete permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
