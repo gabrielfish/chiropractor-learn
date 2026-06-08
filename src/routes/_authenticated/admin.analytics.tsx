@@ -244,7 +244,7 @@ function EmptyChartMessage() {
     <div className="flex flex-col items-center justify-center h-[300px] text-center px-4">
       <BarChart3 className="h-10 w-10 text-gold/40 mb-3" />
       <p className="text-sm text-muted-foreground max-w-xs">
-        Data will appear as members start using the platform
+        Analytics will populate as members watch content and search the library.
       </p>
     </div>
   );
