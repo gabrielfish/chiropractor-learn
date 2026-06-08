@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { FileDropzone } from "@/components/FileDropzone";
+import { uploadContentFile, youtubeThumbnail, slugify } from "@/lib/storage";
 import { toast } from "sonner";
 import { LogOut, Plus } from "lucide-react";
 
@@ -24,9 +27,14 @@ function AdminPage() {
   const qc = useQueryClient();
   const { user } = Route.useRouteContext();
   const [form, setForm] = useState({
-    title: "", description: "", category_id: "", video_url: "", video_duration: "",
-    pdf_url: "", thumbnail_url: "", status: "published" as "draft" | "published",
+    title: "", description: "", category_id: "", video_url: "",
+    pdf_url: "", thumbnail_url: "",
+    status: "published" as "draft" | "published",
   });
+  const [useCustomThumb, setUseCustomThumb] = useState(false);
+  const [addingCat, setAddingCat] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [savingCat, setSavingCat] = useState(false);
 
   const categoriesQ = useQuery({
     queryKey: ["admin", "categories"],
@@ -49,6 +57,35 @@ function AdminPage() {
     },
   });
 
+  // Derived thumbnail: YouTube auto unless custom toggled
+  const ytThumb = !useCustomThumb ? youtubeThumbnail(form.video_url) : null;
+  const effectiveThumb = useCustomThumb ? form.thumbnail_url : (ytThumb ?? form.thumbnail_url);
+
+  const onAddCategory = async () => {
+    const name = newCatName.trim();
+    if (!name) return;
+    setSavingCat(true);
+    try {
+      const slug = slugify(name);
+      const { data, error } = await supabase
+        .from("categories")
+        .insert({ name, slug })
+        .select()
+        .single();
+      if (error) throw error;
+      toast.success("Category added");
+      setForm((f) => ({ ...f, category_id: data.id }));
+      setNewCatName("");
+      setAddingCat(false);
+      qc.invalidateQueries({ queryKey: ["admin", "categories"] });
+      qc.invalidateQueries({ queryKey: ["categories"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to add category");
+    } finally {
+      setSavingCat(false);
+    }
+  };
+
   const create = useMutation({
     mutationFn: async () => {
       if (!form.title.trim()) throw new Error("Title is required");
@@ -57,9 +94,8 @@ function AdminPage() {
         description: form.description || null,
         category_id: form.category_id || null,
         video_url: form.video_url || null,
-        video_duration: form.video_duration || null,
         pdf_url: form.pdf_url || null,
-        thumbnail_url: form.thumbnail_url || null,
+        thumbnail_url: effectiveThumb || null,
         author_id: user.id,
         status: form.status,
         published_at: form.status === "published" ? new Date().toISOString() : null,
@@ -68,12 +104,14 @@ function AdminPage() {
     },
     onSuccess: () => {
       toast.success("Content saved");
-      setForm({ title: "", description: "", category_id: "", video_url: "", video_duration: "", pdf_url: "", thumbnail_url: "", status: "published" });
+      setForm({ title: "", description: "", category_id: "", video_url: "", pdf_url: "", thumbnail_url: "", status: "published" });
+      setUseCustomThumb(false);
       qc.invalidateQueries({ queryKey: ["admin", "content"] });
       qc.invalidateQueries({ queryKey: ["content"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -116,12 +154,33 @@ function AdminPage() {
                 <Label>Category</Label>
                 <select
                   className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                  value={form.category_id}
-                  onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+                  value={addingCat ? "__add__" : form.category_id}
+                  onChange={(e) => {
+                    if (e.target.value === "__add__") { setAddingCat(true); }
+                    else { setAddingCat(false); setForm({ ...form, category_id: e.target.value }); }
+                  }}
                 >
                   <option value="">Select category…</option>
                   {(categoriesQ.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  <option value="__add__">+ Add new category…</option>
                 </select>
+                {addingCat && (
+                  <div className="flex gap-2 pt-2">
+                    <Input
+                      autoFocus
+                      placeholder="New category name"
+                      value={newCatName}
+                      onChange={(e) => setNewCatName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void onAddCategory(); } }}
+                    />
+                    <Button type="button" size="sm" onClick={onAddCategory} disabled={savingCat || !newCatName.trim()}>
+                      {savingCat ? "…" : "Save"}
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => { setAddingCat(false); setNewCatName(""); }}>
+                      Cancel
+                    </Button>
+                  </div>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label>Status</Label>
@@ -134,22 +193,63 @@ function AdminPage() {
                   <option value="draft">Draft</option>
                 </select>
               </div>
-              <div className="space-y-1.5">
+              <div className="md:col-span-2 space-y-1.5">
                 <Label>YouTube URL</Label>
                 <Input placeholder="https://youtu.be/…" value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} />
+                <div className="flex items-center justify-between pt-3">
+                  <div>
+                    <div className="text-sm font-medium text-foreground">Use custom thumbnail instead</div>
+                    <div className="text-xs text-muted-foreground">By default we use the YouTube thumbnail.</div>
+                  </div>
+                  <Switch checked={useCustomThumb} onCheckedChange={setUseCustomThumb} />
+                </div>
+                {!useCustomThumb && ytThumb && (
+                  <div className="pt-2">
+                    <img src={ytThumb} alt="YouTube thumbnail preview" className="h-24 rounded-md border border-border object-cover" />
+                  </div>
+                )}
+                {useCustomThumb && (
+                  <div className="pt-2 space-y-2">
+                    <FileDropzone
+                      label="Upload custom thumbnail"
+                      accept="image/*"
+                      uploaded={!!form.thumbnail_url}
+                      hint="JPG or PNG, 16:9 recommended"
+                      onFile={async (file) => {
+                        try {
+                          const url = await uploadContentFile("thumbnail", file);
+                          setForm((f) => ({ ...f, thumbnail_url: url }));
+                          toast.success("Thumbnail uploaded");
+                        } catch (e) {
+                          toast.error(e instanceof Error ? e.message : "Upload failed");
+                        }
+                      }}
+                    />
+                    {form.thumbnail_url && (
+                      <img src={form.thumbnail_url} alt="Custom thumbnail" className="h-24 rounded-md border border-border object-cover" />
+                    )}
+                  </div>
+                )}
               </div>
-              <div className="space-y-1.5">
-                <Label>Duration</Label>
-                <Input placeholder="32 min" value={form.video_duration} onChange={(e) => setForm({ ...form, video_duration: e.target.value })} />
+              <div className="md:col-span-2 space-y-1.5">
+                <Label>PDF</Label>
+                <FileDropzone
+                  label="Upload PDF"
+                  accept="application/pdf"
+                  uploaded={!!form.pdf_url}
+                  hint="Drag and drop or click to select a PDF"
+                  onFile={async (file) => {
+                    try {
+                      const url = await uploadContentFile("pdf", file);
+                      setForm((f) => ({ ...f, pdf_url: url }));
+                      toast.success("PDF uploaded");
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Upload failed");
+                    }
+                  }}
+                />
               </div>
-              <div className="space-y-1.5">
-                <Label>PDF URL</Label>
-                <Input value={form.pdf_url} onChange={(e) => setForm({ ...form, pdf_url: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Thumbnail URL</Label>
-                <Input value={form.thumbnail_url} onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })} />
-              </div>
+
             </div>
             <div className="flex justify-end mt-5">
               <Button onClick={() => create.mutate()} disabled={create.isPending} className="bg-gold text-gold-foreground hover:bg-gold/90">

@@ -16,6 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { FileDropzone } from "@/components/FileDropzone";
+import { uploadAvatar } from "@/lib/storage";
 import {
   getMyProfile,
   updateMyProfile,
@@ -40,6 +43,7 @@ function Section({ title, description, children }: { title: string; description?
 }
 
 function ProfilePage() {
+  const { user } = Route.useRouteContext();
   const fetchProfile = useServerFn(getMyProfile);
   const saveProfile = useServerFn(updateMyProfile);
   const saveNotifs = useServerFn(updateNotifications);
@@ -180,9 +184,42 @@ function ProfilePage() {
                 <Input id="practice_name" value={practiceName} onChange={(e) => setPracticeName(e.target.value)} maxLength={160} />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="avatar_url">Avatar Image URL</Label>
-                <Input id="avatar_url" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://..." maxLength={500} />
+                <Label>Profile Photo</Label>
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-20 w-20 shrink-0">
+                    {avatarUrl && <AvatarImage src={avatarUrl} alt="Avatar" />}
+                    <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+                      {(fullName || "U").slice(0, 1).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <FileDropzone
+                      label="Upload profile photo"
+                      accept="image/*"
+                      uploaded={!!avatarUrl}
+                      hint="JPG or PNG, square works best"
+                      onFile={async (file) => {
+                        try {
+                          const url = await uploadAvatar(user.id, file);
+                          setAvatarUrl(url);
+                          await saveProfile({
+                            data: {
+                              full_name: fullName || null,
+                              phone: phone || null,
+                              practice_name: practiceName || null,
+                              avatar_url: url,
+                            },
+                          });
+                          toast.success("Profile photo updated");
+                        } catch (e) {
+                          toast.error(e instanceof Error ? e.message : "Upload failed");
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
+
             </div>
             <div className="pt-2">
               <Button type="submit" disabled={savingProfile}>
