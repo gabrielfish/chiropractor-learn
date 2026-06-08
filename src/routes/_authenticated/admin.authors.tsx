@@ -38,6 +38,18 @@ function AuthorsPage() {
   const update = useServerFn(updateAuthorProfile);
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Author | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = async () => {
+    const url = `${window.location.origin}/team-signup`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
 
   const authorsQ = useQuery({
     queryKey: ["admin", "authors"],
