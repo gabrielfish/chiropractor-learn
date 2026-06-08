@@ -43,6 +43,7 @@ function Section({ title, description, children }: { title: string; description?
 }
 
 function ProfilePage() {
+  const { user } = Route.useRouteContext();
   const fetchProfile = useServerFn(getMyProfile);
   const saveProfile = useServerFn(updateMyProfile);
   const saveNotifs = useServerFn(updateNotifications);
