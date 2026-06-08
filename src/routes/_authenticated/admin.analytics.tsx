@@ -239,6 +239,17 @@ function AnalyticsPage() {
   );
 }
 
+function EmptyChartMessage() {
+  return (
+    <div className="flex flex-col items-center justify-center h-[300px] text-center px-4">
+      <BarChart3 className="h-10 w-10 text-gold/40 mb-3" />
+      <p className="text-sm text-muted-foreground max-w-xs">
+        Data will appear as members start using the platform
+      </p>
+    </div>
+  );
+}
+
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-xl bg-card border border-border p-5 shadow-card">
