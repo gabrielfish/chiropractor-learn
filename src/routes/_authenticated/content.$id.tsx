@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Download, FileText, Book, ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { LessonCompleteModal } from "@/components/LessonCompleteModal";
 
 export const Route = createFileRoute("/_authenticated/content/$id")({
   head: () => ({ meta: [{ title: "Lesson — DCPG Membership Portal" }] }),
