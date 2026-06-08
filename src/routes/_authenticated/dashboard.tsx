@@ -52,15 +52,17 @@ function Dashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12">
         {!query && (
-          <section className="mb-12 text-center max-w-2xl mx-auto">
-            <h1 className="font-display text-3xl md:text-4xl font-extrabold text-foreground mb-3">
+          <section className="mb-12 text-center max-w-3xl mx-auto">
+            <h1 className="font-display text-3xl md:text-4xl font-extrabold text-foreground mb-6">
               What do you want to learn today?
             </h1>
-            <p className="text-muted-foreground">
+            <HeroSearch />
+            <p className="text-muted-foreground mt-4 text-sm">
               Search the library, or browse by category below.
             </p>
           </section>
         )}
+
 
         {query && (
           <h2 className="font-display text-2xl font-bold mb-6">
