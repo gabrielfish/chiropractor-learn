@@ -38,6 +38,7 @@ function AdminPage() {
     status: "published" as "draft" | "published",
   });
   const [useCustomThumb, setUseCustomThumb] = useState(false);
+  const [videoSource, setVideoSource] = useState<"youtube" | "upload">("youtube");
   const [addingCat, setAddingCat] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [savingCat, setSavingCat] = useState(false);
@@ -64,8 +65,8 @@ function AdminPage() {
     },
   });
 
-  // Derived thumbnail: YouTube auto unless custom toggled
-  const ytThumb = !useCustomThumb ? youtubeThumbnail(form.video_url) : null;
+  // Derived thumbnail: YouTube auto (only when using YouTube source) unless custom toggled
+  const ytThumb = videoSource === "youtube" && !useCustomThumb ? youtubeThumbnail(form.video_url) : null;
   const effectiveThumb = useCustomThumb ? form.thumbnail_url : (ytThumb ?? form.thumbnail_url);
 
   const onAddCategory = async () => {
@@ -198,9 +199,51 @@ function AdminPage() {
                   <option value="draft">Draft</option>
                 </select>
               </div>
-              <div className="md:col-span-2 space-y-1.5">
-                <Label>YouTube URL</Label>
-                <Input placeholder="https://youtu.be/…" value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} />
+              <div className="md:col-span-2 space-y-2">
+                <Label>Video source</Label>
+                <div className="inline-flex rounded-md border border-border bg-muted p-1">
+                  <button
+                    type="button"
+                    onClick={() => { setVideoSource("youtube"); setForm((f) => ({ ...f, video_url: "" })); }}
+                    className={`px-3 py-1.5 text-sm rounded ${videoSource === "youtube" ? "bg-card text-foreground shadow-sm font-medium" : "text-muted-foreground"}`}
+                  >
+                    YouTube URL
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setVideoSource("upload"); setForm((f) => ({ ...f, video_url: "" })); }}
+                    className={`px-3 py-1.5 text-sm rounded ${videoSource === "upload" ? "bg-card text-foreground shadow-sm font-medium" : "text-muted-foreground"}`}
+                  >
+                    Upload Video File
+                  </button>
+                </div>
+                {videoSource === "youtube" ? (
+                  <Input placeholder="https://youtu.be/…" value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} />
+                ) : (
+                  <div className="space-y-2">
+                    <FileDropzone
+                      label="Upload video file"
+                      accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
+                      uploaded={!!form.video_url}
+                      hint="Drag and drop or click to select an MP4, MOV, or WebM file"
+                      onFile={async (file) => {
+                        try {
+                          const url = await uploadContentFile("video", file);
+                          setForm((f) => ({ ...f, video_url: url }));
+                          toast.success("Video uploaded");
+                        } catch (e) {
+                          toast.error(e instanceof Error ? e.message : "Upload failed");
+                        }
+                      }}
+                    />
+                    {form.video_url && (
+                      <video src={form.video_url} controls className="w-full max-h-56 rounded-md border border-border bg-black" />
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      For large video files we recommend using Cloudflare Stream — ask your developer to set this up.
+                    </p>
+                  </div>
+                )}
                 <div className="flex items-center justify-between pt-3">
                   <div>
                     <div className="text-sm font-medium text-foreground">Use custom thumbnail instead</div>
