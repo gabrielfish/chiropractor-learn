@@ -170,11 +170,29 @@ function Dashboard() {
               ))}
             </div>
           ) : (contentQ.data ?? []).length === 0 ? (
-            <div className="text-center py-16 rounded-xl bg-card border border-border">
-              <p className="text-muted-foreground">
-                {query ? `No results for "${query}".` : "No content published yet. Check back soon."}
-              </p>
-            </div>
+            query ? (
+              <div className="text-center py-12">
+                <div className="mx-auto mb-6 w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center">
+                  <Search className="h-8 w-8 text-gold" />
+                </div>
+                <h3 className="font-display text-xl font-bold text-foreground mb-2">
+                  No results for "{query}"
+                </h3>
+                <p className="text-muted-foreground max-w-md mx-auto mb-10">
+                  Try shorter keywords — for example search "new patient" instead of "how to get new patients"
+                </p>
+                <div className="text-left">
+                  <h4 className="font-display text-lg font-bold text-foreground mb-4">Browse by category instead</h4>
+                  <CategoryGrid categories={categoriesQ.data} />
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-16 rounded-xl bg-card border border-border">
+                <p className="text-muted-foreground">
+                  No content published yet. Check back soon.
+                </p>
+              </div>
+            )
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {(contentQ.data ?? []).map((item) => (
