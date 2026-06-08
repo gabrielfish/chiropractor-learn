@@ -12,7 +12,8 @@ const profileSchema = z.object({
 export const getMyProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
       .from("profiles")
       .select("id,email,full_name,phone,practice_name,avatar_url,email_notifications,sms_notifications")
       .eq("id", context.userId)
@@ -25,13 +26,15 @@ export const updateMyProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => profileSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
       .from("profiles")
       .update(data)
       .eq("id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 const notifSchema = z.object({
   email_notifications: z.boolean(),
