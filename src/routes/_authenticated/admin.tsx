@@ -65,8 +65,8 @@ function AdminPage() {
     },
   });
 
-  // Derived thumbnail: YouTube auto unless custom toggled
-  const ytThumb = !useCustomThumb ? youtubeThumbnail(form.video_url) : null;
+  // Derived thumbnail: YouTube auto (only when using YouTube source) unless custom toggled
+  const ytThumb = videoSource === "youtube" && !useCustomThumb ? youtubeThumbnail(form.video_url) : null;
   const effectiveThumb = useCustomThumb ? form.thumbnail_url : (ytThumb ?? form.thumbnail_url);
 
   const onAddCategory = async () => {
