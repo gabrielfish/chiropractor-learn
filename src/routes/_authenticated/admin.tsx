@@ -38,6 +38,7 @@ function AdminPage() {
     status: "published" as "draft" | "published",
   });
   const [useCustomThumb, setUseCustomThumb] = useState(false);
+  const [videoSource, setVideoSource] = useState<"youtube" | "upload">("youtube");
   const [addingCat, setAddingCat] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [savingCat, setSavingCat] = useState(false);
