@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { PublishNotificationModal } from "@/components/PublishNotificationModal";
+import { useServerFn } from "@tanstack/react-start";
+import { notifyAuthorPublished } from "@/lib/authors.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — DCPG" }] }),
