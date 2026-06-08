@@ -122,7 +122,7 @@ function AuthorsPage() {
                 <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-5">
                   <Users className="h-8 w-8 text-gold" />
                 </div>
-                <h3 className="font-display text-xl font-bold text-foreground mb-2">No authors yet</h3>
+                <h3 className="font-display text-xl font-bold text-foreground mb-2">No team members yet</h3>
                 <p className="text-muted-foreground max-w-md mx-auto mb-6">
                   Team members can sign up at <span className="font-medium text-foreground">/team-signup</span> using the team access code
                 </p>
