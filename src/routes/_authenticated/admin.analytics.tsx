@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid,
 } from "recharts";
-import { Users, FileText, Eye, Activity } from "lucide-react";
+import { Users, FileText, Eye, Activity, BarChart3 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/admin/analytics")({
