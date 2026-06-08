@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { FileDropzone } from "@/components/FileDropzone";
 import { uploadAvatar } from "@/lib/storage";
 import { toast } from "sonner";
-import { Users, FileText, Pencil } from "lucide-react";
+import { Users, FileText, Pencil, Link2, Check } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/authors")({
   head: () => ({ meta: [{ title: "Authors — DCPG Admin" }] }),
