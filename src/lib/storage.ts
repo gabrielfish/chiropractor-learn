@@ -23,7 +23,7 @@ export async function uploadAvatar(userId: string, file: File): Promise<string> 
 }
 
 export async function uploadContentFile(
-  kind: "pdf" | "thumbnail",
+  kind: "pdf" | "thumbnail" | "video",
   file: File,
 ): Promise<string> {
   const path = `${kind}/${crypto.randomUUID()}.${extOf(file.name)}`;
