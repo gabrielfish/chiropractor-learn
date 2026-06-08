@@ -17,4 +17,17 @@ export default defineConfig({
     // (override the default Cloudflare target)
     preset: "vercel",
   },
+  vite: {
+    build: {
+      // Ensure all chunks have stable content-hash filenames so browsers can
+      // cache them safely and old chunk URLs never silently break after redeploy.
+      rollupOptions: {
+        output: {
+          chunkFileNames: "assets/[name]-[hash].js",
+          entryFileNames: "assets/[name]-[hash].js",
+          assetFileNames: "assets/[name]-[hash][extname]",
+        },
+      },
+    },
+  },
 });
