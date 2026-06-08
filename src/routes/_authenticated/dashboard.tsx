@@ -32,13 +32,30 @@ function Dashboard() {
   const contentQ = useQuery({
     queryKey: ["content", "published", query],
     queryFn: async () => {
+      const term = query.replace(/[%,()]/g, " ").trim();
+      let categoryIds: string[] = [];
+      if (term) {
+        const { data: cats } = await supabase
+          .from("categories")
+          .select("id")
+          .ilike("name", `%${term}%`);
+        categoryIds = (cats ?? []).map((c) => c.id as string);
+      }
       let req = supabase
         .from("content")
         .select("*, category:categories(name,slug), author:profiles(full_name,avatar_url,job_title)")
         .eq("status", "published")
         .order("published_at", { ascending: false });
-      if (query) {
-        req = req.or(`title.ilike.%${query}%,description.ilike.%${query}%`);
+      if (term) {
+        const orParts = [
+          `title.ilike.%${term}%`,
+          `description.ilike.%${term}%`,
+          `tags.cs.{${term}}`,
+        ];
+        if (categoryIds.length) {
+          orParts.push(`category_id.in.(${categoryIds.join(",")})`);
+        }
+        req = req.or(orParts.join(","));
       }
       const { data, error } = await req.limit(24);
       if (error) throw error;
