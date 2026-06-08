@@ -16,7 +16,7 @@ export const Route = createFileRoute("/team-signup")({
   head: () => ({
     meta: [
       { title: "Team Sign up — DCPG Membership Portal" },
-      { name: "description", content: "Activate your DCPG team author account with your access code." },
+      { name: "description", content: "Activate your DCPG team member account with your access code." },
     ],
   }),
   component: TeamSignupPage,
@@ -84,10 +84,10 @@ function TeamSignupPage() {
 
         <div className="flex items-center gap-2 text-gold mb-2">
           <ShieldCheck className="h-5 w-5" />
-          <span className="text-sm font-semibold uppercase tracking-wider">Authors only</span>
+          <span className="text-sm font-semibold uppercase tracking-wider">Team members only</span>
         </div>
         <h1 className="font-display text-3xl md:text-4xl font-extrabold text-foreground leading-tight mb-2">
-          Activate your author account
+          Activate your team member account
         </h1>
         <p className="text-muted-foreground mb-8">
           Team members publish content directly to the DCPG library. You need an access code from your admin to continue.
@@ -145,7 +145,7 @@ function TeamSignupPage() {
           </div>
 
           <Button type="submit" disabled={loading} className="w-full bg-gold text-gold-foreground hover:bg-gold/90 h-11 font-semibold">
-            {loading ? "Activating…" : "Activate Author Account"}
+            {loading ? "Activating…" : "Activate Team Member Account"}
           </Button>
         </form>
 

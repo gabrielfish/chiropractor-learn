@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { Users, FileText, Pencil, Link2, Check } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/authors")({
-  head: () => ({ meta: [{ title: "Authors — DCPG Admin" }] }),
+  head: () => ({ meta: [{ title: "Team Members — DCPG Admin" }] }),
   beforeLoad: ({ context }) => {
     const roles = (context as { roles?: string[] }).roles ?? [];
     if (!roles.includes("super_admin")) throw redirect({ to: "/dashboard" });
@@ -68,7 +68,7 @@ function AuthorsPage() {
         },
       }),
     onSuccess: () => {
-      toast.success("Author profile updated");
+      toast.success("Team member profile updated");
       qc.invalidateQueries({ queryKey: ["admin", "authors"] });
       setEditing(null);
     },
@@ -82,7 +82,7 @@ function AuthorsPage() {
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-2 mb-1">
             <Users className="h-7 w-7 text-gold" />
-            <h1 className="font-display text-3xl font-extrabold">Authors</h1>
+            <h1 className="font-display text-3xl font-extrabold">Team Members</h1>
           </div>
           <p className="text-muted-foreground mb-8">All team members with publishing access.</p>
 
@@ -101,7 +101,7 @@ function AuthorsPage() {
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-display font-bold text-foreground truncate">{a.full_name ?? "Unnamed author"}</h3>
+                      <h3 className="font-display font-bold text-foreground truncate">{a.full_name ?? "Unnamed team member"}</h3>
                       <Button size="sm" variant="ghost" onClick={() => setEditing(a)} className="text-muted-foreground hover:text-gold">
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -122,7 +122,7 @@ function AuthorsPage() {
                 <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-5">
                   <Users className="h-8 w-8 text-gold" />
                 </div>
-                <h3 className="font-display text-xl font-bold text-foreground mb-2">No authors yet</h3>
+                <h3 className="font-display text-xl font-bold text-foreground mb-2">No team members yet</h3>
                 <p className="text-muted-foreground max-w-md mx-auto mb-6">
                   Team members can sign up at <span className="font-medium text-foreground">/team-signup</span> using the team access code
                 </p>
@@ -142,7 +142,7 @@ function AuthorsPage() {
       <Dialog open={editing !== null} onOpenChange={(o) => { if (!o) setEditing(null); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-display">Edit author</DialogTitle>
+            <DialogTitle className="font-display">Edit team member</DialogTitle>
           </DialogHeader>
           {editing && (
             <div className="space-y-4">
