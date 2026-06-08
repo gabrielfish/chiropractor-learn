@@ -25,7 +25,7 @@ async function routeByRole() {
     .select("role")
     .eq("user_id", user.id);
   const roleSet = new Set((roles ?? []).map((r) => r.role));
-  if (roleSet.has("super_admin") || roleSet.has("author")) {
+  if (roleSet.has("super_admin")) {
     throw redirect({ to: "/admin" });
   }
   throw redirect({ to: "/dashboard" });
