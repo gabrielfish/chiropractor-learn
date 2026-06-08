@@ -27,9 +27,14 @@ function AdminPage() {
   const qc = useQueryClient();
   const { user } = Route.useRouteContext();
   const [form, setForm] = useState({
-    title: "", description: "", category_id: "", video_url: "", video_duration: "",
-    pdf_url: "", thumbnail_url: "", status: "published" as "draft" | "published",
+    title: "", description: "", category_id: "", video_url: "",
+    pdf_url: "", thumbnail_url: "",
+    status: "published" as "draft" | "published",
   });
+  const [useCustomThumb, setUseCustomThumb] = useState(false);
+  const [addingCat, setAddingCat] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [savingCat, setSavingCat] = useState(false);
 
   const categoriesQ = useQuery({
     queryKey: ["admin", "categories"],
@@ -52,6 +57,35 @@ function AdminPage() {
     },
   });
 
+  // Derived thumbnail: YouTube auto unless custom toggled
+  const ytThumb = !useCustomThumb ? youtubeThumbnail(form.video_url) : null;
+  const effectiveThumb = useCustomThumb ? form.thumbnail_url : (ytThumb ?? form.thumbnail_url);
+
+  const onAddCategory = async () => {
+    const name = newCatName.trim();
+    if (!name) return;
+    setSavingCat(true);
+    try {
+      const slug = slugify(name);
+      const { data, error } = await supabase
+        .from("categories")
+        .insert({ name, slug })
+        .select()
+        .single();
+      if (error) throw error;
+      toast.success("Category added");
+      setForm((f) => ({ ...f, category_id: data.id }));
+      setNewCatName("");
+      setAddingCat(false);
+      qc.invalidateQueries({ queryKey: ["admin", "categories"] });
+      qc.invalidateQueries({ queryKey: ["categories"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to add category");
+    } finally {
+      setSavingCat(false);
+    }
+  };
+
   const create = useMutation({
     mutationFn: async () => {
       if (!form.title.trim()) throw new Error("Title is required");
@@ -60,9 +94,8 @@ function AdminPage() {
         description: form.description || null,
         category_id: form.category_id || null,
         video_url: form.video_url || null,
-        video_duration: form.video_duration || null,
         pdf_url: form.pdf_url || null,
-        thumbnail_url: form.thumbnail_url || null,
+        thumbnail_url: effectiveThumb || null,
         author_id: user.id,
         status: form.status,
         published_at: form.status === "published" ? new Date().toISOString() : null,
@@ -71,12 +104,14 @@ function AdminPage() {
     },
     onSuccess: () => {
       toast.success("Content saved");
-      setForm({ title: "", description: "", category_id: "", video_url: "", video_duration: "", pdf_url: "", thumbnail_url: "", status: "published" });
+      setForm({ title: "", description: "", category_id: "", video_url: "", pdf_url: "", thumbnail_url: "", status: "published" });
+      setUseCustomThumb(false);
       qc.invalidateQueries({ queryKey: ["admin", "content"] });
       qc.invalidateQueries({ queryKey: ["content"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const signOut = async () => {
     await supabase.auth.signOut();
