@@ -124,7 +124,7 @@ function AuthorsPage() {
                 </div>
                 <h3 className="font-display text-xl font-bold text-foreground mb-2">No team members yet</h3>
                 <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                  Team members can sign up at <span className="font-medium text-foreground">/team-signup</span> using the team access code
+                  Share the team signup link with your colleagues
                 </p>
                 <Button
                   onClick={handleCopyLink}
