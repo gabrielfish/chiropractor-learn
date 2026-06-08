@@ -227,8 +227,9 @@ function AdminPage() {
 
   const setStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: ContentStatus }) => {
-      const patch: Record<string, unknown> = { status };
-      if (status === "published") patch.published_at = new Date().toISOString();
+      const patch = status === "published"
+        ? { status, published_at: new Date().toISOString() }
+        : { status };
       const { error } = await supabase.from("content").update(patch).eq("id", id);
       if (error) throw error;
     },
