@@ -145,10 +145,20 @@ function ContentDetail() {
               {item.category && <Badge className="bg-gold/15 text-gold hover:bg-gold/15 border-0 mb-3">{item.category.name}</Badge>}
               <h1 className="font-display text-3xl md:text-4xl font-extrabold text-foreground mb-3">{item.title}</h1>
               {item.author?.full_name && (
-                <p className="text-muted-foreground mb-4">
-                  by <span className="text-foreground font-medium">{item.author.full_name}</span>
-                  {item.author.job_title && <span> — {item.author.job_title}</span>}
-                </p>
+                <div className="flex items-center gap-3 mb-5 p-3 rounded-lg bg-card border border-border">
+                  {item.author.avatar_url ? (
+                    <img src={item.author.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover border border-border" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-primary/10 text-gold flex items-center justify-center font-display font-bold">
+                      {item.author.full_name.slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-xs uppercase tracking-wider text-gold font-semibold">Taught by</p>
+                    <p className="text-foreground font-medium truncate">{item.author.full_name}</p>
+                    {item.author.job_title && <p className="text-xs text-muted-foreground truncate">{item.author.job_title}</p>}
+                  </div>
+                </div>
               )}
               {item.description && (
                 <p className="text-foreground/80 leading-relaxed whitespace-pre-line">{item.description}</p>
