@@ -118,8 +118,21 @@ function AuthorsPage() {
               </div>
             ))}
             {!authorsQ.isLoading && (authorsQ.data?.authors ?? []).length === 0 && (
-              <div className="md:col-span-2 rounded-xl bg-card border border-border p-10 text-center text-muted-foreground">
-                No authors yet. Share the team signup link with someone to add the first author.
+              <div className="md:col-span-2 rounded-xl bg-card border border-border p-12 text-center">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-5">
+                  <Users className="h-8 w-8 text-gold" />
+                </div>
+                <h3 className="font-display text-xl font-bold text-foreground mb-2">No authors yet</h3>
+                <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                  Team members can join via the team signup page at <span className="font-medium text-foreground">/team-signup</span> using an access code
+                </p>
+                <Button
+                  onClick={handleCopyLink}
+                  className="bg-gold text-gold-foreground hover:bg-gold/90"
+                >
+                  {copied ? <Check className="h-4 w-4 mr-2" /> : <Link2 className="h-4 w-4 mr-2" />}
+                  {copied ? "Copied!" : "Copy Team Signup Link"}
+                </Button>
               </div>
             )}
           </div>
