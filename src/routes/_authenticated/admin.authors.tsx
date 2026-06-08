@@ -82,7 +82,7 @@ function AuthorsPage() {
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-2 mb-1">
             <Users className="h-7 w-7 text-gold" />
-            <h1 className="font-display text-3xl font-extrabold">Authors</h1>
+            <h1 className="font-display text-3xl font-extrabold">Team Members</h1>
           </div>
           <p className="text-muted-foreground mb-8">All team members with publishing access.</p>
 
