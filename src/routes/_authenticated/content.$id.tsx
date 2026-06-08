@@ -42,12 +42,21 @@ function ContentDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content")
-        .select("*, category:categories(name,slug), author:profiles(full_name,job_title,avatar_url)")
+        .select("*, category:categories(name,slug)")
         .eq("id", id)
         .single();
       if (error) throw error;
       if (!data) throw notFound();
-      return data;
+      let author: { full_name: string | null; avatar_url: string | null; job_title: string | null } | null = null;
+      if (data.author_id) {
+        const { data: a } = await supabase
+          .from("author_profiles_public")
+          .select("full_name,avatar_url,job_title")
+          .eq("id", data.author_id)
+          .maybeSingle();
+        author = a ?? null;
+      }
+      return { ...data, author };
     },
   });
 
