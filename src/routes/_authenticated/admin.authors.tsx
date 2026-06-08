@@ -68,7 +68,7 @@ function AuthorsPage() {
         },
       }),
     onSuccess: () => {
-      toast.success("Author profile updated");
+      toast.success("Team member profile updated");
       qc.invalidateQueries({ queryKey: ["admin", "authors"] });
       setEditing(null);
     },
