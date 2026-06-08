@@ -116,10 +116,10 @@ function AnalyticsPage() {
 
   const s = statsQ.data;
   const stats = [
-    { label: "Total Members", value: s?.members ?? "—", icon: Users },
-    { label: "Content Published", value: s?.content ?? "—", icon: FileText },
-    { label: "Views This Month", value: s?.views ?? "—", icon: Eye },
-    { label: "Active This Week", value: s?.active ?? "—", icon: Activity },
+    { label: "Total Members", value: s?.members ?? 0, icon: Users },
+    { label: "Content Published", value: s?.content ?? 0, icon: FileText },
+    { label: "Views This Month", value: s?.views ?? 0, icon: Eye },
+    { label: "Active This Week", value: s?.active ?? 0, icon: Activity },
   ];
 
   return (
