@@ -252,6 +252,27 @@ export type Database = {
           },
         ]
       }
+      search_logs: {
+        Row: {
+          created_at: string
+          id: string
+          query: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          query: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          query?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       support_requests: {
         Row: {
           category: string
@@ -305,6 +326,39 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      analytics_recent_members: {
+        Args: { lim?: number }
+        Returns: {
+          completed_count: number
+          email: string
+          full_name: string
+          id: string
+          last_login: string
+        }[]
+      }
+      analytics_signups_by_month: {
+        Args: never
+        Returns: {
+          count: number
+          month: string
+        }[]
+      }
+      analytics_top_searches: {
+        Args: { days?: number; lim?: number }
+        Returns: {
+          match_count: number
+          query: string
+          search_count: number
+        }[]
+      }
+      analytics_zero_result_searches: {
+        Args: { days?: number; lim?: number }
+        Returns: {
+          last_searched: string
+          query: string
+          search_count: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
