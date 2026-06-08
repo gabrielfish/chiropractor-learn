@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { Users, FileText, Pencil, Link2, Check } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/authors")({
-  head: () => ({ meta: [{ title: "Authors — DCPG Admin" }] }),
+  head: () => ({ meta: [{ title: "Team Members — DCPG Admin" }] }),
   beforeLoad: ({ context }) => {
     const roles = (context as { roles?: string[] }).roles ?? [];
     if (!roles.includes("super_admin")) throw redirect({ to: "/dashboard" });
