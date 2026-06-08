@@ -92,7 +92,7 @@ function AdminPage() {
   const create = useMutation({
     mutationFn: async () => {
       if (!form.title.trim()) throw new Error("Title is required");
-      const { error } = await supabase.from("content").insert({
+      const { data: row, error } = await supabase.from("content").insert({
         title: form.title,
         description: form.description || null,
         category_id: form.category_id || null,
@@ -102,15 +102,20 @@ function AdminPage() {
         author_id: user.id,
         status: form.status,
         published_at: form.status === "published" ? new Date().toISOString() : null,
-      });
+      }).select("id, title, status").single();
       if (error) throw error;
+      return row;
     },
-    onSuccess: () => {
+    onSuccess: (row) => {
       toast.success("Content saved");
+      const wasPublished = row?.status === "published";
+      const newId = row?.id ?? null;
+      const newTitle = row?.title ?? "";
       setForm({ title: "", description: "", category_id: "", video_url: "", pdf_url: "", thumbnail_url: "", status: "published" });
       setUseCustomThumb(false);
       qc.invalidateQueries({ queryKey: ["admin", "content"] });
       qc.invalidateQueries({ queryKey: ["content"] });
+      if (wasPublished && newId) setPublishedModal({ id: newId, title: newTitle });
     },
     onError: (e: Error) => toast.error(e.message),
   });
