@@ -48,7 +48,7 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <MemberNav initialQuery={query} />
+      <MemberNav />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12">
         {!query && (
