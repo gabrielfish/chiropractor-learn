@@ -346,10 +346,27 @@ function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border">
-        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
-          <div>© {new Date().getFullYear()} DCPG Membership Portal. All rights reserved.</div>
-          <div>Built for chiropractors by Ryan Rieder's team.</div>
+      <footer className="border-t border-border bg-background">
+        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+          <div>© 2026 DCPG. All rights reserved.</div>
+          <nav className="flex items-center gap-6">
+            <a
+              href="https://dcpracticegrowth.com/privacy-cookie-policy/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-gold transition-colors"
+            >
+              Privacy &amp; Cookie Policy
+            </a>
+            <a
+              href="https://dcpracticegrowth.com/terms-of-service/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-gold transition-colors"
+            >
+              Terms of Service
+            </a>
+          </nav>
         </div>
       </footer>
 
