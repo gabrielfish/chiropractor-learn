@@ -285,6 +285,13 @@ function AdminPage() {
           </section>
         </div>
       </main>
+
+      <PublishNotificationModal
+        open={publishedModal !== null}
+        contentId={publishedModal?.id ?? null}
+        title={publishedModal?.title ?? ""}
+        onClose={() => setPublishedModal(null)}
+      />
     </div>
   );
 }
