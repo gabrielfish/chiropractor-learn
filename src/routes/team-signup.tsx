@@ -145,7 +145,7 @@ function TeamSignupPage() {
           </div>
 
           <Button type="submit" disabled={loading} className="w-full bg-gold text-gold-foreground hover:bg-gold/90 h-11 font-semibold">
-            {loading ? "Activating…" : "Activate Author Account"}
+            {loading ? "Activating…" : "Activate Team Member Account"}
           </Button>
         </form>
 
