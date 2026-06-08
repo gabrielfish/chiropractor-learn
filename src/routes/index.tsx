@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Play, FileText, Award, Search, Users, BookOpen, Quote, Menu, X } from "lucide-react";
 import { LandingSearchModal } from "@/components/LandingSearchModal";
@@ -94,9 +95,29 @@ const features = [
   },
 ];
 
+function TestimonialCard({ t }: { t: typeof testimonials[number] }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-6 flex flex-col gap-4 h-full">
+      <div className="font-display text-3xl font-extrabold text-gold tracking-tight">
+        {t.stat}
+      </div>
+      <blockquote className="text-sm text-muted-foreground leading-relaxed flex-1">
+        "{t.quote}"
+      </blockquote>
+      <div className="border-t border-border pt-4">
+        <div className="font-semibold text-foreground text-sm">{t.name}</div>
+        {t.clinic && (
+          <div className="text-xs text-muted-foreground mt-0.5">{t.clinic}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function LandingPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showAllTestimonials, setShowAllTestimonials] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
@@ -249,26 +270,27 @@ function LandingPage() {
               Practitioners across the UK and beyond who've grown their practices with Ryan Rieder's teaching.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          {/* Desktop: full 3×2 grid, all 6 cards equal height */}
+          <div className="hidden md:grid md:grid-cols-3 gap-6 items-stretch">
             {testimonials.map((t) => (
-              <div
-                key={t.name}
-                className="rounded-xl border border-border bg-card p-6 flex flex-col gap-4 hover:border-gold/50 transition-colors"
-              >
-                <div className="font-display text-3xl font-extrabold text-gold tracking-tight">
-                  {t.stat}
-                </div>
-                <blockquote className="text-sm text-muted-foreground leading-relaxed flex-1">
-                  "{t.quote}"
-                </blockquote>
-                <div className="border-t border-border pt-4">
-                  <div className="font-semibold text-foreground text-sm">{t.name}</div>
-                  {t.clinic && (
-                    <div className="text-xs text-muted-foreground mt-0.5">{t.clinic}</div>
-                  )}
-                </div>
-              </div>
+              <TestimonialCard key={t.name} t={t} />
             ))}
+          </div>
+
+          {/* Mobile: single column, first 3 visible, Show more reveals rest */}
+          <div className="md:hidden flex flex-col gap-4">
+            {testimonials.slice(0, showAllTestimonials ? testimonials.length : 3).map((t) => (
+              <TestimonialCard key={t.name} t={t} />
+            ))}
+            {!showAllTestimonials && (
+              <button
+                onClick={() => setShowAllTestimonials(true)}
+                className="mt-2 w-full py-3 rounded-xl border border-border text-sm font-semibold text-foreground hover:border-gold hover:text-gold transition-colors"
+              >
+                Show {testimonials.length - 3} more results ↓
+              </button>
+            )}
           </div>
         </div>
       </section>
