@@ -41,7 +41,7 @@ function AuthorsPage() {
   const [copied, setCopied] = useState(false);
 
   const handleCopyLink = async () => {
-    const url = `${window.location.origin}/team-signup`;
+    const url = "https://chiropractor-learn.lovable.app/team-signup";
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
