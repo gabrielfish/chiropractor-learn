@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid,
 } from "recharts";
-import { Users, FileText, Eye, Activity } from "lucide-react";
+import { Users, FileText, Eye, Activity, BarChart3 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/admin/analytics")({
@@ -116,10 +116,10 @@ function AnalyticsPage() {
 
   const s = statsQ.data;
   const stats = [
-    { label: "Total Members", value: s?.members ?? "—", icon: Users },
-    { label: "Content Published", value: s?.content ?? "—", icon: FileText },
-    { label: "Views This Month", value: s?.views ?? "—", icon: Eye },
-    { label: "Active This Week", value: s?.active ?? "—", icon: Activity },
+    { label: "Total Members", value: s?.members ?? 0, icon: Users },
+    { label: "Content Published", value: s?.content ?? 0, icon: FileText },
+    { label: "Views This Month", value: s?.views ?? 0, icon: Eye },
+    { label: "Active This Week", value: s?.active ?? 0, icon: Activity },
   ];
 
   return (
@@ -146,34 +146,42 @@ function AnalyticsPage() {
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <Card title="Top 10 Most Viewed Content">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={topContentQ.data ?? []} layout="vertical" margin={{ left: 10, right: 16 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border))" />
-                  <XAxis type="number" stroke="var(--muted-foreground))" fontSize={12} />
-                  <YAxis
-                    type="category"
-                    dataKey="title"
-                    width={140}
-                    stroke="var(--muted-foreground))"
-                    fontSize={11}
-                    tickFormatter={(v: string) => (v.length > 22 ? v.slice(0, 22) + "…" : v)}
-                  />
-                  <Tooltip cursor={{ fill: "var(--muted))" }} />
-                  <Bar dataKey="views" fill="var(--gold))" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {(topContentQ.data ?? []).length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={topContentQ.data ?? []} layout="vertical" margin={{ left: 10, right: 16 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border))" />
+                    <XAxis type="number" stroke="var(--muted-foreground))" fontSize={12} />
+                    <YAxis
+                      type="category"
+                      dataKey="title"
+                      width={140}
+                      stroke="var(--muted-foreground))"
+                      fontSize={11}
+                      tickFormatter={(v: string) => (v.length > 22 ? v.slice(0, 22) + "…" : v)}
+                    />
+                    <Tooltip cursor={{ fill: "var(--muted))" }} />
+                    <Bar dataKey="views" fill="var(--gold))" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyChartMessage />
+              )}
             </Card>
 
             <Card title="New Members — Last 12 Months">
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={signupsQ.data ?? []} margin={{ left: 10, right: 16 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border))" />
-                  <XAxis dataKey="month" stroke="var(--muted-foreground))" fontSize={12} />
-                  <YAxis stroke="var(--muted-foreground))" fontSize={12} allowDecimals={false} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="count" stroke="var(--gold))" strokeWidth={2} dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
+              {(signupsQ.data ?? []).length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={signupsQ.data ?? []} margin={{ left: 10, right: 16 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border))" />
+                    <XAxis dataKey="month" stroke="var(--muted-foreground))" fontSize={12} />
+                    <YAxis stroke="var(--muted-foreground))" fontSize={12} allowDecimals={false} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="count" stroke="var(--gold))" strokeWidth={2} dot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyChartMessage />
+              )}
             </Card>
           </div>
 
@@ -231,6 +239,17 @@ function AnalyticsPage() {
   );
 }
 
+function EmptyChartMessage() {
+  return (
+    <div className="flex flex-col items-center justify-center h-[300px] text-center px-4">
+      <BarChart3 className="h-10 w-10 text-gold/40 mb-3" />
+      <p className="text-sm text-muted-foreground max-w-xs">
+        Data will appear as members start using the platform
+      </p>
+    </div>
+  );
+}
+
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-xl bg-card border border-border p-5 shadow-card">
@@ -250,7 +269,11 @@ function Table({
   empty: string;
 }) {
   if (!rows.length) {
-    return <p className="text-sm text-muted-foreground py-6 text-center">{empty}</p>;
+    return (
+      <div className="flex flex-col items-center justify-center py-10 text-center">
+        <p className="text-sm text-muted-foreground">{empty}</p>
+      </div>
+    );
   }
   return (
     <div className="overflow-x-auto">
