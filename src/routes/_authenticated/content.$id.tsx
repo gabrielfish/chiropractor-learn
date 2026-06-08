@@ -21,8 +21,12 @@ export const Route = createFileRoute("/_authenticated/content/$id")({
 function youtubeEmbed(url: string | null | undefined): string | null {
   if (!url) return null;
   const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
-  if (!m) return url;
+  if (!m) return null;
   return `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1`;
+}
+
+function isYoutube(url: string | null | undefined): boolean {
+  return !!url && /(?:youtube\.com|youtu\.be)/.test(url);
 }
 
 function ContentDetail() {
@@ -132,6 +136,16 @@ function ContentDetail() {
                   title={item.title}
                   allow="accelerometer; encrypted-media; picture-in-picture"
                   allowFullScreen
+                  className="w-full h-full"
+                />
+              </div>
+            ) : item.video_url && !isYoutube(item.video_url) ? (
+              <div className="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-card">
+                <video
+                  src={item.video_url}
+                  controls
+                  playsInline
+                  poster={item.thumbnail_url ?? undefined}
                   className="w-full h-full"
                 />
               </div>
