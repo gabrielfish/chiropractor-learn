@@ -1,0 +1,5 @@
+
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS practice_name TEXT,
+  ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN NOT NULL DEFAULT true,
+  ADD COLUMN IF NOT EXISTS sms_notifications BOOLEAN NOT NULL DEFAULT false;
