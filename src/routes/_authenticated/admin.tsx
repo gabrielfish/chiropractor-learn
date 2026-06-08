@@ -113,26 +113,11 @@ function AdminPage() {
   });
 
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = "/";
-  };
-
   return (
     <div className="min-h-screen flex bg-background">
-      <aside className="w-60 bg-sidebar text-sidebar-foreground p-5 hidden md:flex flex-col">
-        <div className="mb-8">
-          <div className="font-display font-extrabold text-xl">DCPG Admin</div>
-          <div className="text-xs text-sidebar-foreground/60">Membership Portal</div>
-        </div>
-        <nav className="flex-1 space-y-1 text-sm">
-          <div className="px-3 py-2 rounded-lg bg-sidebar-accent text-sidebar-accent-foreground font-medium">Content</div>
-          <Link to="/dashboard" className="block px-3 py-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent">View as member</Link>
-        </nav>
-        <button onClick={signOut} className="flex items-center gap-2 text-sm text-sidebar-foreground/70 hover:text-sidebar-foreground">
-          <LogOut className="h-4 w-4" /> Sign Out
-        </button>
-      </aside>
+      <AdminSidebar active="content" />
+
+
 
       <main className="flex-1 p-6 md:p-10 overflow-x-hidden">
         <div className="max-w-4xl mx-auto">
