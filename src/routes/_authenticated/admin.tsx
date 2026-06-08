@@ -37,6 +37,7 @@ function AdminPage() {
   const [addingCat, setAddingCat] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [savingCat, setSavingCat] = useState(false);
+  const [publishedModal, setPublishedModal] = useState<{ id: string; title: string } | null>(null);
 
   const categoriesQ = useQuery({
     queryKey: ["admin", "categories"],
