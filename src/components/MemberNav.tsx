@@ -27,15 +27,7 @@ export function MemberNav() {
           <span className="hidden sm:inline font-display font-bold text-gold text-xs uppercase tracking-wider">Portal</span>
         </Link>
 
-        <form onSubmit={onSearch} className="flex-1 max-w-xl mx-auto relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="What do you want to learn today?"
-            className="w-full h-10 pl-10 pr-4 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold"
-          />
-        </form>
+        <div className="flex-1" />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
