@@ -1,12 +1,20 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { MemberNav } from "@/components/MemberNav";
 import { ContentCard } from "@/components/ContentCard";
 import * as Icons from "lucide-react";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 const searchSchema = z.object({ q: z.string().optional() });
 
@@ -19,6 +27,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function Dashboard() {
   const { q } = Route.useSearch();
   const query = q?.trim() ?? "";
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const categoriesQ = useQuery({
     queryKey: ["categories"],
@@ -63,25 +72,46 @@ function Dashboard() {
     },
   });
 
+  const matchedCategory = categoriesQ.data?.find(
+    (c) => c.name.toLowerCase() === query.toLowerCase()
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <MemberNav />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12">
-        {!query && (
-          <section className="mb-12 text-center max-w-3xl mx-auto">
+        {matchedCategory && (
+          <Breadcrumb className="mb-6">
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/dashboard">Home</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{matchedCategory.name}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        )}
+
+        <section className={`text-center max-w-3xl mx-auto ${query ? 'mb-6' : 'mb-12'}`}>
+          {!query && (
             <h1 className="font-display text-3xl md:text-4xl font-extrabold text-foreground mb-6">
               What do you want to learn today?
             </h1>
-            <HeroSearch />
+          )}
+          <HeroSearch inputRef={searchInputRef} />
+          {!query && (
             <p className="text-muted-foreground mt-4 text-sm">
               Search the library, or browse by category below.
             </p>
-          </section>
-        )}
+          )}
+        </section>
 
-
-        {query && (
+        {query && !matchedCategory && (
           <h2 className="font-display text-2xl font-bold mb-6">
             Results for "{query}"{" "}
             <span className="text-muted-foreground font-normal text-base">
@@ -172,9 +202,16 @@ function Dashboard() {
           ) : (contentQ.data ?? []).length === 0 ? (
             query ? (
               <div className="text-center py-12">
-                <div className="mx-auto mb-6 w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center">
+                <button
+                  onClick={() => {
+                    searchInputRef.current?.focus();
+                    searchInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }}
+                  className="mx-auto mb-6 w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center cursor-pointer hover:bg-primary/10 transition-colors"
+                  aria-label="Focus search bar"
+                >
                   <Search className="h-8 w-8 text-gold" />
-                </div>
+                </button>
                 <h3 className="font-display text-xl font-bold text-foreground mb-2">
                   No results for "{query}"
                 </h3>
@@ -184,6 +221,14 @@ function Dashboard() {
                 <div className="text-left">
                   <h4 className="font-display text-lg font-bold text-foreground mb-4">Browse by category instead</h4>
                   <CategoryGrid categories={categoriesQ.data} />
+                  <div className="mt-6">
+                    <Link
+                      to="/dashboard"
+                      className="text-sm text-primary hover:text-gold transition-colors inline-flex items-center gap-1"
+                    >
+                      <span>←</span> Back to dashboard
+                    </Link>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -213,7 +258,7 @@ const SEARCH_PLACEHOLDERS = [
   "Search quarterly meeting training...",
 ];
 
-function HeroSearch() {
+function HeroSearch({ inputRef }: { inputRef: React.RefObject<HTMLInputElement | null> }) {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [phIdx, setPhIdx] = useState(0);
@@ -237,6 +282,7 @@ function HeroSearch() {
     <form onSubmit={onSubmit} className="relative w-full max-w-2xl mx-auto">
       <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
       <input
+        ref={inputRef}
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder={SEARCH_PLACEHOLDERS[phIdx]}
