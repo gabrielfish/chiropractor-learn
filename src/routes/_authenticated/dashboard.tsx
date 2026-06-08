@@ -273,7 +273,9 @@ function HeroSearch({ inputRef }: { inputRef: React.RefObject<HTMLInputElement |
     const term = q.trim();
     if (term) {
       const { data } = await supabase.auth.getUser();
-      supabase.from("search_logs").insert({ query: term, user_id: data.user?.id ?? null }).then(() => {});
+      if (data.user?.id) {
+        supabase.from("search_logs").insert({ query: term, user_id: data.user.id }).then(() => {});
+      }
     }
     navigate({ to: "/dashboard", search: { q } as never });
   };
