@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { LogOut, FileText, BarChart3, ExternalLink } from "lucide-react";
+import { LogOut, FileText, BarChart3, ExternalLink, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-export function AdminSidebar({ active }: { active: "content" | "analytics" }) {
+export function AdminSidebar({ active }: { active: "content" | "analytics" | "authors" }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     window.location.href = "/";
@@ -21,6 +21,9 @@ export function AdminSidebar({ active }: { active: "content" | "analytics" }) {
       <nav className="flex-1 space-y-1">
         <Link to="/admin" className={`${itemBase} ${active === "content" ? itemActive : itemIdle}`}>
           <FileText className="h-4 w-4" /> Content
+        </Link>
+        <Link to="/admin/authors" className={`${itemBase} ${active === "authors" ? itemActive : itemIdle}`}>
+          <Users className="h-4 w-4" /> Authors
         </Link>
         <Link to="/admin/analytics" className={`${itemBase} ${active === "analytics" ? itemActive : itemIdle}`}>
           <BarChart3 className="h-4 w-4" /> Analytics

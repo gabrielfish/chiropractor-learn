@@ -11,7 +11,7 @@ export interface ContentCardData {
   pdf_url?: string | null;
   book_url?: string | null;
   category?: { name?: string | null; slug?: string | null } | null;
-  author?: { full_name?: string | null } | null;
+  author?: { full_name?: string | null; avatar_url?: string | null; job_title?: string | null } | null;
   completed?: boolean;
 }
 
@@ -52,7 +52,19 @@ export function ContentCard({ item }: { item: ContentCardData }) {
           {item.title}
         </h3>
         {item.author?.full_name && (
-          <p className="text-xs text-muted-foreground">by {item.author.full_name}</p>
+          <div className="flex items-center gap-2 mt-1.5">
+            {item.author.avatar_url ? (
+              <img src={item.author.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+            ) : (
+              <div className="w-5 h-5 rounded-full bg-primary/10 text-gold text-[10px] font-bold flex items-center justify-center">
+                {item.author.full_name.slice(0, 1).toUpperCase()}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground truncate">
+              Taught by <span className="text-foreground/90 font-medium">{item.author.full_name}</span>
+              {item.author.job_title && <span className="text-muted-foreground"> · {item.author.job_title}</span>}
+            </p>
+          </div>
         )}
       </div>
     </Link>

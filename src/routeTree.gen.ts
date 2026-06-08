@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TeamSignupRouteImport } from './routes/team-signup'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -18,8 +19,14 @@ import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedContentIdRouteImport } from './routes/_authenticated/content.$id'
+import { Route as AuthenticatedAdminAuthorsRouteImport } from './routes/_authenticated/admin.authors'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 
+const TeamSignupRoute = TeamSignupRouteImport.update({
+  id: '/team-signup',
+  path: '/team-signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -64,6 +71,12 @@ const AuthenticatedContentIdRoute = AuthenticatedContentIdRouteImport.update({
   path: '/content/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminAuthorsRoute =
+  AuthenticatedAdminAuthorsRouteImport.update({
+    id: '/authors',
+    path: '/authors',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminAnalyticsRoute =
   AuthenticatedAdminAnalyticsRouteImport.update({
     id: '/analytics',
@@ -75,22 +88,26 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRouteWithChildren
+  '/team-signup': typeof TeamSignupRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/signup/confirm': typeof SignupConfirmRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/admin/authors': typeof AuthenticatedAdminAuthorsRoute
   '/content/$id': typeof AuthenticatedContentIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRouteWithChildren
+  '/team-signup': typeof TeamSignupRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/signup/confirm': typeof SignupConfirmRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/admin/authors': typeof AuthenticatedAdminAuthorsRoute
   '/content/$id': typeof AuthenticatedContentIdRoute
 }
 export interface FileRoutesById {
@@ -99,11 +116,13 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRouteWithChildren
+  '/team-signup': typeof TeamSignupRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/signup/confirm': typeof SignupConfirmRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/_authenticated/admin/authors': typeof AuthenticatedAdminAuthorsRoute
   '/_authenticated/content/$id': typeof AuthenticatedContentIdRoute
 }
 export interface FileRouteTypes {
@@ -112,22 +131,26 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/signup'
+    | '/team-signup'
     | '/admin'
     | '/dashboard'
     | '/profile'
     | '/signup/confirm'
     | '/admin/analytics'
+    | '/admin/authors'
     | '/content/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/signup'
+    | '/team-signup'
     | '/admin'
     | '/dashboard'
     | '/profile'
     | '/signup/confirm'
     | '/admin/analytics'
+    | '/admin/authors'
     | '/content/$id'
   id:
     | '__root__'
@@ -135,11 +158,13 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/signup'
+    | '/team-signup'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
     | '/signup/confirm'
     | '/_authenticated/admin/analytics'
+    | '/_authenticated/admin/authors'
     | '/_authenticated/content/$id'
   fileRoutesById: FileRoutesById
 }
@@ -148,10 +173,18 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRouteWithChildren
+  TeamSignupRoute: typeof TeamSignupRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/team-signup': {
+      id: '/team-signup'
+      path: '/team-signup'
+      fullPath: '/team-signup'
+      preLoaderRoute: typeof TeamSignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
@@ -215,6 +248,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContentIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/authors': {
+      id: '/_authenticated/admin/authors'
+      path: '/authors'
+      fullPath: '/admin/authors'
+      preLoaderRoute: typeof AuthenticatedAdminAuthorsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/analytics': {
       id: '/_authenticated/admin/analytics'
       path: '/analytics'
@@ -227,10 +267,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
+  AuthenticatedAdminAuthorsRoute: typeof AuthenticatedAdminAuthorsRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
+  AuthenticatedAdminAuthorsRoute: AuthenticatedAdminAuthorsRoute,
 }
 
 const AuthenticatedAdminRouteWithChildren =
@@ -269,6 +311,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRouteWithChildren,
+  TeamSignupRoute: TeamSignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
