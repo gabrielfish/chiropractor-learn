@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/admin/authors")({
   head: () => ({ meta: [{ title: "Team Members — DCPG Admin" }] }),
   beforeLoad: ({ context }) => {
     const roles = (context as { roles?: string[] }).roles ?? [];
-    if (!roles.includes("super_admin")) throw redirect({ to: "/dashboard" });
+    if (!roles.includes("super_admin") && !roles.includes("author")) throw redirect({ to: "/dashboard" });
   },
   component: AuthorsPage,
 });

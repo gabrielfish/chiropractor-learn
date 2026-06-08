@@ -1,8 +1,12 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouteContext } from "@tanstack/react-router";
 import { LogOut, FileText, BarChart3, ExternalLink, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export function AdminSidebar({ active }: { active: "content" | "analytics" | "authors" }) {
+  const ctx = useRouteContext({ from: "/_authenticated" }) as { roles?: string[] };
+  const roles = ctx.roles ?? [];
+  const isSuperAdmin = roles.includes("super_admin");
+
   const signOut = async () => {
     await supabase.auth.signOut();
     window.location.href = "/";
@@ -25,9 +29,11 @@ export function AdminSidebar({ active }: { active: "content" | "analytics" | "au
         <Link to="/admin/authors" className={`${itemBase} ${active === "authors" ? itemActive : itemIdle}`}>
           <Users className="h-4 w-4" /> Team Members
         </Link>
-        <Link to="/admin/analytics" className={`${itemBase} ${active === "analytics" ? itemActive : itemIdle}`}>
-          <BarChart3 className="h-4 w-4" /> Analytics
-        </Link>
+        {isSuperAdmin && (
+          <Link to="/admin/analytics" className={`${itemBase} ${active === "analytics" ? itemActive : itemIdle}`}>
+            <BarChart3 className="h-4 w-4" /> Analytics
+          </Link>
+        )}
         <Link to="/dashboard" className={`${itemBase} ${itemIdle} mt-4`}>
           <ExternalLink className="h-4 w-4" /> View as member
         </Link>
