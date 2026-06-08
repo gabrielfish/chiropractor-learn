@@ -269,7 +269,11 @@ function Table({
   empty: string;
 }) {
   if (!rows.length) {
-    return <p className="text-sm text-muted-foreground py-6 text-center">{empty}</p>;
+    return (
+      <div className="flex flex-col items-center justify-center py-10 text-center">
+        <p className="text-sm text-muted-foreground">{empty}</p>
+      </div>
+    );
   }
   return (
     <div className="overflow-x-auto">
