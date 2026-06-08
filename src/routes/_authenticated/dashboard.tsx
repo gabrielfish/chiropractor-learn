@@ -98,7 +98,7 @@ function Dashboard() {
         .from("content")
         .select("id, title, book_url, book_name")
         .eq("status", "published")
-        .not("book_url", "is", null);
+        .eq("content_type", "book");
       if (error) throw error;
       // Index by lowercase title for fast lookup
       const byTitle = new Map((data ?? []).map((d) => [d.title.toLowerCase().trim(), d]));

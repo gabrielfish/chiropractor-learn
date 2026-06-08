@@ -33,10 +33,13 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 
 type ContentStatus = "draft" | "published" | "archived";
 
+type ContentType = "video" | "pdf" | "book" | "";
+
 type FormState = {
   title: string;
   description: string;
   category_id: string;
+  content_type: ContentType;
   video_url: string;
   pdf_url: string;
   thumbnail_url: string;
@@ -47,6 +50,7 @@ const emptyForm: FormState = {
   title: "",
   description: "",
   category_id: "",
+  content_type: "",
   video_url: "",
   pdf_url: "",
   thumbnail_url: "",
@@ -123,6 +127,7 @@ function AdminPage() {
     title: string;
     description: string | null;
     category_id: string | null;
+    content_type: string | null;
     video_url: string | null;
     pdf_url: string | null;
     thumbnail_url: string | null;
@@ -133,6 +138,7 @@ function AdminPage() {
       title: row.title ?? "",
       description: row.description ?? "",
       category_id: row.category_id ?? "",
+      content_type: (row.content_type as ContentType) ?? "",
       video_url: row.video_url ?? "",
       pdf_url: row.pdf_url ?? "",
       thumbnail_url: row.thumbnail_url ?? "",
@@ -177,6 +183,7 @@ function AdminPage() {
         title: form.title,
         description: form.description || null,
         category_id: form.category_id || null,
+        content_type: form.content_type || null,
         video_url: form.video_url || null,
         pdf_url: form.pdf_url || null,
         thumbnail_url: effectiveThumb || null,
@@ -337,6 +344,19 @@ function AdminPage() {
                   {isSuperAdmin && <option value="archived">Archived</option>}
                 </select>
               </div>
+              <div className="space-y-1.5">
+                <Label>Content type</Label>
+                <select
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                  value={form.content_type}
+                  onChange={(e) => setForm({ ...form, content_type: e.target.value as ContentType })}
+                >
+                  <option value="">— Select type —</option>
+                  <option value="video">Video</option>
+                  <option value="pdf">PDF</option>
+                  <option value="book">Book</option>
+                </select>
+              </div>
               <div className="md:col-span-2 space-y-2">
                 <Label>Video source</Label>
                 <div className="inline-flex rounded-md border border-border bg-muted p-1">
@@ -470,6 +490,7 @@ function AdminPage() {
                   <tr className="text-left">
                     <th className="px-4 py-3 font-medium">Title</th>
                     <th className="px-4 py-3 font-medium">Category</th>
+                    <th className="px-4 py-3 font-medium">Type</th>
                     <th className="px-4 py-3 font-medium">Status</th>
                     <th className="px-4 py-3 font-medium">Created</th>
                     {isSuperAdmin && <th className="px-4 py-3 font-medium text-right">Actions</th>}
@@ -487,6 +508,21 @@ function AdminPage() {
                       <tr key={c.id} className="border-t border-border">
                         <td className="px-4 py-3 font-medium">{c.title}</td>
                         <td className="px-4 py-3 text-muted-foreground">{c.category?.name ?? "—"}</td>
+                        <td className="px-4 py-3">
+                          {c.content_type ? (
+                            <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${
+                              c.content_type === "book"
+                                ? "bg-gold/15 text-gold"
+                                : c.content_type === "pdf"
+                                  ? "bg-blue-500/15 text-blue-500"
+                                  : "bg-primary/10 text-primary"
+                            }`}>
+                              {c.content_type}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3">
                           <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${statusClass}`}>
                             {c.status}
@@ -547,7 +583,7 @@ function AdminPage() {
                     );
                   })}
                   {filteredContent.length === 0 && (
-                    <tr><td colSpan={isSuperAdmin ? 5 : 4} className="px-4 py-10 text-center text-muted-foreground">No content in this view.</td></tr>
+                    <tr><td colSpan={isSuperAdmin ? 6 : 5} className="px-4 py-10 text-center text-muted-foreground">No content in this view.</td></tr>
                   )}
                 </tbody>
               </table>
