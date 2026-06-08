@@ -84,6 +84,31 @@ function Dashboard() {
     },
   });
 
+  const BOOK_TITLES = [
+    "Conversion Alchemy System",
+    "New Patient Avalanche System",
+    "New Patient Retention System",
+    "Practice Growth Speaking Secrets",
+  ];
+
+  const booksQ = useQuery({
+    queryKey: ["dashboard-books"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("content")
+        .select("id, title, book_url, book_name")
+        .eq("status", "published")
+        .not("book_url", "is", null);
+      if (error) throw error;
+      // Index by lowercase title for fast lookup
+      const byTitle = new Map((data ?? []).map((d) => [d.title.toLowerCase().trim(), d]));
+      return BOOK_TITLES.map((title) => ({
+        title,
+        content: byTitle.get(title.toLowerCase()) ?? null,
+      }));
+    },
+  });
+
   const categoryCountsQ = useQuery({
     queryKey: ["category-content-counts"],
     queryFn: async () => {
@@ -215,6 +240,73 @@ function Dashboard() {
                   </span>
                 </a>
               ))}
+            </div>
+          </section>
+        )}
+
+        {/* Ryan's Books */}
+        {!query && (
+          <section className="mb-12">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-xl font-bold">Ryan's Books</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[
+                {
+                  title: "Conversion Alchemy System",
+                  desc: "Step-by-step what to say to patients so they pay without friction or hard sales tactics.",
+                },
+                {
+                  title: "New Patient Avalanche System",
+                  desc: "How to grow a seven figure chiropractic practice from six figures or less.",
+                },
+                {
+                  title: "New Patient Retention System",
+                  desc: "Your system to attract, retain and grow a loyal patient base that stays for life.",
+                },
+                {
+                  title: "Practice Growth Speaking Secrets",
+                  desc: "How Ryan used live events and workshops to generate consistent high quality new patients.",
+                },
+              ].map((book) => {
+                const match = booksQ.data?.find((b) => b.title === book.title);
+                const contentId = match?.content?.id ?? null;
+                return (
+                  <div
+                    key={book.title}
+                    className="group relative rounded-xl bg-primary border border-primary/80 p-5 flex gap-4 items-start hover:border-gold/60 transition-all shadow-card"
+                  >
+                    {/* Gold book icon */}
+                    <div className="flex-none rounded-lg bg-gold/15 p-3 mt-0.5">
+                      <Icons.BookOpen className="h-6 w-6 text-gold" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-display font-extrabold text-primary-foreground text-base leading-tight mb-1">
+                        {book.title}
+                      </div>
+                      <p className="text-sm text-primary-foreground/70 leading-relaxed mb-4">
+                        {book.desc}
+                      </p>
+                      {contentId ? (
+                        <Link to="/content/$id" params={{ id: contentId }}>
+                          <button className="inline-flex items-center gap-2 rounded-lg bg-gold text-gold-foreground font-semibold text-sm px-4 py-2 hover:bg-gold/90 transition-colors">
+                            <Icons.Download className="h-4 w-4" />
+                            Download Free Book
+                          </button>
+                        </Link>
+                      ) : (
+                        <button
+                          disabled
+                          className="inline-flex items-center gap-2 rounded-lg bg-gold/30 text-gold-foreground/50 font-semibold text-sm px-4 py-2 cursor-not-allowed"
+                        >
+                          <Icons.Download className="h-4 w-4" />
+                          Coming Soon
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </section>
         )}
