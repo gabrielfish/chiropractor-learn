@@ -16,7 +16,7 @@ import { PublishNotificationModal } from "@/components/PublishNotificationModal"
 import { useServerFn } from "@tanstack/react-start";
 import { notifyAuthorPublished } from "@/lib/authors.functions";
 
-export const Route = createFileRoute("/_authenticated/admin")({
+export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({ meta: [{ title: "Admin — DCPG" }] }),
   beforeLoad: ({ context }) => {
     const roles = (context as { roles?: string[] }).roles ?? [];
