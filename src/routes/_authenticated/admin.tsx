@@ -12,6 +12,7 @@ import { uploadContentFile, youtubeThumbnail, slugify } from "@/lib/storage";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { AdminSidebar } from "@/components/AdminSidebar";
+import { PublishNotificationModal } from "@/components/PublishNotificationModal";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — DCPG" }] }),
