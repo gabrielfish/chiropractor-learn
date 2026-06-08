@@ -122,12 +122,10 @@ function AdminPage() {
       qc.invalidateQueries({ queryKey: ["content"] });
       if (wasPublished && newId) {
         if (isAuthorOnly) {
-          // Author publishing — notify super admins, no modal
+          // Author publishing — notify super admins in the background
           notifyAuthorFn({ data: { contentId: newId } }).catch(() => {});
-          toast.success("Published. Super admin has been notified.");
-        } else {
-          setPublishedModal({ id: newId, title: newTitle });
         }
+        setPublishedModal({ id: newId, title: newTitle });
       }
     },
     onError: (e: Error) => toast.error(e.message),
