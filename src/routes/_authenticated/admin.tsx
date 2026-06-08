@@ -10,7 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { FileDropzone } from "@/components/FileDropzone";
 import { uploadContentFile, youtubeThumbnail, slugify } from "@/lib/storage";
 import { toast } from "sonner";
-import { LogOut, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import { AdminSidebar } from "@/components/AdminSidebar";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — DCPG" }] }),
