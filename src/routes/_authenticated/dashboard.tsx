@@ -84,6 +84,25 @@ function Dashboard() {
     },
   });
 
+  const categoryCountsQ = useQuery({
+    queryKey: ["category-content-counts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("content")
+        .select("category_id")
+        .eq("status", "published")
+        .not("category_id", "is", null);
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      for (const row of data ?? []) {
+        if (row.category_id) {
+          counts[row.category_id] = (counts[row.category_id] ?? 0) + 1;
+        }
+      }
+      return counts;
+    },
+  });
+
   const matchedCategory = categoriesQ.data?.find(
     (c) => c.name.toLowerCase() === query.toLowerCase()
   );
@@ -136,7 +155,7 @@ function Dashboard() {
         {!query && (
           <section className="mb-12">
             <h2 className="font-display text-xl font-bold mb-4">Browse by category</h2>
-            <CategoryGrid categories={categoriesQ.data} />
+            <CategoryGrid categories={categoriesQ.data} categoryCounts={categoryCountsQ.data} />
           </section>
         )}
 
@@ -206,11 +225,19 @@ function Dashboard() {
             {query ? "Matching lessons" : "Recently added"}
           </h2>
           {contentQ.isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="aspect-[16/12] rounded-xl bg-muted animate-pulse" />
-              ))}
-            </div>
+            query ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="aspect-[16/12] rounded-xl bg-muted animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex-none w-[320px] aspect-[16/12] rounded-xl bg-muted animate-pulse" />
+                ))}
+              </div>
+            )
           ) : (contentQ.data ?? []).length === 0 ? (
             query ? (
               <div className="text-center py-12">
@@ -232,7 +259,7 @@ function Dashboard() {
                 </p>
                 <div className="text-left">
                   <h4 className="font-display text-lg font-bold text-foreground mb-4">Browse by category instead</h4>
-                  <CategoryGrid categories={categoriesQ.data} />
+                  <CategoryGrid categories={categoriesQ.data} categoryCounts={categoryCountsQ.data} />
                   <div className="mt-6">
                     <Link
                       to="/dashboard"
@@ -250,10 +277,18 @@ function Dashboard() {
                 </p>
               </div>
             )
-          ) : (
+          ) : query ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {(contentQ.data ?? []).map((item) => (
                 <ContentCard key={item.id} item={item as never} />
+              ))}
+            </div>
+          ) : (
+            <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory">
+              {(contentQ.data ?? []).slice(0, 3).map((item) => (
+                <div key={item.id} className="flex-none w-[320px] snap-start">
+                  <ContentCard item={item as never} />
+                </div>
               ))}
             </div>
           )}
@@ -315,22 +350,34 @@ function HeroSearch({ inputRef }: { inputRef: React.RefObject<HTMLInputElement |
 }
 
 
-function CategoryGrid({ categories }: { categories: { id: string; name: string; icon?: string | null; slug?: string | null }[] | null | undefined }) {
+function CategoryGrid({
+  categories,
+  categoryCounts,
+}: {
+  categories: { id: string; name: string; icon?: string | null; slug?: string | null }[] | null | undefined;
+  categoryCounts?: Record<string, number>;
+}) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
       {(categories ?? []).map((c) => {
         const Icon = ((Icons as unknown as Record<string, typeof Icons.Folder>)[c.icon ?? "Folder"] ?? Icons.Folder);
+        const count = categoryCounts?.[c.id] ?? 0;
         return (
           <Link
             key={c.id}
             to="/dashboard"
             search={{ q: c.name } as never}
-            className="group rounded-xl bg-card border border-border p-4 shadow-card hover:shadow-card-hover hover:border-gold transition-all flex items-center gap-3"
+            className="group relative rounded-xl bg-card border border-border p-4 shadow-card hover:shadow-card-hover hover:border-gold transition-all flex items-center gap-3"
           >
+            {count > 0 && (
+              <span className="absolute top-2.5 right-2.5 min-w-[1.25rem] h-5 px-1.5 rounded-full bg-gold text-gold-foreground text-[10px] font-bold flex items-center justify-center leading-none">
+                {count}
+              </span>
+            )}
             <div className="rounded-lg bg-primary/5 text-primary p-2.5 group-hover:bg-gold/10 group-hover:text-gold transition-colors">
               <Icon className="h-5 w-5" />
             </div>
-            <div className="font-display font-bold text-sm text-foreground leading-tight">
+            <div className="font-display font-bold text-sm text-foreground leading-tight pr-5">
               {c.name}
             </div>
           </Link>
