@@ -9,21 +9,28 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "DCPG Membership Portal — Ryan Rieder's Teaching Library for Chiropractors" },
-      {
-        name: "description",
-        content: "Search and watch Ryan Rieder's complete teaching library — unlimited access built exclusively for chiropractors.",
-      },
-      { property: "og:title", content: "DCPG Membership Portal — Ryan Rieder's Teaching Library for Chiropractors" },
-      { property: "og:description", content: "Search and watch Ryan Rieder's complete teaching library — unlimited access built exclusively for chiropractors." },
+      { name: "description", content: "Access Ryan Rieder's complete chiropractic practice growth library. Search and watch unlimited video lessons, download proven resources, and grow your practice. Exclusively for DCPG members." },
+      // Open Graph
+      { property: "og:title", content: "DCPG Membership Portal — Ryan Rieder's Teaching Library" },
+      { property: "og:description", content: "Unlimited access to Ryan Rieder's complete teaching library — videos, PDFs, books and tools built exclusively for chiropractors who want to grow." },
       { property: "og:image", content: "https://learn.dcpracticegrowth.com/ryan-rieder.webp" },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Ryan Rieder — DCPG Membership Portal" },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://learn.dcpracticegrowth.com" },
+      { property: "og:site_name", content: "DCPG Membership Portal" },
+      // Twitter / X
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "DCPG Membership Portal — Ryan Rieder's Teaching Library for Chiropractors" },
-      { name: "twitter:description", content: "Search and watch Ryan Rieder's complete teaching library — unlimited access built exclusively for chiropractors." },
+      { name: "twitter:title", content: "DCPG Membership Portal — Ryan Rieder's Teaching Library" },
+      { name: "twitter:description", content: "Unlimited access to Ryan Rieder's complete teaching library — videos, PDFs, books and tools built exclusively for chiropractors who want to grow." },
       { name: "twitter:image", content: "https://learn.dcpracticegrowth.com/ryan-rieder.webp" },
+      { name: "twitter:image:alt", content: "Ryan Rieder — DCPG Membership Portal" },
+      // Canonical & robots
+      { name: "robots", content: "index, follow" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://learn.dcpracticegrowth.com" },
     ],
   }),
   component: LandingPage,

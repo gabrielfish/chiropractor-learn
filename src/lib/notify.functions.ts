@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
+﻿import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -41,7 +41,7 @@ export const notifyContentPublished = createServerFn({ method: "POST" })
       .eq("sms_notifications", true)
       .not("phone", "is", null);
 
-    // TODO: enqueue actual email/SMS sends once Lovable Emails + Twilio are set up.
+    // TODO: enqueue actual email/SMS sends once email and SMS infrastructure is set up.
     // For now we just count opted-in recipients.
     return {
       emailCount: emailRecipients?.length ?? 0,

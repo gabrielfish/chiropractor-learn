@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
+﻿import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const schema = z.object({
@@ -17,12 +17,12 @@ export const teamSignup = createServerFn({ method: "POST" })
     if (!expected) throw new Error("Team signup is not configured");
 
     if (data.accessCode.trim() !== expected) {
-      throw new Error("Invalid access code — contact your DCPG admin.");
+      throw new Error("Invalid access code â€” contact your DCPG admin.");
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Create confirmed auth user (team members onboarded via code — skip email confirm)
+    // Create confirmed auth user (team members onboarded via code â€” skip email confirm)
     const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
       email: data.email,
       password: data.password,
@@ -45,13 +45,13 @@ export const teamSignup = createServerFn({ method: "POST" })
       .insert({ user_id: userId, role: "author" });
     if (roleErr) throw new Error(roleErr.message);
 
-    // Notify super admins (stubbed until Lovable Emails is configured).
+    // Notify super admins (stubbed until email infrastructure is configured).
     // We just record the intent; actual email send will be wired up when email infra is enabled.
     const { data: admins } = await supabaseAdmin
       .from("user_roles")
       .select("user_id, profiles:profiles!inner(email, full_name)")
       .eq("role", "super_admin");
-    // TODO: when Lovable Emails is enabled, enqueue an email to each admin here.
+    // TODO: when email infrastructure is enabled, enqueue an email to each admin here.
     void admins;
 
     return { ok: true, userId };

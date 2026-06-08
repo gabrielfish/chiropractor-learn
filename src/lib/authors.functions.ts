@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
+﻿import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -86,7 +86,7 @@ export const updateAuthorProfile = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// Stub — actual email send wires up when Lovable Emails is configured.
+// Stub â€” actual email send wires up when email infrastructure is configured.
 export const notifyAuthorPublished = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
