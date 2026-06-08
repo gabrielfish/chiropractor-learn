@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, FileText, Award, Search, Users, BookOpen, Quote, Menu, X } from "lucide-react";
 import { LandingSearchModal } from "@/components/LandingSearchModal";
@@ -25,19 +25,39 @@ export const Route = createFileRoute("/")({
 
 const testimonials = [
   {
+    stat: "+380% Revenue Growth",
     quote:
-      "DCPG transformed how I run my practice. The Mastermind sessions alone paid for themselves in a month.",
-    name: "Dr. Sarah Chen, DC",
+      "Since joining Ryan in 2018, practice earnings increased by £330,000. Visit numbers rose from the 30s to 250 — now we can't fit anyone else in!",
+    name: "Dr. Belinda Ambrose",
+    clinic: "Aligned Family Chiropractic UK",
   },
   {
+    stat: "£200K Extra Revenue",
     quote:
-      "Ryan's teaching is direct, practical, and rooted in real chiropractic practice. My new patient numbers doubled.",
-    name: "Dr. James Patel, DC",
+      "On track to generate £650,000 — £200,000 more than last year. Weekly visits up from 400 to 550.",
+    name: "Dr. Tom & Dr. Becky Lawrence",
+    clinic: "Goose & Hollings Lane Clinic UK",
   },
   {
+    stat: "93 Patients in 1 Week",
     quote:
-      "Having the entire library searchable in one place changed how my team trains. It's the best investment I've made.",
-    name: "Dr. Maria Alvarez, DC",
+      "Advert live for just 1 week. 120 leads generated. 93 booked and prepaid. Unbelievable results.",
+    name: "Dr. Brian & Caira",
+    clinic: "Premier Chiropractic",
+  },
+  {
+    stat: "Profit Up 91%",
+    quote:
+      "Revenue up £652K. Profit up 91%. And I still have my evenings off. Scaled from 290 to 430 weekly visits without burnout.",
+    name: "Dr. Phil Mitchell",
+    clinic: "",
+  },
+  {
+    stat: "3x New Patients",
+    quote:
+      "My God, this has been a game changer. New patients increased from 25 to 77 per month — without burnout or gimmicks.",
+    name: "Wendy McCloud",
+    clinic: "WDC Physiotherapy UK",
   },
 ];
 
@@ -75,14 +95,8 @@ const features = [
 ];
 
 function LandingPage() {
-  const [idx, setIdx] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const id = setInterval(() => setIdx((i) => (i + 1) % testimonials.length), 6000);
-    return () => clearInterval(id);
-  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -225,25 +239,35 @@ function LandingPage() {
 
       {/* Testimonials */}
       <section className="bg-muted/40 border-y border-border">
-        <div className="max-w-3xl mx-auto px-6 py-20 text-center">
-          <Quote className="h-10 w-10 text-gold mx-auto mb-6" />
-          <blockquote
-            key={idx}
-            className="font-display text-2xl md:text-3xl text-foreground leading-snug mb-6 animate-in fade-in duration-500"
-          >
-            "{testimonials[idx].quote}"
-          </blockquote>
-          <p className="text-sm text-muted-foreground font-medium">— {testimonials[idx].name}</p>
-          <div className="flex justify-center gap-2 mt-8">
-            {testimonials.map((_, i) => (
-              <button
-                key={i}
-                aria-label={`Show testimonial ${i + 1}`}
-                onClick={() => setIdx(i)}
-                className={`h-2 w-2 rounded-full transition-colors ${
-                  i === idx ? "bg-gold" : "bg-border"
-                }`}
-              />
+        <div className="max-w-6xl mx-auto px-6 py-20">
+          <div className="text-center mb-12">
+            <Quote className="h-10 w-10 text-gold mx-auto mb-4" />
+            <h2 className="font-display text-3xl md:text-4xl font-extrabold text-foreground mb-3">
+              Real results from real chiropractors
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Practitioners across the UK and beyond who've grown their practices with Ryan Rieder's teaching.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {testimonials.map((t) => (
+              <div
+                key={t.name}
+                className="rounded-xl border border-border bg-card p-6 flex flex-col gap-4 hover:border-gold/50 transition-colors"
+              >
+                <div className="font-display text-3xl font-extrabold text-gold tracking-tight">
+                  {t.stat}
+                </div>
+                <blockquote className="text-sm text-muted-foreground leading-relaxed flex-1">
+                  "{t.quote}"
+                </blockquote>
+                <div className="border-t border-border pt-4">
+                  <div className="font-semibold text-foreground text-sm">{t.name}</div>
+                  {t.clinic && (
+                    <div className="text-xs text-muted-foreground mt-0.5">{t.clinic}</div>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
         </div>

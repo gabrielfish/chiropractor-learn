@@ -33,20 +33,24 @@ async function routeByRole() {
 
 const TESTIMONIALS = [
   {
-    quote: "DCPG transformed how I run my practice. The Mastermind sessions alone paid for themselves in a month.",
-    author: "Dr. Sarah Chen, DC",
+    quote: "80 leads at £1.63 each, 32 new patients booked in just 6 days. Paid for the whole year from one campaign!",
+    author: "Dr. Alex Eatly",
+    clinic: "Liverpool Chiropractic UK",
   },
   {
-    quote: "Ryan's New Patient Avalanche course brought 23 new patients in 6 weeks. Game changer.",
-    author: "Dr. James Kowalski, DC",
+    quote: "In just 3 months, revenue increased by £38,408 and visits skyrocketed from 535 to 913.",
+    author: "Dr. Julien Barker",
+    clinic: "Spinal Health Centre UK",
   },
   {
-    quote: "I finally understand how to market my practice. The Facebook Ads training is worth every penny.",
-    author: "Dr. Michelle Torres, DC",
+    quote: "121 leads at £1 per lead at our Grand Opening. Everyone who responded bought a plan — ridiculous ROI!",
+    author: "Dr. Mats Flodin",
+    clinic: "Roslagens Kiropraktik",
   },
   {
-    quote: "The Front Desk Training alone transformed my team. My CA calls it her bible.",
-    author: "Dr. David Park, DC",
+    quote: "I've increased new patients by 50% in 9 months. Big thank you to Ryan and the DCPG team.",
+    author: "Dr. Gurmeet Tulsi",
+    clinic: "Healthwise Chiropractic UK",
   },
 ];
 
@@ -155,7 +159,7 @@ function LoginPage() {
           </div>
 
           {/* Rotating testimonials */}
-          <div className="relative h-36 mb-10">
+          <div className="relative h-44 mb-10">
             {TESTIMONIALS.map((t, i) => (
               <div
                 key={i}
@@ -165,7 +169,10 @@ function LoginPage() {
                 <blockquote className="font-display text-xl leading-snug mb-3">
                   "{t.quote}"
                 </blockquote>
-                <p className="text-sm text-primary-foreground/70">— {t.author}</p>
+                <p className="text-sm text-primary-foreground/70 font-medium">— {t.author}</p>
+                {t.clinic && (
+                  <p className="text-xs text-primary-foreground/50 mt-0.5">{t.clinic}</p>
+                )}
               </div>
             ))}
           </div>
