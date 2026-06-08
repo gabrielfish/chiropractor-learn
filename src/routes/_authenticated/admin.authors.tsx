@@ -142,7 +142,7 @@ function AuthorsPage() {
       <Dialog open={editing !== null} onOpenChange={(o) => { if (!o) setEditing(null); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-display">Edit author</DialogTitle>
+            <DialogTitle className="font-display">Edit team member</DialogTitle>
           </DialogHeader>
           {editing && (
             <div className="space-y-4">
