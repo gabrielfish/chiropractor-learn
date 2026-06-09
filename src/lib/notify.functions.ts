@@ -5,6 +5,66 @@ import { z } from "zod";
 const FROM_ADDRESS = "Ryan Rieder - DCPG Teaching Library <noreply@dcpracticegrowth.com>";
 const BASE_URL = "https://learn.dcpracticegrowth.com";
 
+/**
+ * Convert plain-text content description to safe, styled HTML for email.
+ *
+ * Rules applied in order:
+ *   1. HTML-escape every character to prevent injection.
+ *   2. Split on one-or-more blank lines to identify paragraph blocks.
+ *   3. Within each block, if every non-empty line begins with "-" or "•"
+ *      the block is rendered as a <ul> list.
+ *   4. All other blocks are wrapped in <p> tags; single newlines within a
+ *      block become <br /> so line-by-line formatting is preserved.
+ */
+function descriptionToHtml(raw: string): string {
+  // 1. Escape HTML special chars to prevent injection
+  const esc = (s: string) =>
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+  const pStyle =
+    'style="margin:0 0 12px;font-size:16px;line-height:1.7;color:#4b5563;"';
+  const ulStyle =
+    'style="margin:0 0 12px;padding-left:20px;font-size:16px;line-height:1.7;color:#4b5563;"';
+  const liStyle =
+    'style="margin-bottom:6px;"';
+
+  // 2. Split into paragraph blocks on blank lines
+  const blocks = raw.split(/\n{2,}/);
+
+  const rendered = blocks
+    .map((block) => {
+      const lines = block.split("\n");
+      const nonEmpty = lines.filter((l) => l.trim().length > 0);
+      if (nonEmpty.length === 0) return "";
+
+      // 3. Bullet-list block: every non-empty line starts with - or •
+      const isList = nonEmpty.every((l) => /^\s*[-•]/.test(l));
+      if (isList) {
+        const items = nonEmpty
+          .map((l) => {
+            const text = esc(l.replace(/^\s*[-•]\s*/, "").trim());
+            return `<li ${liStyle}>${text}</li>`;
+          })
+          .join("\n");
+        return `<ul ${ulStyle}>\n${items}\n</ul>`;
+      }
+
+      // 4. Regular paragraph: join lines with <br /> for inline line breaks
+      const html = lines
+        .map((l) => esc(l))
+        .join("<br />");
+      return `<p ${pStyle}>${html}</p>`;
+    })
+    .filter(Boolean)
+    .join("\n");
+
+  return rendered;
+}
+
 function buildEmailHtml(opts: {
   title: string;
   description: string | null;
@@ -12,9 +72,7 @@ function buildEmailHtml(opts: {
   contentUrl: string;
 }): string {
   const { title, description, authorName, contentUrl } = opts;
-  const descHtml = description
-    ? `<p style="margin:0 0 24px;font-size:16px;line-height:1.6;color:#4b5563;">${description}</p>`
-    : "";
+  const descHtml = description ? descriptionToHtml(description.trim()) : "";
   const authorHtml = authorName
     ? `<p style="margin:0 0 24px;font-size:14px;color:#6b7280;">By ${authorName}</p>`
     : "";
