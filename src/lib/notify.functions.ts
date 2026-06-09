@@ -135,10 +135,13 @@ export const notifyContentPublished = createServerFn({ method: "POST" })
       .eq("role", "member");
 
     // Exclude anyone who also has super_admin or author (dual-role accounts)
-    const { data: elevatedRows } = await supabaseAdmin
+    // Use .or() with PostgREST syntax to avoid enum type inference issues with .in()
+    const { data: elevatedRows, error: elevatedErr } = await supabaseAdmin
       .from("user_roles")
       .select("user_id")
-      .in("role", ["super_admin", "author"]);
+      .or("role.eq.super_admin,role.eq.author");
+    // If this query errors, fail safe: abort rather than accidentally emailing admins
+    if (elevatedErr) throw new Error(`Failed to fetch elevated roles: ${elevatedErr.message}`);
     const elevatedIds = new Set((elevatedRows ?? []).map((r) => r.user_id as string));
 
     const memberIds = (memberRoleRows ?? [])

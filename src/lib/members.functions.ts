@@ -27,10 +27,13 @@ export const listMembers = createServerFn({ method: "GET" })
     if (rolesErr) throw new Error(rolesErr.message);
 
     // Get all user_ids with an elevated role (super_admin or author)
-    const { data: elevatedRows } = await supabaseAdmin
+    // Use .or() with PostgREST syntax to avoid enum type inference issues with .in()
+    const { data: elevatedRows, error: elevatedErr } = await supabaseAdmin
       .from("user_roles")
       .select("user_id")
-      .in("role", ["super_admin", "author"]);
+      .or("role.eq.super_admin,role.eq.author");
+    // If this query errors, fail safe: treat all member IDs as potentially elevated
+    if (elevatedErr) throw new Error(`Failed to fetch elevated roles: ${elevatedErr.message}`);
     const elevatedIds = new Set((elevatedRows ?? []).map((r) => r.user_id as string));
 
     // Only users whose sole role is 'member' — exclude anyone with super_admin/author
