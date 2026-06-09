@@ -1,4 +1,4 @@
-﻿import { createServerFn } from "@tanstack/react-start";
+import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const schema = z.object({
@@ -17,12 +17,12 @@ export const teamSignup = createServerFn({ method: "POST" })
     if (!expected) throw new Error("Team signup is not configured");
 
     if (data.accessCode.trim() !== expected) {
-      throw new Error(“Invalid access code — contact your DCPG admin.”);
+      throw new Error("Invalid access code - contact your DCPG admin.");
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Create confirmed auth user (team members onboarded via code -- skip email confirm)
+    // Create confirmed auth user (team members onboarded via code - skip email confirm)
     const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
       email: data.email,
       password: data.password,
