@@ -17,7 +17,7 @@ export const teamSignup = createServerFn({ method: "POST" })
     if (!expected) throw new Error("Team signup is not configured");
 
     if (data.accessCode.trim() !== expected) {
-      throw new Error("Invalid access code â€” contact your DCPG admin.");
+      throw new Error(“Invalid access code — contact your DCPG admin.”);
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
