@@ -60,6 +60,10 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -75,6 +79,22 @@ function LoginPage() {
       }
     }).catch(() => {});
   }, []);
+
+  const handleForgot = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) return;
+    setForgotLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
+      redirectTo: "https://learn.dcpracticegrowth.com/reset-password",
+    });
+    setForgotLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setForgotSent(true);
+    toast.success("Password reset email sent — check your inbox");
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -132,7 +152,61 @@ function LoginPage() {
             </Button>
           </form>
 
-          <button className="mt-3 text-sm text-muted-foreground hover:text-primary">Forgot password?</button>
+          {/* Forgot password */}
+          {!showForgot ? (
+            <button
+              type="button"
+              onClick={() => { setShowForgot(true); setForgotEmail(email); setForgotSent(false); }}
+              className="mt-3 text-sm text-muted-foreground hover:text-primary"
+            >
+              Forgot password?
+            </button>
+          ) : forgotSent ? (
+            <div className="mt-4 rounded-lg border border-green-500/30 bg-green-500/5 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+              ✓ Password reset email sent — check your inbox.{" "}
+              <button
+                type="button"
+                onClick={() => { setShowForgot(false); setForgotSent(false); }}
+                className="underline"
+              >
+                Back to sign in
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleForgot} className="mt-4 rounded-lg border border-border bg-muted/30 px-4 py-4 space-y-3">
+              <p className="text-sm font-medium text-foreground">Reset your password</p>
+              <p className="text-xs text-muted-foreground">Enter your email and we'll send you a reset link.</p>
+              <div className="space-y-1.5">
+                <Label htmlFor="forgotEmail" className="text-xs">Email</Label>
+                <Input
+                  id="forgotEmail"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="submit"
+                  disabled={forgotLoading}
+                  className="flex-1 h-9 text-sm bg-gold text-gold-foreground hover:bg-gold/90 font-semibold"
+                >
+                  {forgotLoading ? "Sending…" : "Send reset link"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowForgot(false)}
+                  className="h-9 text-sm"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          )}
 
           <div className="my-8 border-t border-border" />
 
