@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { MemberNav } from "@/components/MemberNav";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -210,8 +211,9 @@ function ProfilePage() {
 
             </div>
             <div className="pt-2">
-              <Button type="submit" disabled={savingProfile}>
-                {savingProfile ? "Saving..." : "Save Changes"}
+              <Button type="submit" disabled={savingProfile} className="inline-flex items-center gap-2">
+                {savingProfile && <Loader2 className="h-4 w-4 animate-spin" />}
+                {savingProfile ? "Saving…" : "Save Changes"}
               </Button>
             </div>
           </Section>
@@ -219,8 +221,9 @@ function ProfilePage() {
 
         {/* Reset Password */}
         <Section title="Reset Password" description="We'll email you a secure link to set a new password.">
-          <Button variant="outline" onClick={onResetPassword} disabled={sendingReset}>
-            {sendingReset ? "Sending..." : "Send Reset Email"}
+          <Button variant="outline" onClick={onResetPassword} disabled={sendingReset} className="inline-flex items-center gap-2">
+            {sendingReset && <Loader2 className="h-4 w-4 animate-spin" />}
+            {sendingReset ? "Sending…" : "Send Reset Email"}
           </Button>
         </Section>
 
@@ -272,8 +275,9 @@ function ProfilePage() {
               />
             </div>
             <div className="pt-2">
-              <Button type="submit" disabled={submittingSupport || !subject.trim() || !message.trim()}>
-                {submittingSupport ? "Sending..." : "Submit"}
+              <Button type="submit" disabled={submittingSupport || !subject.trim() || !message.trim()} className="inline-flex items-center gap-2">
+                {submittingSupport && <Loader2 className="h-4 w-4 animate-spin" />}
+                {submittingSupport ? "Sending…" : "Submit"}
               </Button>
             </div>
           </Section>

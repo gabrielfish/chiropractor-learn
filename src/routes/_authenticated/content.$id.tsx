@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MemberNav } from "@/components/MemberNav";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Download, FileText, Book, ArrowLeft } from "lucide-react";
+import { CheckCircle2, Download, FileText, Book, ArrowLeft, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { LessonCompleteModal } from "@/components/LessonCompleteModal";
@@ -122,8 +122,35 @@ function ContentDetail() {
     return (
       <div className="min-h-screen bg-background">
         <MemberNav />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-          <div className="h-96 rounded-xl bg-muted animate-pulse" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-10">
+          {/* Back link skeleton */}
+          <div className="h-4 w-28 rounded bg-muted animate-pulse mb-4" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-5">
+              {/* Video skeleton */}
+              <div className="aspect-video w-full rounded-xl bg-muted animate-pulse" />
+              {/* Badge + title */}
+              <div className="h-5 w-24 rounded-full bg-muted animate-pulse" />
+              <div className="h-8 w-3/4 rounded-lg bg-muted animate-pulse" />
+              <div className="h-4 w-1/2 rounded-lg bg-muted animate-pulse" />
+              {/* Description lines */}
+              <div className="space-y-2">
+                <div className="h-4 rounded bg-muted animate-pulse" />
+                <div className="h-4 rounded bg-muted animate-pulse w-5/6" />
+                <div className="h-4 rounded bg-muted animate-pulse w-4/6" />
+              </div>
+              {/* Buttons row */}
+              <div className="flex gap-3">
+                <div className="h-10 w-40 rounded-lg bg-muted animate-pulse" />
+                <div className="h-10 w-36 rounded-lg bg-muted animate-pulse" />
+              </div>
+            </div>
+            {/* Sidebar skeleton */}
+            <div className="space-y-4">
+              <div className="h-36 rounded-xl bg-muted animate-pulse" />
+              <div className="h-28 rounded-xl bg-muted animate-pulse" />
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -228,8 +255,12 @@ function ContentDetail() {
                   disabled={completed || markComplete.isPending}
                   className={completed ? "bg-success text-success-foreground hover:bg-success" : "bg-gold text-gold-foreground hover:bg-gold/90"}
                 >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  {completed ? "Completed" : "Mark as complete"}
+                  {markComplete.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                  )}
+                  {markComplete.isPending ? "Saving…" : completed ? "Completed" : "Mark as complete"}
                 </Button>
                 {item.pdf_url && (
                   <Button asChild variant="outline">
@@ -262,8 +293,9 @@ function ContentDetail() {
                   className="w-full min-h-[80px] resize-y bg-transparent text-sm focus:outline-none"
                 />
                 <div className="flex justify-end mt-2">
-                  <Button onClick={() => postComment.mutate()} disabled={postComment.isPending || !commentBody.trim()} size="sm" className="bg-primary hover:bg-primary/90">
-                    Post comment
+                  <Button onClick={() => postComment.mutate()} disabled={postComment.isPending || !commentBody.trim()} size="sm" className="bg-primary hover:bg-primary/90 inline-flex items-center gap-1.5">
+                    {postComment.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    {postComment.isPending ? "Posting…" : "Post comment"}
                   </Button>
                 </div>
               </div>

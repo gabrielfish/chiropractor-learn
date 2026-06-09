@@ -20,7 +20,7 @@ import {
 import { FileDropzone } from "@/components/FileDropzone";
 import { uploadContentFile, youtubeThumbnail, slugify } from "@/lib/storage";
 import { toast } from "sonner";
-import { Plus, Pencil, Archive, Trash2, RotateCcw, X } from "lucide-react";
+import { Plus, Pencil, Archive, Trash2, RotateCcw, X, Loader2 } from "lucide-react";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { PublishNotificationModal } from "@/components/PublishNotificationModal";
 import { useServerFn } from "@tanstack/react-start";
@@ -461,7 +461,8 @@ function AdminPage() {
 
             </div>
             <div className="flex justify-end mt-5">
-              <Button onClick={() => save.mutate()} disabled={save.isPending} className="w-full sm:w-auto bg-gold text-gold-foreground hover:bg-gold/90 h-11">
+              <Button onClick={() => save.mutate()} disabled={save.isPending} className="w-full sm:w-auto bg-gold text-gold-foreground hover:bg-gold/90 h-11 inline-flex items-center gap-2">
+                {save.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 {save.isPending ? "Saving…" : editingId ? "Update lesson" : "Save lesson"}
               </Button>
             </div>
@@ -555,7 +556,7 @@ function AdminPage() {
                                   aria-label="Restore"
                                   title="Restore to published"
                                 >
-                                  <RotateCcw className="h-4 w-4" />
+                                  {setStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
                                 </Button>
                               ) : (
                                 <Button
@@ -567,7 +568,7 @@ function AdminPage() {
                                   aria-label="Archive"
                                   title="Archive"
                                 >
-                                  <Archive className="h-4 w-4" />
+                                  {setStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />}
                                 </Button>
                               )}
                               <Button

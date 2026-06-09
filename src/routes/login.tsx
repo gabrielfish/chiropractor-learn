@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Play, FileText, Award, User, ArrowLeft } from "lucide-react";
+import { Play, FileText, Award, User, ArrowLeft, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -147,7 +147,8 @@ function LoginPage() {
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
-            <Button type="submit" disabled={loading} className="w-full bg-gold text-gold-foreground hover:bg-gold/90 h-11 font-semibold">
+            <Button type="submit" disabled={loading} className="w-full bg-gold text-gold-foreground hover:bg-gold/90 h-11 font-semibold inline-flex items-center gap-2">
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {loading ? "Signing in…" : "Sign In"}
             </Button>
           </form>
@@ -192,8 +193,9 @@ function LoginPage() {
                 <Button
                   type="submit"
                   disabled={forgotLoading}
-                  className="flex-1 h-9 text-sm bg-gold text-gold-foreground hover:bg-gold/90 font-semibold"
+                  className="flex-1 h-9 text-sm bg-gold text-gold-foreground hover:bg-gold/90 font-semibold inline-flex items-center gap-1.5"
                 >
+                  {forgotLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   {forgotLoading ? "Sending…" : "Send reset link"}
                 </Button>
                 <Button

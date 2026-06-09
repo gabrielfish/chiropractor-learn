@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { MemberNav } from "@/components/MemberNav";
 import { ContentCard } from "@/components/ContentCard";
@@ -159,7 +159,7 @@ function Dashboard() {
               What do you want to learn today?
             </h1>
           )}
-          <HeroSearch inputRef={searchInputRef} />
+          <HeroSearch inputRef={searchInputRef} isSearching={contentQ.isLoading && !!query} />
           {!query && (
             <p className="text-muted-foreground mt-4 text-sm">
               Search the library, or browse by category below.
@@ -180,7 +180,15 @@ function Dashboard() {
         {!query && (
           <section className="mb-12">
             <h2 className="font-display text-xl font-bold mb-4">Browse by category</h2>
-            <CategoryGrid categories={categoriesQ.data} categoryCounts={categoryCountsQ.data} />
+            {categoriesQ.isLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="h-[60px] rounded-xl bg-muted animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <CategoryGrid categories={categoriesQ.data} categoryCounts={categoryCountsQ.data} />
+            )}
           </section>
         )}
 
@@ -250,7 +258,14 @@ function Dashboard() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-xl font-bold">Ryan's Books</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {booksQ.isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-[140px] rounded-xl bg-muted animate-pulse" />
+                ))}
+              </div>
+            ) : null}
+            {!booksQ.isLoading && <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 {
                   title: "Conversion Alchemy System",
@@ -307,14 +322,15 @@ function Dashboard() {
                   </div>
                 );
               })}
-            </div>
+            </div>}
           </section>
         )}
 
         {/* Content */}
         <section>
-          <h2 className="font-display text-xl font-bold mb-4">
+          <h2 className="font-display text-xl font-bold mb-4 flex items-center gap-2">
             {query ? "Matching lessons" : "Recently added"}
+            {contentQ.isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
           </h2>
           {contentQ.isLoading ? (
             query ? (
@@ -397,7 +413,13 @@ const SEARCH_PLACEHOLDERS = [
   "Search quarterly meeting training...",
 ];
 
-function HeroSearch({ inputRef }: { inputRef: React.RefObject<HTMLInputElement | null> }) {
+function HeroSearch({
+  inputRef,
+  isSearching = false,
+}: {
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  isSearching?: boolean;
+}) {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [phIdx, setPhIdx] = useState(0);
@@ -421,7 +443,11 @@ function HeroSearch({ inputRef }: { inputRef: React.RefObject<HTMLInputElement |
 
   return (
     <form onSubmit={onSubmit} className="relative w-full max-w-2xl mx-auto">
-      <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+      {isSearching ? (
+        <Loader2 className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-gold animate-spin pointer-events-none" />
+      ) : (
+        <Search className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+      )}
       <input
         ref={inputRef}
         value={q}
@@ -433,9 +459,11 @@ function HeroSearch({ inputRef }: { inputRef: React.RefObject<HTMLInputElement |
       />
       <button
         type="submit"
-        className="absolute right-2 top-1/2 -translate-y-1/2 h-10 px-3 sm:px-5 rounded-full bg-gold text-gold-foreground font-semibold text-sm hover:bg-gold/90 transition-colors whitespace-nowrap"
+        disabled={isSearching}
+        className="absolute right-2 top-1/2 -translate-y-1/2 h-10 px-3 sm:px-5 rounded-full bg-gold text-gold-foreground font-semibold text-sm hover:bg-gold/90 transition-colors whitespace-nowrap disabled:opacity-70 inline-flex items-center gap-1.5"
       >
-        Search
+        {isSearching && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+        {isSearching ? "Searching…" : "Search"}
       </button>
     </form>
   );

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { KeyRound, ArrowLeft } from "lucide-react";
+import { KeyRound, ArrowLeft, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/reset-password")({
   ssr: false,
@@ -136,8 +136,9 @@ function ResetPasswordPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-gold text-gold-foreground hover:bg-gold/90 h-11 font-semibold"
+              className="w-full bg-gold text-gold-foreground hover:bg-gold/90 h-11 font-semibold inline-flex items-center gap-2"
             >
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {loading ? "Updating…" : "Update Password"}
             </Button>
           </form>
