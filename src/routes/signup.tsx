@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ export const Route = createFileRoute("/signup")({
 });
 
 function SignupPage() {
-  const navigate = useNavigate();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState<string | undefined>(undefined);
@@ -37,36 +36,60 @@ function SignupPage() {
     if (password !== confirm) return toast.error("Passwords do not match");
 
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        // After clicking the confirmation link, land directly on the dashboard
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: {
-          full_name: fullName,
-          phone: phone ?? null,
-          practice_name: practice || null,
+
+    try {
+      // 1. Create the auth user
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: {
+            full_name: fullName,
+            phone: phone ?? null,
+            practice_name: practice || null,
+          },
         },
-      },
-    });
-    setLoading(false);
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    if (data.session) {
-      // Email confirmation is disabled — user is already logged in
-      toast.success("Account created — welcome!");
-      navigate({ to: "/dashboard" });
-    } else {
-      // Email confirmation is enabled — send them to the confirmation holding page
-      navigate({
-        to: "/signup/confirm",
-        search: { email },
       });
+
+      if (error) {
+        toast.error(error.message);
+        setLoading(false);
+        return;
+      }
+
+      const userId = data.user?.id;
+
+      // 2. If we have a session the user is immediately logged in (email confirm disabled).
+      //    Upsert the full profile row — the DB trigger only writes id/email/full_name,
+      //    so we fill in phone and practice_name here.
+      if (data.session && userId) {
+        await supabase
+          .from("profiles")
+          .upsert({
+            id: userId,
+            email,
+            full_name: fullName,
+            phone: phone ?? null,
+            practice_name: practice || null,
+          })
+          .eq("id", userId);
+        // user_roles 'member' row is inserted by the handle_new_user DB trigger —
+        // RLS blocks client inserts to user_roles, so we rely on the trigger.
+      }
+
+      // 3. Redirect — use window.location so it fires after Supabase's SIGNED_IN
+      //    auth-state event, which would otherwise race with and cancel navigate().
+      if (data.session) {
+        // Logged in immediately — go straight to dashboard
+        window.location.href = "/dashboard";
+      } else {
+        // Email confirmation required — show holding page with the address
+        window.location.href = `/signup/confirm?email=${encodeURIComponent(email)}`;
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Signup failed — please try again");
+      setLoading(false);
     }
   };
 

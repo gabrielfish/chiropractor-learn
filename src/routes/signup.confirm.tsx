@@ -33,30 +33,32 @@ function ConfirmPage() {
           <MailCheck className="h-8 w-8 text-gold" />
         </div>
 
-        <h1 className="font-display text-3xl md:text-4xl font-extrabold text-foreground leading-tight mb-3">
+        <h1 className="font-display text-3xl md:text-4xl font-extrabold text-foreground leading-tight mb-4">
           Check your inbox!
         </h1>
 
-        <p className="text-muted-foreground mb-2">
+        <p className="text-muted-foreground mb-1">
           We sent a confirmation link to
         </p>
-        {email && (
-          <p className="font-semibold text-foreground mb-6 break-all">{email}</p>
-        )}
-        <p className="text-muted-foreground mb-8">
-          Click it to activate your account and access the DCPG portal.
+        <p className="font-semibold text-foreground text-lg mb-4 break-all">
+          {email ?? "your email address"}
+        </p>
+        <p className="text-muted-foreground mb-2">
+          Click it to activate your account and start learning.
+        </p>
+        <p className="text-sm text-muted-foreground mb-8">
+          Can't find it? Check your spam folder.
         </p>
 
-        <Button asChild className="w-full bg-gold text-gold-foreground hover:bg-gold/90 h-11 font-semibold">
+        <Button asChild className="w-full bg-gold text-gold-foreground hover:bg-gold/90 h-11 font-semibold mb-4">
           <Link to="/login">Go to Sign In</Link>
         </Button>
 
-        <p className="text-sm text-muted-foreground mt-6">
-          Didn't get the email? Check your spam folder or{" "}
+        <p className="text-sm text-muted-foreground">
+          Wrong address?{" "}
           <Link to="/signup" className="text-foreground font-medium hover:underline">
-            try again
+            Sign up again
           </Link>
-          .
         </p>
       </div>
     </div>
