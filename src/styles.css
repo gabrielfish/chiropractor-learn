@@ -153,3 +153,12 @@
   outline: none;
   box-shadow: 0 0 0 1px var(--ring);
 }
+
+/* Hide scrollbar but keep scroll functionality — used on mobile admin nav */
+.no-scrollbar {
+  scrollbar-width: none;   /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}

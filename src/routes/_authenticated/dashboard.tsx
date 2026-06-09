@@ -188,7 +188,7 @@ function Dashboard() {
         {!query && (
           <section className="mb-12">
             <h2 className="font-display text-xl font-bold mb-4">Tools & Resources</h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 {
                   title: "Website AI Audit Tool",
@@ -324,9 +324,9 @@ function Dashboard() {
                 ))}
               </div>
             ) : (
-              <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
+              <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 sm:-mx-1 px-4 sm:px-1">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex-none w-[320px] aspect-[16/12] rounded-xl bg-muted animate-pulse" />
+                  <div key={i} className="flex-none w-[85vw] sm:w-[320px] max-w-[320px] aspect-[16/12] rounded-xl bg-muted animate-pulse" />
                 ))}
               </div>
             )
@@ -376,9 +376,9 @@ function Dashboard() {
               ))}
             </div>
           ) : (
-            <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory">
+            <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 sm:-mx-1 px-4 sm:px-1 snap-x snap-mandatory">
               {(contentQ.data ?? []).slice(0, 3).map((item) => (
-                <div key={item.id} className="flex-none w-[320px] snap-start">
+                <div key={item.id} className="flex-none w-[85vw] sm:w-[320px] max-w-[320px] snap-start">
                   <ContentCard item={item as never} />
                 </div>
               ))}
@@ -428,12 +428,12 @@ function HeroSearch({ inputRef }: { inputRef: React.RefObject<HTMLInputElement |
         onChange={(e) => setQ(e.target.value)}
         placeholder={SEARCH_PLACEHOLDERS[phIdx]}
         aria-label="Search library"
-        style={{ fontSize: "18px" }}
-        className="w-full h-14 pl-14 pr-32 rounded-full border-2 border-border bg-card shadow-card transition-all focus:outline-none focus:border-gold focus:ring-4 focus:ring-gold/20 placeholder:text-muted-foreground/70"
+        style={{ fontSize: "16px" }}
+        className="w-full h-14 pl-12 sm:pl-14 pr-24 sm:pr-32 rounded-full border-2 border-border bg-card shadow-card transition-all focus:outline-none focus:border-gold focus:ring-4 focus:ring-gold/20 placeholder:text-muted-foreground/70"
       />
       <button
         type="submit"
-        className="absolute right-2 top-1/2 -translate-y-1/2 h-10 px-5 rounded-full bg-gold text-gold-foreground font-semibold text-sm hover:bg-gold/90 transition-colors"
+        className="absolute right-2 top-1/2 -translate-y-1/2 h-10 px-3 sm:px-5 rounded-full bg-gold text-gold-foreground font-semibold text-sm hover:bg-gold/90 transition-colors whitespace-nowrap"
       >
         Search
       </button>

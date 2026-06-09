@@ -274,12 +274,12 @@ function AdminPage() {
     <div className="min-h-screen flex bg-background">
       <AdminSidebar active="content" />
 
-      <main className="flex-1 p-6 md:p-10 overflow-x-hidden">
+      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-x-hidden min-w-0">
         <div className="max-w-4xl mx-auto">
           <h1 className="font-display text-3xl font-extrabold mb-1">Manage content</h1>
           <p className="text-muted-foreground mb-8">Upload lessons and manage your library.</p>
 
-          <section className="rounded-xl bg-card border border-border p-6 shadow-card mb-10">
+          <section className="rounded-xl bg-card border border-border p-4 sm:p-6 shadow-card mb-10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-lg font-bold flex items-center gap-2">
                 {editingId ? <Pencil className="h-5 w-5 text-gold" /> : <Plus className="h-5 w-5 text-gold" />}
@@ -315,20 +315,23 @@ function AdminPage() {
                   <option value="__add__">+ Add new category…</option>
                 </select>
                 {addingCat && (
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex flex-col sm:flex-row gap-2 pt-2">
                     <Input
                       autoFocus
                       placeholder="New category name"
                       value={newCatName}
                       onChange={(e) => setNewCatName(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void onAddCategory(); } }}
+                      className="flex-1"
                     />
-                    <Button type="button" size="sm" onClick={onAddCategory} disabled={savingCat || !newCatName.trim()}>
-                      {savingCat ? "…" : "Save"}
-                    </Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => { setAddingCat(false); setNewCatName(""); }}>
-                      Cancel
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button type="button" size="sm" onClick={onAddCategory} disabled={savingCat || !newCatName.trim()} className="flex-1 sm:flex-none">
+                        {savingCat ? "…" : "Save"}
+                      </Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => { setAddingCat(false); setNewCatName(""); }} className="flex-1 sm:flex-none">
+                        Cancel
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -458,16 +461,16 @@ function AdminPage() {
 
             </div>
             <div className="flex justify-end mt-5">
-              <Button onClick={() => save.mutate()} disabled={save.isPending} className="bg-gold text-gold-foreground hover:bg-gold/90">
+              <Button onClick={() => save.mutate()} disabled={save.isPending} className="w-full sm:w-auto bg-gold text-gold-foreground hover:bg-gold/90 h-11">
                 {save.isPending ? "Saving…" : editingId ? "Update lesson" : "Save lesson"}
               </Button>
             </div>
           </section>
 
           <section>
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <h2 className="font-display text-lg font-bold">All content ({counts.all})</h2>
-              <div className="inline-flex rounded-md border border-border bg-muted p-1">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <h2 className="font-display text-lg font-bold shrink-0">All content ({counts.all})</h2>
+              <div className="inline-flex rounded-md border border-border bg-muted p-1 overflow-x-auto max-w-full">
                 {filterTabs.map((t) => (
                   <button
                     key={t.key}
@@ -485,7 +488,8 @@ function AdminPage() {
               </div>
             </div>
             <div className="rounded-xl bg-card border border-border overflow-hidden">
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[560px]">
                 <thead className="bg-muted">
                   <tr className="text-left">
                     <th className="px-4 py-3 font-medium">Title</th>
@@ -587,6 +591,7 @@ function AdminPage() {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           </section>
         </div>

@@ -230,14 +230,14 @@ function LandingPage() {
           aria-hidden="true"
         />
         {/* Content sits above the image */}
-        <div className="relative max-w-5xl mx-auto px-6 py-20 md:py-28 text-center">
-          <div className="inline-block mb-6 px-3 py-1 rounded-full bg-gold/20 text-gold text-xs font-semibold tracking-wide uppercase">
+        <div className="relative max-w-5xl mx-auto px-5 sm:px-6 py-14 sm:py-20 md:py-28 text-center">
+          <div className="inline-block mb-5 sm:mb-6 px-3 py-1 rounded-full bg-gold/20 text-gold text-xs font-semibold tracking-wide uppercase">
             With Ryan Rieder
           </div>
-          <h1 className="font-display text-4xl md:text-6xl font-extrabold leading-tight mb-6">
+          <h1 className="font-display text-3xl sm:text-4xl md:text-6xl font-extrabold leading-tight mb-5 sm:mb-6">
             Ryan Rieder's complete teaching library, built for chiropractors who want to grow.
           </h1>
-          <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10">
+          <p className="text-base sm:text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-8 sm:mb-10">
             Search and watch Ryan Rieder's complete teaching library — unlimited access, built exclusively for chiropractors.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -344,9 +344,9 @@ function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-border bg-background">
-        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground text-center sm:text-left">
           <div>© 2026 DCPG. All rights reserved.</div>
-          <nav className="flex items-center gap-6">
+          <nav className="flex flex-col sm:flex-row items-center gap-2 sm:gap-6">
             <a
               href="https://dcpracticegrowth.com/privacy-cookie-policy/"
               target="_blank"
