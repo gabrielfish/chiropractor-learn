@@ -54,7 +54,7 @@ const emptyForm: FormState = {
   pdf_url: "",
   thumbnail_url: "",
   status: "published",
-  display_author_name: "",
+  display_author_name: "Dr Ryan Rieder",
 };
 
 function AdminPage() {
