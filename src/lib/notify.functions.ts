@@ -1,6 +1,94 @@
-﻿import { createServerFn } from "@tanstack/react-start";
+import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+
+const FROM_ADDRESS = "noreply@dcpracticegrowth.com";
+const BASE_URL = "https://learn.dcpracticegrowth.com";
+
+function buildEmailHtml(opts: {
+  title: string;
+  description: string | null;
+  authorName: string | null;
+  contentUrl: string;
+}): string {
+  const { title, description, authorName, contentUrl } = opts;
+  const descHtml = description
+    ? `<p style="margin:0 0 24px;font-size:16px;line-height:1.6;color:#4b5563;">${description}</p>`
+    : "";
+  const authorHtml = authorName
+    ? `<p style="margin:0 0 24px;font-size:14px;color:#6b7280;">By ${authorName}</p>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New content on DCPG Portal</title>
+</head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#0f172a;padding:32px 40px;text-align:center;">
+              <p style="margin:0;font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">DCPG Membership Portal</p>
+              <p style="margin:6px 0 0;font-size:13px;color:#c9a227;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Ryan Rieder's Teaching Library</p>
+            </td>
+          </tr>
+
+          <!-- Badge -->
+          <tr>
+            <td style="padding:32px 40px 0;text-align:center;">
+              <span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:12px;font-weight:700;padding:4px 14px;border-radius:99px;letter-spacing:0.5px;text-transform:uppercase;">New Content Just Dropped</span>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:24px 40px 32px;">
+              <h1 style="margin:0 0 16px;font-size:26px;font-weight:800;color:#0f172a;line-height:1.25;">${title}</h1>
+              ${authorHtml}
+              ${descHtml}
+
+              <!-- CTA Button -->
+              <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+                <tr>
+                  <td align="center" style="border-radius:8px;background:#c9a227;">
+                    <a href="${contentUrl}" target="_blank"
+                       style="display:inline-block;padding:14px 36px;font-size:16px;font-weight:700;color:#1a1a1a;text-decoration:none;border-radius:8px;letter-spacing:0.2px;">
+                      Watch Now &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:28px 0 0;font-size:13px;color:#9ca3af;text-align:center;">
+                Or copy this link: <a href="${contentUrl}" style="color:#c9a227;">${contentUrl}</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f8fafc;border-top:1px solid #e5e7eb;padding:20px 40px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;">
+                You're receiving this because you have email notifications enabled on your DCPG account.<br />
+                <a href="${BASE_URL}/profile" style="color:#c9a227;text-decoration:none;">Manage notification preferences</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
 
 export const notifyContentPublished = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -22,30 +110,80 @@ export const notifyContentPublished = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // Fetch content + author
     const { data: content, error: cErr } = await supabaseAdmin
       .from("content")
-      .select("id, title")
+      .select("id, title, description, author_id")
       .eq("id", data.contentId)
       .single();
     if (cErr || !content) throw new Error("Content not found");
 
+    let authorName: string | null = null;
+    if (content.author_id) {
+      const { data: authorProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("full_name")
+        .eq("id", content.author_id)
+        .maybeSingle();
+      authorName = authorProfile?.full_name ?? null;
+    }
+
+    // Fetch email-opted-in members
     const { data: emailRecipients } = await supabaseAdmin
       .from("profiles")
       .select("id, email")
       .eq("email_notifications", true)
       .not("email", "is", null);
 
+    // Fetch SMS-opted-in members (stub - not yet wired)
     const { data: smsRecipients } = await supabaseAdmin
       .from("profiles")
       .select("id, phone")
       .eq("sms_notifications", true)
       .not("phone", "is", null);
 
-    // TODO: enqueue actual email/SMS sends once email and SMS infrastructure is set up.
-    // For now we just count opted-in recipients.
+    const recipients = (emailRecipients ?? []).filter((r) => !!r.email);
+    const emailCount = recipients.length;
+
+    // Send emails via Resend
+    if (emailCount > 0) {
+      const apiKey = process.env.RESEND_API_KEY;
+      if (!apiKey) throw new Error("RESEND_API_KEY is not configured");
+
+      const { Resend } = await import("resend");
+      const resend = new Resend(apiKey);
+
+      const contentUrl = `${BASE_URL}/content/${content.id}`;
+      const html = buildEmailHtml({
+        title: content.title,
+        description: content.description ?? null,
+        authorName,
+        contentUrl,
+      });
+
+      // Send in batches of 50 to stay within Resend rate limits
+      const BATCH = 50;
+      for (let i = 0; i < recipients.length; i += BATCH) {
+        const batch = recipients.slice(i, i + BATCH);
+        await Promise.all(
+          batch.map((r) =>
+            resend.emails.send({
+              from: FROM_ADDRESS,
+              to: r.email as string,
+              subject: "New content just dropped on DCPG Portal",
+              html,
+            }),
+          ),
+        );
+      }
+    }
+
+    // TODO: wire up SMS sends when SMS infrastructure is configured.
+    void smsRecipients;
+
     return {
-      emailCount: emailRecipients?.length ?? 0,
-      smsCount: smsRecipients?.length ?? 0,
+      emailCount,
+      smsCount: 0,
       title: content.title,
     };
   });
