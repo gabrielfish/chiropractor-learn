@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { sendAdminNewTeamMemberEmail } from "@/lib/notify.functions";
 
 const schema = z.object({
   fullName: z.string().trim().min(1).max(120),
@@ -45,14 +46,15 @@ export const teamSignup = createServerFn({ method: "POST" })
       .insert({ user_id: userId, role: "author" });
     if (roleErr) throw new Error(roleErr.message);
 
-    // Notify super admins (stubbed until email infrastructure is configured).
-    // We just record the intent; actual email send will be wired up when email infra is enabled.
-    const { data: admins } = await supabaseAdmin
-      .from("user_roles")
-      .select("user_id, profiles:profiles!inner(email, full_name)")
-      .eq("role", "super_admin");
-    // TODO: when email infrastructure is enabled, enqueue an email to each admin here.
-    void admins;
+    // Notify admins (gabriel + ryan) that a new team member just activated their account.
+    // Fire-and-forget — don't block signup if email fails.
+    sendAdminNewTeamMemberEmail({
+      fullName: data.fullName,
+      email: data.email,
+      practiceName: data.practice ?? null,
+    }).catch((err) => {
+      console.error("[team-signup] admin notification failed:", err);
+    });
 
     return { ok: true, userId };
   });

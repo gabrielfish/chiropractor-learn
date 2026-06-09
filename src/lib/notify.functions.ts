@@ -168,10 +168,10 @@ export const notifyContentPublished = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Fetch content + author
+    // Fetch content + author + category
     const { data: content, error: cErr } = await supabaseAdmin
       .from("content")
-      .select("id, title, description, author_id, display_author_name")
+      .select("id, title, description, author_id, display_author_name, category:categories(name)")
       .eq("id", data.contentId)
       .single();
     if (cErr || !content) throw new Error("Content not found");
@@ -255,6 +255,34 @@ export const notifyContentPublished = createServerFn({ method: "POST" })
       }
     }
 
+    // --- Internal admin notification (always sent regardless of member count) ---
+    {
+      const apiKey = process.env.RESEND_API_KEY;
+      if (apiKey) {
+        const { Resend } = await import("resend");
+        const resend = new Resend(apiKey);
+        const contentUrl = `${BASE_URL}/content/${content.id}`;
+        const categoryName =
+          (content as { category?: { name?: string | null } | null }).category?.name ?? null;
+        const adminHtml = buildAdminContentPublishedHtml({
+          title: content.title,
+          authorName,
+          categoryName,
+          contentUrl,
+        });
+        await Promise.all(
+          ADMIN_RECIPIENTS.map((to) =>
+            resend.emails.send({
+              from: FROM_ADDRESS,
+              to,
+              subject: "New content published on DCPG Portal",
+              html: adminHtml,
+            }),
+          ),
+        );
+      }
+    }
+
     return {
       emailCount,
       smsCount: 0,
@@ -263,13 +291,127 @@ export const notifyContentPublished = createServerFn({ method: "POST" })
   });
 
 // ---------------------------------------------------------------------------
-// New-member signup notification — sent to admins, not the member themselves
+// Admin-facing notifications — sent to gabriel + ryan only
 // ---------------------------------------------------------------------------
 
 const ADMIN_RECIPIENTS = [
   "gabriel@dcpracticegrowth.com",
   "ryan@dcpracticegrowth.com",
 ];
+
+// --- Admin email: content just published ---
+
+function buildAdminContentPublishedHtml(opts: {
+  title: string;
+  authorName: string | null;
+  categoryName: string | null;
+  contentUrl: string;
+}): string {
+  const { title, authorName, categoryName, contentUrl } = opts;
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+  const authorRow = authorName
+    ? `<tr style="border-bottom:1px solid #f3f4f6;">
+        <td style="padding:12px 16px;color:#6b7280;font-size:14px;width:100px;">Author</td>
+        <td style="padding:12px 16px;font-size:14px;color:#0f172a;font-weight:600;">${esc(authorName)}</td>
+       </tr>`
+    : "";
+  const categoryRow = categoryName
+    ? `<tr style="border-bottom:1px solid #f3f4f6;">
+        <td style="padding:12px 16px;color:#6b7280;font-size:14px;">Category</td>
+        <td style="padding:12px 16px;font-size:14px;color:#0f172a;font-weight:600;">${esc(categoryName)}</td>
+       </tr>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New content published — DCPG Portal</title>
+</head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#0f172a;padding:32px 40px;text-align:center;">
+              <p style="margin:0;font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">DCPG Membership Portal</p>
+              <p style="margin:6px 0 0;font-size:13px;color:#c9a227;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Admin Notification</p>
+            </td>
+          </tr>
+
+          <!-- Badge -->
+          <tr>
+            <td style="padding:32px 40px 0;text-align:center;">
+              <span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:12px;font-weight:700;padding:4px 14px;border-radius:99px;letter-spacing:0.5px;text-transform:uppercase;">New Content Published</span>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:24px 40px 32px;">
+              <h1 style="margin:0 0 20px;font-size:24px;font-weight:800;color:#0f172a;line-height:1.25;">
+                New content just went live on the portal!
+              </h1>
+
+              <!-- Content details table -->
+              <table cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:28px;">
+                <tr style="background:#f8fafc;">
+                  <td colspan="2" style="padding:12px 16px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #e5e7eb;">
+                    Content Details
+                  </td>
+                </tr>
+                <tr style="border-bottom:1px solid #f3f4f6;">
+                  <td style="padding:12px 16px;color:#6b7280;font-size:14px;width:100px;">Title</td>
+                  <td style="padding:12px 16px;font-size:14px;color:#0f172a;font-weight:600;">${esc(title)}</td>
+                </tr>
+                ${authorRow}
+                ${categoryRow}
+                <tr>
+                  <td style="padding:12px 16px;color:#6b7280;font-size:14px;">Link</td>
+                  <td style="padding:12px 16px;font-size:14px;">
+                    <a href="${contentUrl}" style="color:#c9a227;text-decoration:none;word-break:break-all;">${contentUrl}</a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA Button -->
+              <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+                <tr>
+                  <td align="center" style="border-radius:8px;background:#c9a227;">
+                    <a href="${contentUrl}" target="_blank"
+                       style="display:inline-block;padding:14px 36px;font-size:16px;font-weight:700;color:#1a1a1a;text-decoration:none;border-radius:8px;">
+                      View Content &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f8fafc;border-top:1px solid #e5e7eb;padding:20px 40px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;">
+                DCPG Admin notification &mdash; sent to portal administrators only.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+// --- Admin email: new team member joined ---
 
 function buildNewMemberHtml(opts: {
   fullName: string;
@@ -371,6 +513,53 @@ function buildNewMemberHtml(opts: {
   </table>
 </body>
 </html>`;
+}
+
+/**
+ * Plain async helper — call directly from other server-side code (e.g. team-signup handler).
+ * Sends an admin notification email when a new TEAM MEMBER activates their account.
+ * Gracefully no-ops if RESEND_API_KEY is not configured.
+ */
+export async function sendAdminNewTeamMemberEmail(opts: {
+  fullName: string;
+  email: string;
+  practiceName: string | null;
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("[sendAdminNewTeamMemberEmail] RESEND_API_KEY not set, skipping admin notification");
+    return;
+  }
+
+  const { Resend } = await import("resend");
+  const resend = new Resend(apiKey);
+
+  const joinedAt = new Date().toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+
+  const html = buildNewMemberHtml({
+    fullName: opts.fullName,
+    email: opts.email,
+    practiceName: opts.practiceName,
+    joinedAt,
+  });
+
+  await Promise.all(
+    ADMIN_RECIPIENTS.map((to) =>
+      resend.emails.send({
+        from: FROM_ADDRESS,
+        to,
+        subject: "New team member just joined DCPG!",
+        html,
+      }),
+    ),
+  );
 }
 
 export const notifyNewMember = createServerFn({ method: "POST" })
