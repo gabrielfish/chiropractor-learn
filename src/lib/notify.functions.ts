@@ -128,12 +128,22 @@ export const notifyContentPublished = createServerFn({ method: "POST" })
       authorName = authorProfile?.full_name ?? null;
     }
 
-    // Fetch user IDs that have role = 'member' only (never email admins/authors)
+    // Fetch user IDs with role='member'
     const { data: memberRoleRows } = await supabaseAdmin
       .from("user_roles")
       .select("user_id")
       .eq("role", "member");
-    const memberIds = (memberRoleRows ?? []).map((r) => r.user_id as string);
+
+    // Exclude anyone who also has super_admin or author (dual-role accounts)
+    const { data: elevatedRows } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .in("role", ["super_admin", "author"]);
+    const elevatedIds = new Set((elevatedRows ?? []).map((r) => r.user_id as string));
+
+    const memberIds = (memberRoleRows ?? [])
+      .map((r) => r.user_id as string)
+      .filter((id) => !elevatedIds.has(id));
 
     // Fetch profiles for those members that have email_notifications enabled
     const { data: emailRecipients } = memberIds.length

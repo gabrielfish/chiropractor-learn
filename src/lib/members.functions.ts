@@ -19,13 +19,25 @@ export const listMembers = createServerFn({ method: "GET" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Get all member user_ids
+    // Get all user_ids with role='member'
     const { data: memberRows, error: rolesErr } = await supabaseAdmin
       .from("user_roles")
       .select("user_id")
       .eq("role", "member");
     if (rolesErr) throw new Error(rolesErr.message);
-    const ids = (memberRows ?? []).map((r) => r.user_id as string);
+
+    // Get all user_ids with an elevated role (super_admin or author)
+    const { data: elevatedRows } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .in("role", ["super_admin", "author"]);
+    const elevatedIds = new Set((elevatedRows ?? []).map((r) => r.user_id as string));
+
+    // Only users whose sole role is 'member' — exclude anyone with super_admin/author
+    const ids = (memberRows ?? [])
+      .map((r) => r.user_id as string)
+      .filter((id) => !elevatedIds.has(id));
+
     if (ids.length === 0) return { members: [] };
 
     // Fetch profiles
