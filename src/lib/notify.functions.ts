@@ -171,13 +171,16 @@ export const notifyContentPublished = createServerFn({ method: "POST" })
     // Fetch content + author
     const { data: content, error: cErr } = await supabaseAdmin
       .from("content")
-      .select("id, title, description, author_id")
+      .select("id, title, description, author_id, display_author_name")
       .eq("id", data.contentId)
       .single();
     if (cErr || !content) throw new Error("Content not found");
 
-    let authorName: string | null = null;
-    if (content.author_id) {
+    // display_author_name overrides the author's profile name when set
+    // (allows team members to upload on behalf of Ryan Rieder)
+    let authorName: string | null =
+      (content as { display_author_name?: string | null }).display_author_name ?? null;
+    if (!authorName && content.author_id) {
       const { data: authorProfile } = await supabaseAdmin
         .from("profiles")
         .select("full_name")
