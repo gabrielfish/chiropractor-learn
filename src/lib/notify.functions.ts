@@ -135,13 +135,6 @@ export const notifyContentPublished = createServerFn({ method: "POST" })
       .eq("email_notifications", true)
       .not("email", "is", null);
 
-    // Fetch SMS-opted-in members (stub - not yet wired)
-    const { data: smsRecipients } = await supabaseAdmin
-      .from("profiles")
-      .select("id, phone")
-      .eq("sms_notifications", true)
-      .not("phone", "is", null);
-
     const recipients = (emailRecipients ?? []).filter((r) => !!r.email);
     const emailCount = recipients.length;
 
@@ -177,9 +170,6 @@ export const notifyContentPublished = createServerFn({ method: "POST" })
         );
       }
     }
-
-    // TODO: wire up SMS sends when SMS infrastructure is configured.
-    void smsRecipients;
 
     return {
       emailCount,

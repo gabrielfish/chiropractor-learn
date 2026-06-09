@@ -15,7 +15,7 @@ export const getMyProfile = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("profiles")
-      .select("id,email,full_name,phone,practice_name,avatar_url,email_notifications,sms_notifications")
+      .select("id,email,full_name,phone,practice_name,avatar_url,email_notifications")
       .eq("id", context.userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -38,7 +38,6 @@ export const updateMyProfile = createServerFn({ method: "POST" })
 
 const notifSchema = z.object({
   email_notifications: z.boolean(),
-  sms_notifications: z.boolean(),
 });
 
 export const updateNotifications = createServerFn({ method: "POST" })

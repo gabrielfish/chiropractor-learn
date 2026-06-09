@@ -61,7 +61,6 @@ function ProfilePage() {
 
   // Notifications
   const [emailNotif, setEmailNotif] = useState(true);
-  const [smsNotif, setSmsNotif] = useState(false);
 
   // Support form
   const [category, setCategory] = useState<string>("Technical Issue");
@@ -79,7 +78,6 @@ function ProfilePage() {
     setPracticeName(p.practice_name ?? "");
     setAvatarUrl(p.avatar_url ?? "");
     setEmailNotif(p.email_notifications ?? true);
-    setSmsNotif(p.sms_notifications ?? false);
   }, [profileQ.data]);
 
   const onSaveProfile = async (e: FormEvent) => {
@@ -117,19 +115,9 @@ function ProfilePage() {
   const onToggleEmail = async (v: boolean) => {
     setEmailNotif(v);
     try {
-      await saveNotifs({ data: { email_notifications: v, sms_notifications: smsNotif } });
+      await saveNotifs({ data: { email_notifications: v } });
     } catch {
       setEmailNotif(!v);
-      toast.error("Failed to update preference");
-    }
-  };
-
-  const onToggleSms = async (v: boolean) => {
-    setSmsNotif(v);
-    try {
-      await saveNotifs({ data: { email_notifications: emailNotif, sms_notifications: v } });
-    } catch {
-      setSmsNotif(!v);
       toast.error("Failed to update preference");
     }
   };
@@ -238,19 +226,12 @@ function ProfilePage() {
 
         {/* Notifications */}
         <Section title="Notifications" description="Choose how you want to hear from us.">
-          <div className="flex items-center justify-between py-2 border-b border-border">
+          <div className="flex items-center justify-between py-2">
             <div>
               <div className="font-medium text-foreground">Email Notifications</div>
               <div className="text-sm text-muted-foreground">New content, announcements, and account updates.</div>
             </div>
             <Switch checked={emailNotif} onCheckedChange={onToggleEmail} />
-          </div>
-          <div className="flex items-center justify-between py-2">
-            <div>
-              <div className="font-medium text-foreground">SMS Notifications</div>
-              <div className="text-sm text-muted-foreground">Time-sensitive alerts via text message.</div>
-            </div>
-            <Switch checked={smsNotif} onCheckedChange={onToggleSms} />
           </div>
         </Section>
 

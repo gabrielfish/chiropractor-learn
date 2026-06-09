@@ -40,7 +40,7 @@ export function PublishNotificationModal({
     onSuccess: (res) => {
       setSent(true);
       toast.success(
-        `Notification queued — ${res.emailCount} email${res.emailCount === 1 ? "" : "s"}, ${res.smsCount} SMS`,
+        `Emails sent to ${res.emailCount} member${res.emailCount === 1 ? "" : "s"}`,
       );
       setTimeout(onClose, 1200);
     },
@@ -86,7 +86,7 @@ export function PublishNotificationModal({
                 {notifyMut.isPending ? "Sending…" : "Notify All Members"}
               </div>
               <div className="text-sm text-muted-foreground">
-                Email + SMS to everyone opted-in, with a direct link.
+                Email everyone with notifications enabled, with a direct link.
               </div>
             </div>
           </button>
