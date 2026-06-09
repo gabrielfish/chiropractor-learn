@@ -330,7 +330,7 @@ function MembersPage() {
 
       {/* ── Invite Modal ──────────────────────────────────────────────── */}
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-        <DialogContent className="max-w-lg p-0 overflow-hidden border-border bg-card">
+        <DialogContent className="max-w-[calc(100%-32px)] sm:max-w-[560px] p-0 overflow-hidden border-border bg-card">
           {/* Header */}
           <div className="bg-primary text-primary-foreground px-6 pt-6 pb-5">
             <DialogHeader>
@@ -343,9 +343,9 @@ function MembersPage() {
             </DialogHeader>
           </div>
 
-          <div className="p-6 space-y-5">
+          <div className="p-5 sm:p-6 space-y-5">
             {/* ── Section 1: Inner Circle Member ───────────────────────── */}
-            <div className="rounded-xl border-2 border-gold/30 bg-gold/5 p-5">
+            <div className="rounded-xl border-2 border-gold/30 bg-gold/5 p-4 sm:p-5">
               <div className="flex items-center gap-2 mb-1">
                 <div className="rounded-lg bg-gold/15 text-gold p-1.5">
                   <Users className="h-4 w-4" />
@@ -358,17 +358,17 @@ function MembersPage() {
                 Share this link with Ryan's Inner Circle members to give them access.
               </p>
 
-              {/* Link row */}
-              <div className="flex items-center gap-2 rounded-lg bg-background border border-border px-3 py-2 mb-3">
-                <span className="flex-1 text-xs text-foreground/80 font-mono truncate select-all">
+              {/* Link row — stacks on mobile, side-by-side on sm+ */}
+              <div className="rounded-lg bg-background border border-border p-2.5 mb-3">
+                <p className="text-xs text-foreground/70 font-mono truncate select-all mb-2 px-1">
                   https://learn.dcpracticegrowth.com/signup?invite=INNERCIRCLE
-                </span>
+                </p>
                 <button
                   onClick={() => copyToClipboard(
                     "https://learn.dcpracticegrowth.com/signup?invite=INNERCIRCLE",
                     "member-link",
                   )}
-                  className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-gold text-gold-foreground hover:bg-gold/90 transition-colors"
+                  className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-md bg-gold text-gold-foreground hover:bg-gold/90 transition-colors"
                 >
                   {copiedKey === "member-link" ? (
                     <><Check className="h-3.5 w-3.5" /> Copied!</>
@@ -380,7 +380,7 @@ function MembersPage() {
             </div>
 
             {/* ── Section 2: Team Member ────────────────────────────────── */}
-            <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-5">
+            <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-4 sm:p-5">
               <div className="flex items-center gap-2 mb-1">
                 <div className="rounded-lg bg-primary/10 text-primary p-1.5">
                   <ShieldCheck className="h-4 w-4" />
@@ -394,16 +394,16 @@ function MembersPage() {
               </p>
 
               {/* Team signup link */}
-              <div className="flex items-center gap-2 rounded-lg bg-background border border-border px-3 py-2 mb-2">
-                <span className="flex-1 text-xs text-foreground/80 font-mono truncate select-all">
+              <div className="rounded-lg bg-background border border-border p-2.5 mb-2">
+                <p className="text-xs text-foreground/70 font-mono truncate select-all mb-2 px-1">
                   https://learn.dcpracticegrowth.com/team-signup
-                </span>
+                </p>
                 <button
                   onClick={() => copyToClipboard(
                     "https://learn.dcpracticegrowth.com/team-signup",
                     "team-link",
                   )}
-                  className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                  className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
                   {copiedKey === "team-link" ? (
                     <><Check className="h-3.5 w-3.5" /> Copied!</>
@@ -414,14 +414,16 @@ function MembersPage() {
               </div>
 
               {/* Access code row */}
-              <div className="flex items-center gap-2 rounded-lg bg-background border border-border px-3 py-2">
-                <span className="text-xs text-muted-foreground mr-1 shrink-0">Access Code:</span>
-                <span className="flex-1 text-xs font-bold font-mono text-foreground tracking-widest select-all">
-                  DCPGTEAM
-                </span>
+              <div className="rounded-lg bg-background border border-border p-2.5">
+                <div className="flex items-center gap-1.5 mb-2 px-1">
+                  <span className="text-xs text-muted-foreground shrink-0">Access Code:</span>
+                  <span className="text-xs font-bold font-mono text-foreground tracking-widest select-all">
+                    DCPGTEAM
+                  </span>
+                </div>
                 <button
                   onClick={() => copyToClipboard("DCPGTEAM", "team-code")}
-                  className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                  className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
                   {copiedKey === "team-code" ? (
                     <><Check className="h-3.5 w-3.5" /> Copied!</>
