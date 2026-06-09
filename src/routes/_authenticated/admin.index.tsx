@@ -23,8 +23,6 @@ import { toast } from "sonner";
 import { Plus, Pencil, Archive, Trash2, RotateCcw, X, Loader2 } from "lucide-react";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { PublishNotificationModal } from "@/components/PublishNotificationModal";
-import { useServerFn } from "@tanstack/react-start";
-import { notifyAuthorPublished } from "@/lib/authors.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({ meta: [{ title: "Admin — DCPG" }] }),
@@ -64,8 +62,6 @@ function AdminPage() {
   const { user, roles } = Route.useRouteContext() as { user: { id: string }; roles: string[] };
   const isAuthorOnly = roles.includes("author") && !roles.includes("super_admin");
   const isSuperAdmin = roles.includes("super_admin");
-  const notifyAuthorFn = useServerFn(notifyAuthorPublished);
-
   const [form, setForm] = useState<FormState>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [useCustomThumb, setUseCustomThumb] = useState(false);
@@ -231,9 +227,8 @@ function AdminPage() {
       qc.invalidateQueries({ queryKey: ["admin", "content"] }); // invalidates all variants
       qc.invalidateQueries({ queryKey: ["content"] });
       if (isNew && wasPublished && newId) {
-        if (isAuthorOnly) {
-          notifyAuthorFn({ data: { contentId: newId } }).catch(() => {});
-        }
+        // Show the 3-option modal for ALL roles — super_admin and author alike.
+        // The modal's "Notify All Members" button calls notifyContentPublished.
         setPublishedModal({ id: newId, title: newTitle });
       }
     },

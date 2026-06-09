@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, redirect, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -55,7 +55,6 @@ const TESTIMONIALS = [
 ];
 
 function LoginPage() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -110,10 +109,13 @@ function LoginPage() {
     if (!user) return;
     const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
     const roleSet = new Set((roles ?? []).map((r) => r.role));
+    // Use window.location.href instead of navigate() to avoid TanStack Router's
+    // AuthSync race: the SIGNED_IN event fires router.invalidate() which cancels
+    // navigate() before it completes, leaving the user stuck on /login.
     if (roleSet.has("super_admin") || roleSet.has("author")) {
-      navigate({ to: "/admin" });
+      window.location.href = "/admin";
     } else {
-      navigate({ to: "/dashboard" });
+      window.location.href = "/dashboard";
     }
   };
 
