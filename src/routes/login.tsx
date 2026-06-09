@@ -148,11 +148,13 @@ function LoginPage() {
       {/* Right panel */}
       <div className="hidden md:flex md:basis-2/5 bg-primary text-primary-foreground items-center justify-center px-10 py-12">
         <div className="max-w-sm w-full">
-          {/* Headshot placeholder */}
           <div className="flex flex-col items-center mb-8">
-            <div className="h-24 w-24 rounded-full bg-gold/20 flex items-center justify-center mb-3 border-2 border-gold/40">
-              <User className="h-10 w-10 text-gold" />
-            </div>
+            <img
+              src="/ryan-rieder.webp"
+              alt="Ryan Rieder"
+              className="rounded-full object-cover mb-3 border-2 border-gold/40"
+              style={{ width: 120, height: 120 }}
+            />
             <div className="font-display text-xl font-bold text-gold">Ryan Rieder</div>
             <div className="text-sm text-primary-foreground/60">Founder, DCPG</div>
           </div>
