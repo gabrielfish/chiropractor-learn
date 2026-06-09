@@ -13,10 +13,10 @@ export const Route = createFileRoute("/_authenticated/admin/settings")({
 
 function SettingsPage() {
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex flex-col md:flex-row bg-background">
       <AdminSidebar active="settings" />
 
-      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-x-hidden min-w-0">
+      <main className="flex-1 pt-14 px-4 pb-4 sm:px-6 sm:pb-6 md:p-10 overflow-x-hidden min-w-0">
         <div className="max-w-4xl mx-auto">
           <h1 className="font-display text-3xl font-extrabold mb-1">Settings</h1>
           <p className="text-muted-foreground mb-8">

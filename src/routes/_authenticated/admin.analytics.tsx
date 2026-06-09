@@ -123,9 +123,9 @@ function AnalyticsPage() {
   ];
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex flex-col md:flex-row bg-background">
       <AdminSidebar active="analytics" />
-      <main className="flex-1 p-6 md:p-10 overflow-x-hidden">
+      <main className="flex-1 pt-14 px-6 pb-6 md:p-10 overflow-x-hidden">
         <div className="max-w-6xl mx-auto">
           <h1 className="font-display text-3xl font-extrabold mb-1">Analytics</h1>
           <p className="text-muted-foreground mb-8">How members are using the portal.</p>

@@ -97,9 +97,9 @@ function AuthorsPage() {
   });
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex flex-col md:flex-row bg-background">
       <AdminSidebar active="authors" />
-      <main className="flex-1 p-6 md:p-10 overflow-x-hidden">
+      <main className="flex-1 pt-14 px-6 pb-6 md:p-10 overflow-x-hidden">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-2 mb-1">
             <Users className="h-7 w-7 text-gold" />

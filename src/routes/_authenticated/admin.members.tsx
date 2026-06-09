@@ -150,10 +150,10 @@ function MembersPage() {
   });
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex flex-col md:flex-row min-h-screen bg-background">
       <AdminSidebar active="members" />
 
-      <main className="flex-1 p-8 overflow-auto">
+      <main className="flex-1 pt-14 px-4 pb-4 sm:px-8 sm:pb-8 md:p-8 overflow-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
