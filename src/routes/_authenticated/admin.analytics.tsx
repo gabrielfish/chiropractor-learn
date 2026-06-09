@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/admin/analytics")({
   beforeLoad: ({ context }) => {
     const roles = (context as { roles?: string[] }).roles ?? [];
     if (!roles.includes("super_admin")) {
-      throw redirect({ to: "/admin" });
+      throw redirect({ to: "/dashboard" });
     }
   },
   component: AnalyticsPage,

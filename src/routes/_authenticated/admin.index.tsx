@@ -87,12 +87,16 @@ function AdminPage() {
   });
 
   const contentQ = useQuery({
-    queryKey: ["admin", "content"],
+    // Include user.id in the key so author-only views are isolated from super_admin cache
+    queryKey: ["admin", "content", isAuthorOnly ? user.id : "all"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("content")
         .select("*, category:categories(name)")
         .order("created_at", { ascending: false });
+      // Authors see only their own uploads
+      if (isAuthorOnly) q = q.eq("author_id", user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
@@ -224,7 +228,7 @@ function AdminPage() {
       const newId = row?.id ?? null;
       const newTitle = row?.title ?? "";
       resetForm();
-      qc.invalidateQueries({ queryKey: ["admin", "content"] });
+      qc.invalidateQueries({ queryKey: ["admin", "content"] }); // invalidates all variants
       qc.invalidateQueries({ queryKey: ["content"] });
       if (isNew && wasPublished && newId) {
         if (isAuthorOnly) {
@@ -280,8 +284,14 @@ function AdminPage() {
 
       <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-x-hidden min-w-0">
         <div className="max-w-4xl mx-auto">
-          <h1 className="font-display text-3xl font-extrabold mb-1">Manage content</h1>
-          <p className="text-muted-foreground mb-8">Upload lessons and manage your library.</p>
+          <h1 className="font-display text-3xl font-extrabold mb-1">
+            {isAuthorOnly ? "My Content" : "Manage content"}
+          </h1>
+          <p className="text-muted-foreground mb-8">
+            {isAuthorOnly
+              ? "Upload and manage lessons you've created."
+              : "Upload lessons and manage your library."}
+          </p>
 
           <section className="rounded-xl bg-card border border-border p-4 sm:p-6 shadow-card mb-10">
             <div className="flex items-center justify-between mb-4">
@@ -490,7 +500,9 @@ function AdminPage() {
 
           <section>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-              <h2 className="font-display text-lg font-bold shrink-0">All content ({counts.all})</h2>
+              <h2 className="font-display text-lg font-bold shrink-0">
+                {isAuthorOnly ? "My uploads" : "All content"} ({counts.all})
+              </h2>
               <div className="inline-flex rounded-md border border-border bg-muted p-1 overflow-x-auto max-w-full">
                 {filterTabs.map((t) => (
                   <button
@@ -518,7 +530,7 @@ function AdminPage() {
                     <th className="px-4 py-3 font-medium">Type</th>
                     <th className="px-4 py-3 font-medium">Status</th>
                     <th className="px-4 py-3 font-medium">Created</th>
-                    {isSuperAdmin && <th className="px-4 py-3 font-medium text-right">Actions</th>}
+                    <th className="px-4 py-3 font-medium text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -554,43 +566,43 @@ function AdminPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(c.created_at).toLocaleDateString()}</td>
-                        {isSuperAdmin && (
-                          <td className="px-4 py-3">
-                            <div className="flex items-center justify-end gap-1">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => startEdit(c)}
+                              aria-label="Edit"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            {c.status === "archived" ? (
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => startEdit(c)}
-                                aria-label="Edit"
+                                onClick={() => setStatus.mutate({ id: c.id, status: "published" })}
+                                disabled={setStatus.isPending}
+                                aria-label="Restore"
+                                title="Restore to published"
                               >
-                                <Pencil className="h-4 w-4" />
+                                {setStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
                               </Button>
-                              {c.status === "archived" ? (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setStatus.mutate({ id: c.id, status: "published" })}
-                                  disabled={setStatus.isPending}
-                                  aria-label="Restore"
-                                  title="Restore to published"
-                                >
-                                  {setStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-                                </Button>
-                              ) : (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setStatus.mutate({ id: c.id, status: "archived" })}
-                                  disabled={setStatus.isPending}
-                                  aria-label="Archive"
-                                  title="Archive"
-                                >
-                                  {setStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />}
-                                </Button>
-                              )}
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setStatus.mutate({ id: c.id, status: "archived" })}
+                                disabled={setStatus.isPending}
+                                aria-label="Archive"
+                                title="Archive"
+                              >
+                                {setStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />}
+                              </Button>
+                            )}
+                            {isSuperAdmin && (
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -601,14 +613,14 @@ function AdminPage() {
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
-                            </div>
-                          </td>
-                        )}
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}
                   {filteredContent.length === 0 && (
-                    <tr><td colSpan={isSuperAdmin ? 6 : 5} className="px-4 py-10 text-center text-muted-foreground">No content in this view.</td></tr>
+                    <tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">No content in this view.</td></tr>
                   )}
                 </tbody>
               </table>
