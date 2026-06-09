@@ -22,7 +22,7 @@ export const teamSignup = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Create confirmed auth user (team members onboarded via code â€” skip email confirm)
+    // Create confirmed auth user (team members onboarded via code -- skip email confirm)
     const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
       email: data.email,
       password: data.password,
