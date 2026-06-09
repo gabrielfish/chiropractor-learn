@@ -44,6 +44,7 @@ type FormState = {
   pdf_url: string;
   thumbnail_url: string;
   status: ContentStatus;
+  display_author_name: string;
 };
 
 const emptyForm: FormState = {
@@ -55,6 +56,7 @@ const emptyForm: FormState = {
   pdf_url: "",
   thumbnail_url: "",
   status: "published",
+  display_author_name: "",
 };
 
 function AdminPage() {
@@ -143,6 +145,7 @@ function AdminPage() {
       pdf_url: row.pdf_url ?? "",
       thumbnail_url: row.thumbnail_url ?? "",
       status: row.status,
+      display_author_name: (row as { display_author_name?: string | null }).display_author_name ?? "",
     });
     const isYt = !!row.video_url && /youtu\.?be/.test(row.video_url);
     setVideoSource(isYt ? "youtube" : row.video_url ? "upload" : "youtube");
@@ -188,6 +191,7 @@ function AdminPage() {
         pdf_url: form.pdf_url || null,
         thumbnail_url: effectiveThumb || null,
         status: form.status,
+        display_author_name: form.display_author_name.trim() || null,
       };
       if (editingId) {
         const { data: row, error } = await supabase
@@ -299,6 +303,22 @@ function AdminPage() {
               <div className="md:col-span-2 space-y-1.5">
                 <Label>Description</Label>
                 <Textarea rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              </div>
+              <div className="md:col-span-2 space-y-1.5">
+                <Label htmlFor="display_author_name">
+                  Author Display Name
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">(optional — overrides your profile name)</span>
+                </Label>
+                <Input
+                  id="display_author_name"
+                  placeholder="e.g. Dr Ryan Rieder"
+                  value={form.display_author_name}
+                  onChange={(e) => setForm({ ...form, display_author_name: e.target.value })}
+                  maxLength={120}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Leave blank to show your profile name. Enter a name here to attribute this content to someone else — e.g. upload on behalf of Ryan.
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label>Category</Label>

@@ -11,6 +11,8 @@ export interface ContentCardData {
   pdf_url?: string | null;
   book_url?: string | null;
   content_type?: string | null;
+  /** Overrides author.full_name for display when set by uploader */
+  display_author_name?: string | null;
   category?: { name?: string | null; slug?: string | null } | null;
   author?: { full_name?: string | null; avatar_url?: string | null; job_title?: string | null } | null;
   completed?: boolean;
@@ -88,21 +90,27 @@ export function ContentCard({ item }: { item: ContentCardData }) {
         <h3 className="font-display font-bold text-foreground line-clamp-2 leading-snug mb-1">
           {item.title}
         </h3>
-        {item.author?.full_name && (
-          <div className="flex items-center gap-2 mt-1.5">
-            {item.author.avatar_url ? (
-              <img src={item.author.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
-            ) : (
-              <div className="w-5 h-5 rounded-full bg-primary/10 text-gold text-[10px] font-bold flex items-center justify-center">
-                {item.author.full_name.slice(0, 1).toUpperCase()}
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground truncate">
-              Taught by <span className="text-foreground/90 font-medium">{item.author.full_name}</span>
-              {item.author.job_title && <span className="text-muted-foreground"> · {item.author.job_title}</span>}
-            </p>
-          </div>
-        )}
+        {(item.display_author_name || item.author?.full_name) && (() => {
+          // display_author_name overrides the author's profile name when set
+          const displayName = item.display_author_name || item.author?.full_name!;
+          const avatarUrl = item.display_author_name ? null : item.author?.avatar_url;
+          const jobTitle = item.display_author_name ? null : item.author?.job_title;
+          return (
+            <div className="flex items-center gap-2 mt-1.5">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
+              ) : (
+                <div className="w-5 h-5 rounded-full bg-primary/10 text-gold text-[10px] font-bold flex items-center justify-center">
+                  {displayName.slice(0, 1).toUpperCase()}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground truncate">
+                Taught by <span className="text-foreground/90 font-medium">{displayName}</span>
+                {jobTitle && <span className="text-muted-foreground"> · {jobTitle}</span>}
+              </p>
+            </div>
+          );
+        })()}
       </div>
     </Link>
   );

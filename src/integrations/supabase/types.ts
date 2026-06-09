@@ -108,6 +108,7 @@ export type Database = {
           category_id: string | null
           created_at: string
           description: string | null
+          display_author_name: string | null
           id: string
           pdf_name: string | null
           pdf_url: string | null
@@ -127,6 +128,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           description?: string | null
+          display_author_name?: string | null
           id?: string
           pdf_name?: string | null
           pdf_url?: string | null
@@ -146,6 +148,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           description?: string | null
+          display_author_name?: string | null
           id?: string
           pdf_name?: string | null
           pdf_url?: string | null

@@ -229,22 +229,28 @@ function ContentDetail() {
             <div className="mt-6">
               {item.category && <Badge className="bg-gold/15 text-gold hover:bg-gold/15 border-0 mb-3">{item.category.name}</Badge>}
               <h1 className="font-display text-3xl md:text-4xl font-extrabold text-foreground mb-3">{item.title}</h1>
-              {item.author?.full_name && (
-                <div className="flex items-center gap-3 mb-5 p-3 rounded-lg bg-card border border-border">
-                  {item.author.avatar_url ? (
-                    <img src={item.author.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover border border-border" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-primary/10 text-gold flex items-center justify-center font-display font-bold">
-                      {item.author.full_name.slice(0, 1).toUpperCase()}
+              {(item.display_author_name || item.author?.full_name) && (() => {
+                // display_author_name overrides the profile name when set by the uploader
+                const displayName = item.display_author_name ?? item.author!.full_name!;
+                const avatarUrl = item.display_author_name ? null : item.author?.avatar_url;
+                const jobTitle = item.display_author_name ? null : item.author?.job_title;
+                return (
+                  <div className="flex items-center gap-3 mb-5 p-3 rounded-lg bg-card border border-border">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover border border-border" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-primary/10 text-gold flex items-center justify-center font-display font-bold">
+                        {displayName.slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-xs uppercase tracking-wider text-gold font-semibold">Taught by</p>
+                      <p className="text-foreground font-medium truncate">{displayName}</p>
+                      {jobTitle && <p className="text-xs text-muted-foreground truncate">{jobTitle}</p>}
                     </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-xs uppercase tracking-wider text-gold font-semibold">Taught by</p>
-                    <p className="text-foreground font-medium truncate">{item.author.full_name}</p>
-                    {item.author.job_title && <p className="text-xs text-muted-foreground truncate">{item.author.job_title}</p>}
                   </div>
-                </div>
-              )}
+                );
+              })()}
               {item.description && (
                 <p className="text-foreground/80 leading-relaxed whitespace-pre-line">{item.description}</p>
               )}
