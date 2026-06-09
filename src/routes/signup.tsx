@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { notifyNewMember } from "@/lib/notify.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +23,7 @@ export const Route = createFileRoute("/signup")({
 });
 
 function SignupPage() {
+  const notifyAdmins = useServerFn(notifyNewMember);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState<string | undefined>(undefined);
@@ -78,7 +81,16 @@ function SignupPage() {
         // RLS blocks client inserts to user_roles, so we rely on the trigger.
       }
 
-      // 3. Redirect — use window.location so it fires after Supabase's SIGNED_IN
+      // 3. Fire-and-forget admin notification — never block or fail signup on this
+      notifyAdmins({
+        data: {
+          fullName,
+          email,
+          practiceName: practice || null,
+        },
+      }).catch(() => {});
+
+      // 4. Redirect — use window.location so it fires after Supabase's SIGNED_IN
       //    auth-state event, which would otherwise race with and cancel navigate().
       if (data.session) {
         // Logged in immediately — go straight to dashboard
