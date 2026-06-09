@@ -2,12 +2,12 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { listMembers, setMemberActive } from "@/lib/members.functions";
+import { listMembers, setMemberActive, setUserRole } from "@/lib/members.functions";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Search, UserCheck, UserX, Link2, Check, Users } from "lucide-react";
+import { Search, UserCheck, UserX, Link2, Check, Users, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/members")({
   head: () => ({ meta: [{ title: "Members — DCPG Admin" }] }),
@@ -28,6 +28,20 @@ type Member = {
   last_login: string | null;
   is_active: boolean;
   content_completed: number;
+};
+
+type AppRole = "member" | "author" | "super_admin";
+
+const ROLE_LABELS: Record<AppRole, string> = {
+  member: "Member",
+  author: "Team Member",
+  super_admin: "Super Admin",
+};
+
+const ROLE_COLOURS: Record<AppRole, string> = {
+  member: "bg-blue-500/10 text-blue-600",
+  author: "bg-gold/15 text-gold",
+  super_admin: "bg-primary/10 text-primary",
 };
 
 function formatDate(iso: string | null) {
@@ -66,9 +80,13 @@ function Avatar({ member }: { member: Member }) {
 function MembersPage() {
   const listFn = useServerFn(listMembers);
   const toggleFn = useServerFn(setMemberActive);
+  const roleFn = useServerFn(setUserRole);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [inviteCopied, setInviteCopied] = useState(false);
+  // Track which user's role select is pending
+  const [pendingRole, setPendingRole] = useState<string | null>(null);
+  const [pendingToggle, setPendingToggle] = useState<string | null>(null);
 
   const membersQ = useQuery({
     queryKey: ["admin", "members"],
@@ -76,13 +94,31 @@ function MembersPage() {
   });
 
   const toggleMut = useMutation({
-    mutationFn: (vars: { userId: string; is_active: boolean }) =>
-      toggleFn({ data: vars }),
+    mutationFn: (vars: { userId: string; is_active: boolean }) => {
+      setPendingToggle(vars.userId);
+      return toggleFn({ data: vars });
+    },
     onSuccess: (_data, vars) => {
-      toast.success(vars.is_active ? "Member reactivated" : "Member deactivated");
+      toast.success(vars.is_active ? "Member reactivated" : "Member deactivated — content reassigned to Dr Ryan Rieder");
       qc.invalidateQueries({ queryKey: ["admin", "members"] });
     },
     onError: (err: Error) => toast.error(err.message),
+    onSettled: () => setPendingToggle(null),
+  });
+
+  const roleMut = useMutation({
+    mutationFn: (vars: { userId: string; role: AppRole }) => {
+      setPendingRole(vars.userId);
+      return roleFn({ data: vars });
+    },
+    onSuccess: (_data, vars) => {
+      const label = ROLE_LABELS[vars.role];
+      toast.success(`Role updated to ${label} — user will move to the appropriate section`);
+      qc.invalidateQueries({ queryKey: ["admin", "members"] });
+      qc.invalidateQueries({ queryKey: ["admin", "authors"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+    onSettled: () => setPendingRole(null),
   });
 
   const handleCopyInvite = async () => {
@@ -127,13 +163,9 @@ function MembersPage() {
             className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold gap-2 self-start sm:self-auto"
           >
             {inviteCopied ? (
-              <>
-                <Check className="h-4 w-4" /> Copied!
-              </>
+              <><Check className="h-4 w-4" /> Copied!</>
             ) : (
-              <>
-                <Link2 className="h-4 w-4" /> Invite Member
-              </>
+              <><Link2 className="h-4 w-4" /> Invite Member</>
             )}
           </Button>
         </div>
@@ -166,7 +198,7 @@ function MembersPage() {
         ) : (
           <div className="rounded-xl border border-border overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm min-w-[780px]">
                 <thead>
                   <tr className="bg-muted/50 border-b border-border text-left">
                     <th className="px-4 py-3 font-semibold text-foreground whitespace-nowrap">Member</th>
@@ -175,6 +207,7 @@ function MembersPage() {
                     <th className="px-4 py-3 font-semibold text-foreground whitespace-nowrap">Last Login</th>
                     <th className="px-4 py-3 font-semibold text-foreground whitespace-nowrap text-center">Completed</th>
                     <th className="px-4 py-3 font-semibold text-foreground whitespace-nowrap text-center">Status</th>
+                    <th className="px-4 py-3 font-semibold text-foreground whitespace-nowrap">Role</th>
                     <th className="px-4 py-3 font-semibold text-foreground whitespace-nowrap"></th>
                   </tr>
                 </thead>
@@ -240,21 +273,49 @@ function MembersPage() {
                         </span>
                       </td>
 
-                      {/* Toggle */}
+                      {/* Role dropdown */}
+                      <td className="px-4 py-3">
+                        {pendingRole === m.id ? (
+                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                            <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+                          </span>
+                        ) : (
+                          <select
+                            value="member"
+                            onChange={(e) =>
+                              roleMut.mutate({ userId: m.id, role: e.target.value as AppRole })
+                            }
+                            className={`text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold/50 ${ROLE_COLOURS["member"]}`}
+                            title="Change role"
+                          >
+                            <option value="member">Member</option>
+                            <option value="author">Team Member</option>
+                            <option value="super_admin">Super Admin</option>
+                          </select>
+                        )}
+                      </td>
+
+                      {/* Deactivate / Reactivate */}
                       <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() =>
-                            toggleMut.mutate({ userId: m.id, is_active: !m.is_active })
-                          }
-                          disabled={toggleMut.isPending}
-                          className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-50 ${
-                            m.is_active
-                              ? "border-destructive/30 text-destructive hover:bg-destructive/10"
-                              : "border-green-500/30 text-green-600 hover:bg-green-500/10"
-                          }`}
-                        >
-                          {m.is_active ? "Deactivate" : "Reactivate"}
-                        </button>
+                        {pendingToggle === m.id ? (
+                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground px-3 py-1.5">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              toggleMut.mutate({ userId: m.id, is_active: !m.is_active })
+                            }
+                            disabled={toggleMut.isPending}
+                            className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-50 ${
+                              m.is_active
+                                ? "border-destructive/30 text-destructive hover:bg-destructive/10"
+                                : "border-green-500/30 text-green-600 hover:bg-green-500/10"
+                            }`}
+                          >
+                            {m.is_active ? "Deactivate" : "Reactivate"}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

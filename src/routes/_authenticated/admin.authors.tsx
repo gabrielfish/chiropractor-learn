@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { listAuthors, updateAuthorProfile } from "@/lib/authors.functions";
+import { setMemberActive } from "@/lib/members.functions";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { FileDropzone } from "@/components/FileDropzone";
 import { uploadAvatar } from "@/lib/storage";
 import { toast } from "sonner";
-import { Users, FileText, Pencil, Link2, Check } from "lucide-react";
+import { Users, FileText, Pencil, Link2, Check, UserX, UserCheck, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/authors")({
   head: () => ({ meta: [{ title: "Team Members — DCPG Admin" }] }),
@@ -30,15 +31,35 @@ type Author = {
   avatar_url: string | null;
   job_title: string | null;
   bio: string | null;
+  is_active: boolean;
   content_count: number;
 };
 
 function AuthorsPage() {
   const list = useServerFn(listAuthors);
   const update = useServerFn(updateAuthorProfile);
+  const toggleFn = useServerFn(setMemberActive);
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Author | null>(null);
   const [copied, setCopied] = useState(false);
+  const [pendingToggle, setPendingToggle] = useState<string | null>(null);
+
+  const toggleMut = useMutation({
+    mutationFn: (vars: { userId: string; is_active: boolean }) => {
+      setPendingToggle(vars.userId);
+      return toggleFn({ data: vars });
+    },
+    onSuccess: (_data, vars) => {
+      toast.success(
+        vars.is_active
+          ? "Team member reactivated"
+          : "Team member deactivated — content reassigned to Dr Ryan Rieder",
+      );
+      qc.invalidateQueries({ queryKey: ["admin", "authors"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+    onSettled: () => setPendingToggle(null),
+  });
 
   const handleCopyLink = async () => {
     const url = "https://learn.dcpracticegrowth.com/team-signup";
@@ -90,7 +111,10 @@ function AuthorsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {(authorsQ.data?.authors ?? []).map((a) => (
-              <div key={a.id} className="rounded-xl bg-card border border-border p-5 shadow-card">
+              <div
+                key={a.id}
+                className={`rounded-xl bg-card border border-border p-5 shadow-card transition-opacity ${!a.is_active ? "opacity-60" : ""}`}
+              >
                 <div className="flex items-start gap-4">
                   {a.avatar_url ? (
                     <img src={a.avatar_url} alt={a.full_name ?? ""} className="w-16 h-16 rounded-full object-cover border border-border" />
@@ -101,17 +125,47 @@ function AuthorsPage() {
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-display font-bold text-foreground truncate">{a.full_name ?? "Unnamed team member"}</h3>
-                      <Button size="sm" variant="ghost" onClick={() => setEditing(a)} className="text-muted-foreground hover:text-gold">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <h3 className="font-display font-bold text-foreground truncate">{a.full_name ?? "Unnamed team member"}</h3>
+                        {/* Active / Inactive badge */}
+                        <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          a.is_active ? "bg-green-500/15 text-green-600" : "bg-muted text-muted-foreground"
+                        }`}>
+                          {a.is_active
+                            ? <><UserCheck className="h-3 w-3" /> Active</>
+                            : <><UserX className="h-3 w-3" /> Inactive</>}
+                        </span>
+                      </div>
+                      <Button size="sm" variant="ghost" onClick={() => setEditing(a)} className="text-muted-foreground hover:text-gold shrink-0">
                         <Pencil className="h-4 w-4" />
                       </Button>
                     </div>
                     {a.job_title && <p className="text-sm text-gold font-medium">{a.job_title}</p>}
                     {a.email && <p className="text-xs text-muted-foreground truncate">{a.email}</p>}
                     {a.bio && <p className="text-sm text-foreground/80 mt-2 line-clamp-3">{a.bio}</p>}
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-3">
-                      <FileText className="h-3.5 w-3.5" />
-                      {a.content_count} {a.content_count === 1 ? "lesson" : "lessons"} published
+                    <div className="flex items-center justify-between mt-3">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <FileText className="h-3.5 w-3.5" />
+                        {a.content_count} {a.content_count === 1 ? "lesson" : "lessons"} published
+                      </div>
+                      {/* Deactivate / Reactivate */}
+                      {pendingToggle === a.id ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground px-2 py-1">
+                          <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => toggleMut.mutate({ userId: a.id, is_active: !a.is_active })}
+                          disabled={toggleMut.isPending}
+                          className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-50 ${
+                            a.is_active
+                              ? "border-destructive/30 text-destructive hover:bg-destructive/10"
+                              : "border-green-500/30 text-green-600 hover:bg-green-500/10"
+                          }`}
+                        >
+                          {a.is_active ? "Deactivate" : "Reactivate"}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

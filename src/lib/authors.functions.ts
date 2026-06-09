@@ -25,7 +25,7 @@ export const listAuthors = createServerFn({ method: "GET" })
 
     const { data: profiles } = await supabaseAdmin
       .from("profiles")
-      .select("id, full_name, email, avatar_url, job_title, bio")
+      .select("id, full_name, email, avatar_url, job_title, bio, is_active")
       .in("id", ids);
 
     const { data: counts } = await supabaseAdmin
@@ -46,6 +46,7 @@ export const listAuthors = createServerFn({ method: "GET" })
         avatar_url: p.avatar_url,
         job_title: p.job_title,
         bio: p.bio,
+        is_active: (p as { is_active?: boolean | null }).is_active ?? true,
         content_count: countMap.get(p.id) ?? 0,
       })),
     };

@@ -98,10 +98,63 @@ export const setMemberActive = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Toggle is_active on the profile
     const { error } = await supabaseAdmin
       .from("profiles")
       .update({ is_active: data.is_active } as Record<string, unknown>)
       .eq("id", data.userId);
     if (error) throw new Error(error.message);
+
+    // On deactivation: reassign all their content to 'Dr Ryan Rieder' so
+    // the portal still shows a valid author name for their published lessons.
+    if (!data.is_active) {
+      await supabaseAdmin
+        .from("content")
+        .update({ display_author_name: "Dr Ryan Rieder" } as Record<string, unknown>)
+        .eq("author_id", data.userId);
+    }
+
+    return { ok: true };
+  });
+
+// ---------------------------------------------------------------------------
+// Role management — super_admin can change any user's role
+// ---------------------------------------------------------------------------
+
+const roleSchema = z.object({
+  userId: z.string().uuid(),
+  role: z.enum(["member", "author", "super_admin"]),
+});
+
+export const setUserRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => roleSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // Only super_admins can change roles
+    const { data: callerRoles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    if (!(callerRoles ?? []).some((r) => r.role === "super_admin")) {
+      throw new Error("Forbidden");
+    }
+
+    // Prevent accidental self-demotion
+    if (data.userId === userId) {
+      throw new Error("You cannot change your own role");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Replace all existing role rows with the single new role
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: data.userId, role: data.role });
+    if (error) throw new Error(error.message);
+
     return { ok: true };
   });
