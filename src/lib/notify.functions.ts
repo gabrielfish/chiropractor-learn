@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-const FROM_ADDRESS = "noreply@dcpracticegrowth.com";
+const FROM_ADDRESS = "Ryan Rieder - DCPG Teaching Library <noreply@dcpracticegrowth.com>";
 const BASE_URL = "https://learn.dcpracticegrowth.com";
 
 function buildEmailHtml(opts: {
@@ -35,8 +35,8 @@ function buildEmailHtml(opts: {
           <!-- Header -->
           <tr>
             <td style="background:#0f172a;padding:32px 40px;text-align:center;">
-              <p style="margin:0;font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">DCPG Membership Portal</p>
-              <p style="margin:6px 0 0;font-size:13px;color:#c9a227;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Ryan Rieder's Teaching Library</p>
+              <img src="${BASE_URL}/dcpg-logo.png" alt="DCPG" width="150" style="display:block;margin:0 auto 16px;width:150px;max-width:150px;" />
+              <p style="margin:0;font-size:13px;color:#c9a227;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Ryan Rieder's Teaching Library</p>
             </td>
           </tr>
 
@@ -173,7 +173,7 @@ export const notifyContentPublished = createServerFn({ method: "POST" })
             resend.emails.send({
               from: FROM_ADDRESS,
               to: r.email as string,
-              subject: "New content just dropped on DCPG Portal",
+              subject: "New Teaching from Dr Ryan Rieder 🎓",
               html,
             }),
           ),
