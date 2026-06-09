@@ -128,12 +128,22 @@ export const notifyContentPublished = createServerFn({ method: "POST" })
       authorName = authorProfile?.full_name ?? null;
     }
 
-    // Fetch email-opted-in members
-    const { data: emailRecipients } = await supabaseAdmin
-      .from("profiles")
-      .select("id, email")
-      .eq("email_notifications", true)
-      .not("email", "is", null);
+    // Fetch user IDs that have role = 'member' only (never email admins/authors)
+    const { data: memberRoleRows } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "member");
+    const memberIds = (memberRoleRows ?? []).map((r) => r.user_id as string);
+
+    // Fetch profiles for those members that have email_notifications enabled
+    const { data: emailRecipients } = memberIds.length
+      ? await supabaseAdmin
+          .from("profiles")
+          .select("id, email")
+          .in("id", memberIds)
+          .eq("email_notifications", true)
+          .not("email", "is", null)
+      : { data: [] };
 
     const recipients = (emailRecipients ?? []).filter((r) => !!r.email);
     const emailCount = recipients.length;
