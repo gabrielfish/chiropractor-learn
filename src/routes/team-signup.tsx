@@ -78,8 +78,7 @@ function TeamSignupPage() {
         </Link>
 
         <div className="mb-8">
-          <div className="font-display text-4xl font-extrabold text-primary tracking-tight">DCPG</div>
-          <div className="font-display text-lg text-gold font-bold tracking-wide">Team Portal</div>
+          <img src="/dcpg-logo.png" alt="DCPG" style={{ height: 40 }} />
         </div>
 
         <div className="flex items-center gap-2 text-gold mb-2">

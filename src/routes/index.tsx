@@ -9,10 +9,10 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "DCPG Membership Portal — Ryan Rieder's Teaching Library for Chiropractors" },
-      { name: "description", content: "Access Ryan Rieder's complete chiropractic practice growth library. Search and watch unlimited video lessons, download proven resources, and grow your practice. Exclusively for DCPG members." },
+      { name: "description", content: "Access Ryan Rieder's complete chiropractic practice growth library. Search and watch unlimited video lessons, download proven resources, and grow your practice." },
       // Open Graph
-      { property: "og:title", content: "DCPG Membership Portal — Ryan Rieder's Teaching Library" },
-      { property: "og:description", content: "Unlimited access to Ryan Rieder's complete teaching library — videos, PDFs, books and tools built exclusively for chiropractors who want to grow." },
+      { property: "og:title", content: "DCPG Membership Portal — Ryan Rieder's Teaching Library for Chiropractors" },
+      { property: "og:description", content: "Access Ryan Rieder's complete chiropractic practice growth library. Search and watch unlimited video lessons, download proven resources, and grow your practice." },
       { property: "og:image", content: "https://learn.dcpracticegrowth.com/ryan-rieder.webp" },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
@@ -22,8 +22,8 @@ export const Route = createFileRoute("/")({
       { property: "og:site_name", content: "DCPG Membership Portal" },
       // Twitter / X
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "DCPG Membership Portal — Ryan Rieder's Teaching Library" },
-      { name: "twitter:description", content: "Unlimited access to Ryan Rieder's complete teaching library — videos, PDFs, books and tools built exclusively for chiropractors who want to grow." },
+      { name: "twitter:title", content: "DCPG Membership Portal — Ryan Rieder's Teaching Library for Chiropractors" },
+      { name: "twitter:description", content: "Access Ryan Rieder's complete chiropractic practice growth library. Search and watch unlimited video lessons, download proven resources, and grow your practice." },
       { name: "twitter:image", content: "https://learn.dcpracticegrowth.com/ryan-rieder.webp" },
       { name: "twitter:image:alt", content: "Ryan Rieder — DCPG Membership Portal" },
       // Canonical & robots
@@ -143,9 +143,8 @@ function LandingPage() {
       {/* Top nav */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-baseline gap-2">
-            <span className="font-display text-2xl font-extrabold text-primary tracking-tight">DCPG</span>
-            <span className="font-display text-sm text-gold font-bold tracking-wide hidden sm:inline">Membership Portal</span>
+          <Link to="/" className="flex items-center shrink-0">
+            <img src="/dcpg-logo.png" alt="DCPG" style={{ height: 40 }} />
           </Link>
 
           {/* Desktop nav */}
@@ -223,16 +222,14 @@ function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="relative text-primary-foreground overflow-hidden">
-        {/* Ryan's photo background */}
+      <section className="relative text-white overflow-hidden">
+        {/* Hero background image */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url('/ryan-rieder.webp')" }}
+          style={{ backgroundImage: "url('/hero.webp')" }}
           aria-hidden="true"
         />
-        {/* Dark navy overlay so text stays readable */}
-        <div className="absolute inset-0 bg-primary/85" aria-hidden="true" />
-        {/* Content sits above both layers */}
+        {/* Content sits above the image */}
         <div className="relative max-w-5xl mx-auto px-6 py-20 md:py-28 text-center">
           <div className="inline-block mb-6 px-3 py-1 rounded-full bg-gold/20 text-gold text-xs font-semibold tracking-wide uppercase">
             With Ryan Rieder

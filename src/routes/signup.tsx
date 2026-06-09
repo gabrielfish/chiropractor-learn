@@ -67,8 +67,7 @@ function SignupPage() {
         </Link>
 
         <div className="mb-8">
-          <div className="font-display text-4xl font-extrabold text-primary tracking-tight">DCPG</div>
-          <div className="font-display text-lg text-gold font-bold tracking-wide">Membership Portal</div>
+          <img src="/dcpg-logo.png" alt="DCPG" style={{ height: 40 }} />
         </div>
 
         <h1 className="font-display text-3xl md:text-4xl font-extrabold text-foreground leading-tight mb-2">

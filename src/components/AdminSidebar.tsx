@@ -19,8 +19,10 @@ export function AdminSidebar({ active }: { active: "content" | "analytics" | "au
   return (
     <aside className="w-60 bg-sidebar text-sidebar-foreground p-5 hidden md:flex flex-col shrink-0">
       <div className="mb-8">
-        <div className="font-display font-extrabold text-xl">DCPG Admin</div>
-        <div className="text-xs text-sidebar-foreground/60">Membership Portal</div>
+        <Link to="/" className="inline-block mb-2">
+          <img src="/dcpg-logo.png" alt="DCPG" style={{ height: 40 }} />
+        </Link>
+        <div className="text-xs text-sidebar-foreground/60">Admin Portal</div>
       </div>
       <nav className="flex-1 space-y-1">
         <Link to="/admin" className={`${itemBase} ${active === "content" ? itemActive : itemIdle}`}>

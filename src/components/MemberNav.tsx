@@ -22,9 +22,8 @@ export function MemberNav() {
   return (
     <header className="sticky top-0 z-30 bg-background/90 backdrop-blur border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
-        <Link to="/dashboard" className="flex items-baseline gap-1.5 shrink-0">
-          <span className="font-display font-extrabold text-primary text-xl">DCPG</span>
-          <span className="hidden sm:inline font-display font-bold text-gold text-xs uppercase tracking-wider">Portal</span>
+        <Link to="/dashboard" className="flex items-center shrink-0">
+          <img src="/dcpg-logo.png" alt="DCPG" style={{ height: 40 }} />
         </Link>
 
         <div className="flex-1" />
