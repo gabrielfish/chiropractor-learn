@@ -6,8 +6,14 @@ import { listMembers, setMemberActive, setUserRole } from "@/lib/members.functio
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Search, UserCheck, UserX, Link2, Check, Users, Loader2 } from "lucide-react";
+import { Search, UserCheck, UserX, Link2, Check, Users, Loader2, Copy, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/members")({
   head: () => ({ meta: [{ title: "Members — DCPG Admin" }] }),
@@ -83,7 +89,8 @@ function MembersPage() {
   const roleFn = useServerFn(setUserRole);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
-  const [inviteCopied, setInviteCopied] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   // Track which user's role select is pending
   const [pendingRole, setPendingRole] = useState<string | null>(null);
   const [pendingToggle, setPendingToggle] = useState<string | null>(null);
@@ -121,14 +128,13 @@ function MembersPage() {
     onSettled: () => setPendingRole(null),
   });
 
-  const handleCopyInvite = async () => {
-    const url = "https://learn.dcpracticegrowth.com/signup?invite=INNERCIRCLE";
+  const copyToClipboard = async (text: string, key: string) => {
     try {
-      await navigator.clipboard.writeText(url);
-      setInviteCopied(true);
-      setTimeout(() => setInviteCopied(false), 2000);
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(null), 2000);
     } catch {
-      toast.error("Failed to copy invite link");
+      toast.error("Failed to copy");
     }
   };
 
@@ -159,14 +165,10 @@ function MembersPage() {
             </p>
           </div>
           <Button
-            onClick={handleCopyInvite}
+            onClick={() => setInviteOpen(true)}
             className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold gap-2 self-start sm:self-auto"
           >
-            {inviteCopied ? (
-              <><Check className="h-4 w-4" /> Copied!</>
-            ) : (
-              <><Link2 className="h-4 w-4" /> Invite Member</>
-            )}
+            <Link2 className="h-4 w-4" /> Invite Member
           </Button>
         </div>
 
@@ -325,6 +327,113 @@ function MembersPage() {
           </div>
         )}
       </main>
+
+      {/* ── Invite Modal ──────────────────────────────────────────────── */}
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent className="max-w-lg p-0 overflow-hidden border-border bg-card">
+          {/* Header */}
+          <div className="bg-primary text-primary-foreground px-6 pt-6 pb-5">
+            <DialogHeader>
+              <DialogTitle className="font-display text-xl font-extrabold flex items-center gap-2">
+                <Link2 className="h-5 w-5 text-gold" /> Invite to the Portal
+              </DialogTitle>
+              <p className="text-sm text-primary-foreground/70 mt-1">
+                Share the right link for the right type of account.
+              </p>
+            </DialogHeader>
+          </div>
+
+          <div className="p-6 space-y-5">
+            {/* ── Section 1: Inner Circle Member ───────────────────────── */}
+            <div className="rounded-xl border-2 border-gold/30 bg-gold/5 p-5">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="rounded-lg bg-gold/15 text-gold p-1.5">
+                  <Users className="h-4 w-4" />
+                </div>
+                <h3 className="font-display font-bold text-foreground text-base">
+                  Invite an Inner Circle Member
+                </h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Share this link with Ryan's Inner Circle members to give them access.
+              </p>
+
+              {/* Link row */}
+              <div className="flex items-center gap-2 rounded-lg bg-background border border-border px-3 py-2 mb-3">
+                <span className="flex-1 text-xs text-foreground/80 font-mono truncate select-all">
+                  https://learn.dcpracticegrowth.com/signup?invite=INNERCIRCLE
+                </span>
+                <button
+                  onClick={() => copyToClipboard(
+                    "https://learn.dcpracticegrowth.com/signup?invite=INNERCIRCLE",
+                    "member-link",
+                  )}
+                  className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-gold text-gold-foreground hover:bg-gold/90 transition-colors"
+                >
+                  {copiedKey === "member-link" ? (
+                    <><Check className="h-3.5 w-3.5" /> Copied!</>
+                  ) : (
+                    <><Copy className="h-3.5 w-3.5" /> Copy Link</>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* ── Section 2: Team Member ────────────────────────────────── */}
+            <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-5">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="rounded-lg bg-primary/10 text-primary p-1.5">
+                  <ShieldCheck className="h-4 w-4" />
+                </div>
+                <h3 className="font-display font-bold text-foreground text-base">
+                  Invite a Team Member
+                </h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Share this link and access code with DCPG team members who need to upload content.
+              </p>
+
+              {/* Team signup link */}
+              <div className="flex items-center gap-2 rounded-lg bg-background border border-border px-3 py-2 mb-2">
+                <span className="flex-1 text-xs text-foreground/80 font-mono truncate select-all">
+                  https://learn.dcpracticegrowth.com/team-signup
+                </span>
+                <button
+                  onClick={() => copyToClipboard(
+                    "https://learn.dcpracticegrowth.com/team-signup",
+                    "team-link",
+                  )}
+                  className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  {copiedKey === "team-link" ? (
+                    <><Check className="h-3.5 w-3.5" /> Copied!</>
+                  ) : (
+                    <><Copy className="h-3.5 w-3.5" /> Copy Link</>
+                  )}
+                </button>
+              </div>
+
+              {/* Access code row */}
+              <div className="flex items-center gap-2 rounded-lg bg-background border border-border px-3 py-2">
+                <span className="text-xs text-muted-foreground mr-1 shrink-0">Access Code:</span>
+                <span className="flex-1 text-xs font-bold font-mono text-foreground tracking-widest select-all">
+                  DCPGTEAM
+                </span>
+                <button
+                  onClick={() => copyToClipboard("DCPGTEAM", "team-code")}
+                  className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  {copiedKey === "team-code" ? (
+                    <><Check className="h-3.5 w-3.5" /> Copied!</>
+                  ) : (
+                    <><Copy className="h-3.5 w-3.5" /> Copy Code</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
