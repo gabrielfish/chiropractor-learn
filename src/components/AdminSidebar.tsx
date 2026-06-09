@@ -3,6 +3,7 @@ import { Link, useRouteContext } from "@tanstack/react-router";
 import {
   LogOut,
   FileText,
+  Library,
   BarChart3,
   ExternalLink,
   Users,
@@ -16,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type AdminSection =
   | "content"
+  | "library"
   | "authors"
   | "members"
   | "analytics"
@@ -43,7 +45,8 @@ export function AdminSidebar({ active }: { active: AdminSection }) {
   // ── Super-admin nav items ──────────────────────────────────────────────
   type NavItem = { to: string; icon: React.ElementType; label: string; section: AdminSection };
   const superAdminItems: NavItem[] = [
-    { to: "/admin",               icon: FileText,  label: "Content",       section: "content" },
+    { to: "/admin",               icon: FileText,  label: "Upload",        section: "content" },
+    { to: "/admin/library",       icon: Library,   label: "Library",       section: "library" },
     { to: "/admin/authors",       icon: Users,     label: "Team Members",  section: "authors" },
     { to: "/admin/members",       icon: UserCheck, label: "Members",       section: "members" },
     { to: "/admin/analytics",     icon: BarChart3, label: "Analytics",     section: "analytics" },
@@ -52,7 +55,8 @@ export function AdminSidebar({ active }: { active: AdminSection }) {
   ];
 
   const authorItems: NavItem[] = [
-    { to: "/admin", icon: FileText, label: "My Content", section: "content" },
+    { to: "/admin",         icon: FileText, label: "Upload",  section: "content" },
+    { to: "/admin/library", icon: Library,  label: "Library", section: "library" },
   ];
 
   const navItems = isSuperAdmin ? superAdminItems : authorItems;
