@@ -13,7 +13,7 @@ export const Route = createFileRoute("/signup")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Sign up — DCPG Membership Portal" },
+      { title: "Sign up - DCPG Membership Portal" },
       { name: "description", content: "Activate your DCPG membership and access Ryan Rieder's complete chiropractic teaching library." },
     ],
   }),
@@ -37,11 +37,12 @@ function SignupPage() {
     if (password !== confirm) return toast.error("Passwords do not match");
 
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/login`,
+        // After clicking the confirmation link, land directly on the dashboard
+        emailRedirectTo: `${window.location.origin}/dashboard`,
         data: {
           full_name: fullName,
           phone: phone ?? null,
@@ -55,7 +56,18 @@ function SignupPage() {
       toast.error(error.message);
       return;
     }
-    navigate({ to: "/signup/confirm" });
+
+    if (data.session) {
+      // Email confirmation is disabled — user is already logged in
+      toast.success("Account created — welcome!");
+      navigate({ to: "/dashboard" });
+    } else {
+      // Email confirmation is enabled — send them to the confirmation holding page
+      navigate({
+        to: "/signup/confirm",
+        search: { email },
+      });
+    }
   };
 
   return (
@@ -117,7 +129,7 @@ function SignupPage() {
           </div>
 
           <Button type="submit" disabled={loading} className="w-full bg-gold text-gold-foreground hover:bg-gold/90 h-11 font-semibold">
-            {loading ? "Activating…" : "Activate My Account"}
+            {loading ? "Activating..." : "Activate My Account"}
           </Button>
         </form>
 
