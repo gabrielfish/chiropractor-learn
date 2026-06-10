@@ -370,54 +370,75 @@ function Dashboard() {
                 {
                   title: "Conversion Alchemy System",
                   desc: "Step-by-step what to say to patients so they pay without friction or hard sales tactics.",
+                  cover: "/ca.webp",
                 },
                 {
                   title: "New Patient Avalanche System",
                   desc: "How to grow a seven figure chiropractic practice from six figures or less.",
+                  cover: "/ss.webp",
                 },
                 {
                   title: "New Patient Retention System",
                   desc: "Your system to attract, retain and grow a loyal patient base that stays for life.",
+                  cover: "/ss.webp",
                 },
                 {
                   title: "Practice Growth Speaking Secrets",
                   desc: "How Ryan used live events and workshops to generate consistent high quality new patients.",
+                  cover: "/prs.png",
                 },
               ].map((book) => {
                 const match = booksQ.data?.find((b) => b.title === book.title);
-                const contentId = (match?.content as any)?.id ?? null;
+                const content = match?.content as any;
+                const contentId = content?.id ?? null;
+                const bookUrl = content?.book_url ?? null;
                 return (
                   <div
                     key={book.title}
-                    className="group relative rounded-xl bg-primary border border-primary/80 p-5 flex gap-4 items-start hover:border-gold/60 transition-all shadow-card"
+                    className="group relative rounded-xl bg-primary border border-primary/80 overflow-hidden hover:border-gold/60 transition-all shadow-card flex"
                   >
-                    {/* Gold book icon */}
-                    <div className="flex-none rounded-lg bg-gold/15 p-3 mt-0.5">
-                      <Icons.BookOpen className="h-6 w-6 text-gold" />
+                    {/* Book cover image */}
+                    <div className="w-28 sm:w-32 shrink-0 relative overflow-hidden">
+                      <img
+                        src={book.cover}
+                        alt={book.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-display font-extrabold text-primary-foreground text-base leading-tight mb-1">
-                        {book.title}
+                    <div className="flex-1 min-w-0 p-4 flex flex-col justify-between">
+                      <div>
+                        <div className="font-display font-extrabold text-primary-foreground text-sm leading-tight mb-1">
+                          {book.title}
+                        </div>
+                        <p className="text-xs text-primary-foreground/70 leading-relaxed">
+                          {book.desc}
+                        </p>
                       </div>
-                      <p className="text-sm text-primary-foreground/70 leading-relaxed mb-4">
-                        {book.desc}
-                      </p>
-                      {contentId ? (
-                        <Link to="/content/$id" params={{ id: contentId }}>
-                          <button className="inline-flex items-center gap-2 rounded-lg bg-gold text-gold-foreground font-semibold text-sm px-4 py-2 hover:bg-gold/90 transition-colors">
-                            <Icons.Download className="h-4 w-4" />
+                      <div className="mt-3">
+                        {bookUrl ? (
+                          <a
+                            href={bookUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 rounded-lg bg-gold text-gold-foreground font-semibold text-xs px-3 py-1.5 hover:bg-gold/90 transition-colors"
+                          >
+                            <Icons.Download className="h-3.5 w-3.5" />
                             Download Free Book
-                          </button>
-                        </Link>
-                      ) : (
-                        <button
-                          disabled
-                          className="inline-flex items-center gap-2 rounded-lg bg-gold/30 text-gold-foreground/50 font-semibold text-sm px-4 py-2 cursor-not-allowed"
-                        >
-                          <Icons.Download className="h-4 w-4" />
-                          Coming Soon
-                        </button>
-                      )}
+                          </a>
+                        ) : contentId ? (
+                          <Link to="/content/$id" params={{ id: contentId }}>
+                            <span className="inline-flex items-center gap-2 rounded-lg bg-gold text-gold-foreground font-semibold text-xs px-3 py-1.5 hover:bg-gold/90 transition-colors">
+                              <Icons.Download className="h-3.5 w-3.5" />
+                              Download Free Book
+                            </span>
+                          </Link>
+                        ) : (
+                          <span className="inline-flex items-center gap-2 rounded-lg bg-gold/30 text-gold-foreground/50 font-semibold text-xs px-3 py-1.5 cursor-not-allowed">
+                            <Icons.Download className="h-3.5 w-3.5" />
+                            Coming Soon
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

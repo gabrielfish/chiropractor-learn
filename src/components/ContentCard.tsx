@@ -1,6 +1,16 @@
 import { Link } from "@tanstack/react-router";
 import { Play, FileText, BookOpen, CheckCircle2 } from "lucide-react";
 
+/** Returns true if this item should open directly (PDF/Book) instead of navigating to the player page */
+function isDirectOpen(item: ContentCardData): boolean {
+  return item.content_type === "pdf" || item.content_type === "book" || (!item.video_url && (!!item.pdf_url || !!item.book_url));
+}
+
+/** The URL to open directly for PDF/Book items */
+function directUrl(item: ContentCardData): string {
+  return item.book_url ?? item.pdf_url ?? "";
+}
+
 export interface ContentCardData {
   id: string;
   title: string;
@@ -58,12 +68,13 @@ function ContentTypePlaceholder({ item }: { item: ContentCardData }) {
 }
 
 export function ContentCard({ item }: { item: ContentCardData }) {
-  return (
-    <Link
-      to="/content/$id"
-      params={{ id: item.id }}
-      className="group block rounded-xl overflow-hidden bg-card border border-border shadow-card hover:shadow-card-hover transition-all"
-    >
+  const direct = isDirectOpen(item);
+  const url = direct ? directUrl(item) : undefined;
+
+  const cardClass = "group block rounded-xl overflow-hidden bg-card border border-border shadow-card hover:shadow-card-hover transition-all";
+
+  const inner = (
+    <>
       <div className="aspect-video bg-muted relative overflow-hidden">
         {item.thumbnail_url ? (
           <img src={item.thumbnail_url} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
@@ -91,7 +102,6 @@ export function ContentCard({ item }: { item: ContentCardData }) {
           {item.title}
         </h3>
         {(item.display_author_name || item.author?.full_name) && (() => {
-          // display_author_name overrides the author's profile name when set
           const displayName = item.display_author_name || item.author?.full_name!;
           const avatarUrl = item.display_author_name ? null : item.author?.avatar_url;
           const jobTitle = item.display_author_name ? null : item.author?.job_title;
@@ -112,6 +122,24 @@ export function ContentCard({ item }: { item: ContentCardData }) {
           );
         })()}
       </div>
+    </>
+  );
+
+  if (direct && url) {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" className={cardClass}>
+        {inner}
+      </a>
+    );
+  }
+
+  return (
+    <Link
+      to="/content/$id"
+      params={{ id: item.id }}
+      className={cardClass}
+    >
+      {inner}
     </Link>
   );
 }
