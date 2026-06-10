@@ -27,7 +27,7 @@ function youtubeEmbed(url: string | null | undefined): string | null {
   // modestbranding=1 — hide YouTube wordmark in control bar
   // iv_load_policy=3 — disable video annotations
   // disablekb=0    — keep keyboard controls enabled for accessibility
-  return `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1&iv_load_policy=3&disablekb=0`;
+  return `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1`;
 }
 
 function isYoutube(url: string | null | undefined): boolean {
@@ -172,41 +172,12 @@ function ContentDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             {embed ? (
-              /*
-               * YouTube embed hardening:
-               * - Transparent overlay div sits on top of the iframe and intercepts
-               *   right-click (onContextMenu) to prevent "Open in YouTube" context menus.
-               * - pointer-events: none on the iframe itself means mouse events (including
-               *   the YouTube logo click-through) are absorbed by the overlay instead.
-               * - pointer-events: auto is restored on the overlay so the browser still
-               *   passes click/play/pause through to the embedded player via the iframe's
-               *   own controls (which YouTube renders inside the iframe document).
-               * Note: YouTube's own iframe API/controls are inside the sandboxed document
-               * and are unaffected — play/pause/seek/fullscreen all work normally.
-               */
-              <div
-                className="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-card"
-                style={{ position: "relative" }}
-                onContextMenu={(e) => e.preventDefault()}
-              >
-                {/* Transparent intercept layer — catches right-click and logo clicks */}
-                <div
-                  aria-hidden="true"
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    zIndex: 1,
-                    pointerEvents: "auto",
-                    background: "transparent",
-                  }}
-                  onContextMenu={(e) => e.preventDefault()}
-                />
+              <div className="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-card">
                 <iframe
                   src={embed}
                   title={item.title}
-                  allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
-                  style={{ pointerEvents: "none" }}
                   className="w-full h-full"
                 />
               </div>
@@ -283,6 +254,12 @@ function ContentDetail() {
                   </Button>
                 )}
               </div>
+              {(item as any).text_content && (
+                <div className="mt-6 rounded-xl bg-card border border-border p-5">
+                  <h3 className="font-display font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Notes & Resources</h3>
+                  <p className="text-foreground/80 text-sm leading-relaxed whitespace-pre-wrap">{(item as any).text_content}</p>
+                </div>
+              )}
             </div>
 
             {/* Comments */}

@@ -30,7 +30,7 @@ function youtubeEmbed(url: string | null | undefined): string | null {
   if (!url) return null;
   const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
   if (!m) return null;
-  return `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1&iv_load_policy=3&disablekb=0`;
+  return `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1`;
 }
 
 type ContentType = "video" | "pdf" | "text" | string;
@@ -363,65 +363,47 @@ function CoursePage() {
                 </p>
               )}
 
-              {/* Video player */}
-              {activeLesson.content_type === "video" && activeLesson.video_url && (
+              {/* Video — shown if video_url is set */}
+              {activeLesson.video_url && (
                 embed ? (
-                  <div
-                    className="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-card mb-6"
-                    style={{ position: "relative" }}
-                    onContextMenu={(e) => e.preventDefault()}
-                  >
-                    <div
-                      aria-hidden="true"
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        zIndex: 1,
-                        pointerEvents: "auto",
-                        background: "transparent",
-                      }}
-                      onContextMenu={(e) => e.preventDefault()}
-                    />
-                    <iframe
-                      src={embed}
-                      title={activeLesson.title}
-                      allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      style={{ pointerEvents: "none" }}
-                      className="w-full h-full"
-                    />
+                  <div className="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-card mb-6">
+                    <iframe src={embed} title={activeLesson.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen className="w-full h-full" />
                   </div>
                 ) : (
                   <div className="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-card mb-6">
-                    <video
-                      src={activeLesson.video_url}
-                      controls
-                      playsInline
-                      className="w-full h-full"
-                    />
+                    <video src={activeLesson.video_url} controls playsInline className="w-full h-full" />
                   </div>
                 )
               )}
 
-              {/* PDF viewer */}
-              {activeLesson.content_type === "pdf" && activeLesson.pdf_url && (
-                <div className="rounded-xl bg-card border border-border p-8 mb-6 flex flex-col items-center gap-4 text-center">
-                  <FileText className="h-12 w-12 text-gold" />
-                  <p className="text-muted-foreground text-sm">This lesson includes a PDF document.</p>
-                  <Button asChild className="bg-gold text-gold-foreground hover:bg-gold/90">
-                    <a href={activeLesson.pdf_url} target="_blank" rel="noopener noreferrer">
-                      <Download className="h-4 w-4 mr-2" /> Open PDF
-                    </a>
-                  </Button>
+              {/* PDF — shown if pdf_url is set regardless of content_type */}
+              {activeLesson.pdf_url && (
+                <div className="rounded-xl bg-card border border-border p-6 mb-6 flex flex-col sm:flex-row items-center gap-4">
+                  <FileText className="h-10 w-10 text-gold shrink-0" />
+                  <div className="flex-1 text-center sm:text-left">
+                    <p className="font-medium text-foreground mb-1">PDF Attachment</p>
+                    <p className="text-muted-foreground text-sm mb-3">Download the PDF resource for this lesson.</p>
+                    <Button asChild className="bg-gold text-gold-foreground hover:bg-gold/90">
+                      <a href={activeLesson.pdf_url} target="_blank" rel="noopener noreferrer">
+                        <Download className="h-4 w-4 mr-2" /> Open PDF
+                      </a>
+                    </Button>
+                  </div>
                 </div>
               )}
 
-              {/* Text content */}
-              {activeLesson.content_type === "text" && activeLesson.text_content && (
-                <div className="rounded-xl bg-card border border-border p-6 mb-6">
-                  <p className="text-foreground/80 text-sm leading-relaxed whitespace-pre-wrap">
-                    {activeLesson.text_content}
-                  </p>
+              {/* Text content — shown if text_content is set regardless of content_type */}
+              {activeLesson.text_content && (
+                <div className="rounded-xl bg-card border border-border p-5 mb-6">
+                  <h3 className="font-display font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Notes & Resources</h3>
+                  <p className="text-foreground/80 text-sm leading-relaxed whitespace-pre-wrap">{activeLesson.text_content}</p>
+                </div>
+              )}
+
+              {/* Fallback if nothing is set */}
+              {!activeLesson.video_url && !activeLesson.pdf_url && !activeLesson.text_content && (
+                <div className="aspect-video w-full rounded-xl bg-muted flex items-center justify-center mb-6">
+                  <p className="text-muted-foreground text-sm">No content added yet.</p>
                 </div>
               )}
 

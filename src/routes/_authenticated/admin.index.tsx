@@ -56,6 +56,7 @@ type LessonDraft = {
   id: string | null; localId: string; title: string;
   content_type: 'video' | 'pdf' | 'text'; video_url: string;
   pdf_url: string; text_content: string; description: string;
+  lessonVideoSource?: 'youtube' | 'upload';
 }
 type ModuleDraft = {
   id: string | null; localId: string; title: string;
@@ -301,7 +302,7 @@ function AdminPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const mkLesson = (): LessonDraft => ({ id: null, localId: 'new-' + (++_localIdCounter), title: '', content_type: 'video', video_url: '', pdf_url: '', text_content: '', description: '' })
+  const mkLesson = () => ({ id: null, localId: 'new-' + (++_localIdCounter), title: '', content_type: 'video' as const, video_url: '', pdf_url: '', text_content: '', description: '', lessonVideoSource: 'youtube' as const })
   const mkModule = (): ModuleDraft => ({ id: null, localId: 'mod-' + (++_localIdCounter), title: '', description: '', lessons: [mkLesson()] })
   const addMod = () => setCourseForm(f => ({ ...f, modules: [...f.modules, mkModule()] }))
   const removeMod = (i: number) => setCourseForm(f => ({ ...f, modules: f.modules.filter((_, x) => x !== i) }))
@@ -573,6 +574,16 @@ function AdminPage() {
                     }}
                   />
                 </div>
+                <div className="md:col-span-2 space-y-1.5">
+                  <Label>Notes & Text Content <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
+                  <Textarea
+                    rows={5}
+                    placeholder="Add supplementary notes, instructions, or text content that members will see alongside the video/PDF…"
+                    value={(form as any).text_content ?? ""}
+                    onChange={(e) => setForm({ ...form, text_content: e.target.value } as any)}
+                  />
+                  <p className="text-xs text-muted-foreground">This text appears below the video on the member lesson page.</p>
+                </div>
               </div>
               <div className="flex justify-end mt-5">
                 <Button
@@ -658,25 +669,41 @@ function AdminPage() {
                             <GripVertical className="h-4 w-4 text-muted-foreground mt-2.5 shrink-0" />
                             <div className="flex-1 space-y-2 min-w-0">
                               <Input placeholder={"Lesson " + (li + 1) + " title"} value={lesson.title} onChange={e => updateLesson(mi, li, { title: e.target.value })} />
-                              <div className="flex flex-wrap gap-2">
-                                <select className="h-9 rounded-md border border-input bg-background px-2 text-sm shrink-0"
-                                  value={lesson.content_type} onChange={e => updateLesson(mi, li, { content_type: e.target.value as 'video' | 'pdf' | 'text' })}>
-                                  <option value="video">Video</option>
-                                  <option value="pdf">PDF</option>
-                                  <option value="text">Text</option>
-                                </select>
-                                {lesson.content_type === 'video' && (
-                                  <Input className="flex-1 min-w-0" placeholder="YouTube URL or upload link" value={lesson.video_url} onChange={e => updateLesson(mi, li, { video_url: e.target.value })} />
-                                )}
-                                {lesson.content_type === 'pdf' && (
-                                  <div className="flex-1">
-                                    <FileDropzone label="Upload PDF" accept="application/pdf" uploaded={!!lesson.pdf_url} hint="PDF file"
-                                      onFile={async file => { try { const url = await uploadContentFile('pdf', file); updateLesson(mi, li, { pdf_url: url }); toast.success("PDF uploaded") } catch (e) { toast.error("Upload failed") } }} />
+                              <div className="space-y-2">
+                                {/* Video — YouTube URL or Upload toggle */}
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-2">
+                                    <div className="inline-flex rounded-md border border-border bg-muted p-0.5 text-xs">
+                                      <button type="button"
+                                        onClick={() => updateLesson(mi, li, { lessonVideoSource: 'youtube' } as any)}
+                                        className={"px-2.5 py-1 rounded " + (((lesson as any).lessonVideoSource ?? 'youtube') === 'youtube' ? "bg-card text-foreground shadow-sm font-medium" : "text-muted-foreground")}>
+                                        YouTube URL
+                                      </button>
+                                      <button type="button"
+                                        onClick={() => updateLesson(mi, li, { lessonVideoSource: 'upload', video_url: '' } as any)}
+                                        className={"px-2.5 py-1 rounded " + (((lesson as any).lessonVideoSource ?? 'youtube') === 'upload' ? "bg-card text-foreground shadow-sm font-medium" : "text-muted-foreground")}>
+                                        Upload File
+                                      </button>
+                                    </div>
                                   </div>
-                                )}
-                                {lesson.content_type === 'text' && (
-                                  <Textarea className="flex-1" rows={2} placeholder="Enter text content…" value={lesson.text_content} onChange={e => updateLesson(mi, li, { text_content: e.target.value })} />
-                                )}
+                                  {((lesson as any).lessonVideoSource ?? 'youtube') === 'youtube' ? (
+                                    <Input placeholder="YouTube URL (optional)" value={lesson.video_url} onChange={e => updateLesson(mi, li, { video_url: e.target.value })} />
+                                  ) : (
+                                    <div className="space-y-1">
+                                      <FileDropzone label="Upload video file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" uploaded={!!lesson.video_url} hint="MP4, MOV, or WebM"
+                                        onFile={async file => { try { const url = await uploadContentFile('video', file); updateLesson(mi, li, { video_url: url }); toast.success("Video uploaded") } catch(e) { toast.error("Upload failed") } }} />
+                                      {lesson.video_url && <p className="text-xs text-green-600">✓ Video uploaded</p>}
+                                    </div>
+                                  )}
+                                </div>
+                                {/* PDF attachment */}
+                                <div className="space-y-1">
+                                  <FileDropzone label="PDF attachment (optional)" accept="application/pdf" uploaded={!!lesson.pdf_url} hint="PDF file"
+                                    onFile={async file => { try { const url = await uploadContentFile('pdf', file); updateLesson(mi, li, { pdf_url: url }); toast.success("PDF uploaded") } catch(e) { toast.error("Upload failed") } }} />
+                                  {lesson.pdf_url && <p className="text-xs text-green-600">✓ PDF uploaded</p>}
+                                </div>
+                                {/* Text/notes */}
+                                <Textarea rows={2} placeholder="Notes or text content (optional)…" value={lesson.text_content} onChange={e => updateLesson(mi, li, { text_content: e.target.value })} />
                               </div>
                             </div>
                             <div className="flex flex-col gap-0.5 shrink-0">

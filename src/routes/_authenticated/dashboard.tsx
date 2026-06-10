@@ -31,6 +31,13 @@ function Dashboard() {
   const query = q?.trim() ?? "";
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [contentFilter, setContentFilter] = useState<'all' | 'lessons' | 'courses'>('all')
+  const [visibleLessonCount, setVisibleLessonCount] = useState(9)
+  const [visibleCourseCount, setVisibleCourseCount] = useState(9)
+
+  useEffect(() => {
+    setVisibleLessonCount(9)
+    setVisibleCourseCount(9)
+  }, [contentFilter, query])
 
   const categoriesQ = useQuery({
     queryKey: ["categories"],
@@ -69,7 +76,7 @@ function Dashboard() {
         }
         req = req.or(orParts.join(","));
       }
-      const { data, error } = await req.limit(24);
+      const { data, error } = await req.limit(100);
       if (error) throw error;
       const authorIds = Array.from(new Set((data ?? []).map((d) => d.author_id).filter(Boolean) as string[]));
       let authorsById = new Map<string, { full_name: string | null; avatar_url: string | null; job_title: string | null }>();
@@ -428,86 +435,92 @@ function Dashboard() {
               <span className="text-sm text-muted-foreground">({filteredCourses.length})</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredCourses.map(course => <CourseCard key={course.id} item={course} />)}
+              {filteredCourses.slice(0, visibleCourseCount).map(course => <CourseCard key={course.id} item={course} />)}
             </div>
+            {visibleCourseCount < filteredCourses.length && (
+              <div className="flex justify-center mt-6">
+                <button
+                  onClick={() => setVisibleCourseCount(n => n + 9)}
+                  className="px-6 py-2.5 rounded-full border-2 border-border hover:border-gold text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Load More ({filteredCourses.length - visibleCourseCount} remaining)
+                </button>
+              </div>
+            )}
           </section>
         )}
 
         {/* Content */}
-        {contentFilter !== 'courses' && <section>
-          <h2 className="font-display text-xl font-bold mb-4 flex items-center gap-2">
-            {query ? "Matching lessons" : "Recently added"}
-            {contentQ.isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-          </h2>
-          {contentQ.isLoading ? (
-            query ? (
+        {contentFilter !== 'courses' && (
+          <section>
+            <h2 className="font-display text-xl font-bold mb-4 flex items-center gap-2">
+              {query ? "Matching lessons" : "Recently added"}
+              {contentQ.isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+            </h2>
+            {contentQ.isLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="aspect-[16/12] rounded-xl bg-muted animate-pulse" />
                 ))}
               </div>
-            ) : (
-              <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 sm:-mx-1 px-4 sm:px-1">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex-none w-[85vw] sm:w-[320px] max-w-[320px] aspect-[16/12] rounded-xl bg-muted animate-pulse" />
-                ))}
-              </div>
-            )
-          ) : (contentQ.data ?? []).length === 0 ? (
-            query ? (
-              <div className="text-center py-12">
-                <button
-                  onClick={() => {
-                    searchInputRef.current?.focus();
-                    searchInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-                  }}
-                  className="mx-auto mb-6 w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center cursor-pointer hover:bg-primary/10 transition-colors"
-                  aria-label="Focus search bar"
-                >
-                  <Search className="h-8 w-8 text-gold" />
-                </button>
-                <h3 className="font-display text-xl font-bold text-foreground mb-2">
-                  No results for "{query}"
-                </h3>
-                <p className="text-muted-foreground max-w-md mx-auto mb-10">
-                  Try shorter keywords — for example search "new patient" instead of "how to get new patients"
-                </p>
-                <div className="text-left">
-                  <h4 className="font-display text-lg font-bold text-foreground mb-4">Browse by category instead</h4>
-                  <CategoryGrid categories={categoriesQ.data} categoryCounts={categoryCountsQ.data} />
-                  <div className="mt-6">
-                    <Link
-                      to="/dashboard"
-                      className="text-sm text-primary hover:text-gold transition-colors inline-flex items-center gap-1"
-                    >
-                      <span>←</span> Back to dashboard
-                    </Link>
+            ) : (contentQ.data ?? []).length === 0 ? (
+              query ? (
+                <div className="text-center py-12">
+                  <button
+                    onClick={() => {
+                      searchInputRef.current?.focus();
+                      searchInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }}
+                    className="mx-auto mb-6 w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center cursor-pointer hover:bg-primary/10 transition-colors"
+                    aria-label="Focus search bar"
+                  >
+                    <Search className="h-8 w-8 text-gold" />
+                  </button>
+                  <h3 className="font-display text-xl font-bold text-foreground mb-2">
+                    No results for "{query}"
+                  </h3>
+                  <p className="text-muted-foreground max-w-md mx-auto mb-10">
+                    Try shorter keywords — for example search "new patient" instead of "how to get new patients"
+                  </p>
+                  <div className="text-left">
+                    <h4 className="font-display text-lg font-bold text-foreground mb-4">Browse by category instead</h4>
+                    <CategoryGrid categories={categoriesQ.data} categoryCounts={categoryCountsQ.data} />
+                    <div className="mt-6">
+                      <Link
+                        to="/dashboard"
+                        className="text-sm text-primary hover:text-gold transition-colors inline-flex items-center gap-1"
+                      >
+                        <span>←</span> Back to dashboard
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="text-center py-16 rounded-xl bg-card border border-border">
-                <p className="text-muted-foreground">
-                  No content published yet. Check back soon.
-                </p>
-              </div>
-            )
-          ) : query ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {(contentQ.data ?? []).map((item) => (
-                <ContentCard key={item.id} item={item as never} />
-              ))}
-            </div>
-          ) : (
-            <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 sm:-mx-1 px-4 sm:px-1 snap-x snap-mandatory">
-              {(contentQ.data ?? []).slice(0, 3).map((item) => (
-                <div key={item.id} className="flex-none w-[85vw] sm:w-[320px] max-w-[320px] snap-start">
-                  <ContentCard item={item as never} />
+              ) : (
+                <div className="text-center py-16 rounded-xl bg-card border border-border">
+                  <p className="text-muted-foreground">No content published yet. Check back soon.</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </section>}
+              )
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {(contentQ.data ?? []).slice(0, visibleLessonCount).map((item) => (
+                    <ContentCard key={item.id} item={item as never} />
+                  ))}
+                </div>
+                {visibleLessonCount < (contentQ.data ?? []).length && (
+                  <div className="flex justify-center mt-6">
+                    <button
+                      onClick={() => setVisibleLessonCount(n => n + 9)}
+                      className="px-6 py-2.5 rounded-full border-2 border-border hover:border-gold text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Load More ({(contentQ.data ?? []).length - visibleLessonCount} remaining)
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </section>
+        )}
         </main>
       </div>
     </div>
