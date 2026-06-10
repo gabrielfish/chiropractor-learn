@@ -1,5 +1,20 @@
 import { Link } from "@tanstack/react-router";
-import { Play, FileText, BookOpen, CheckCircle2 } from "lucide-react";
+import { Play, FileText, BookOpen, CheckCircle2, Share2 } from "lucide-react";
+
+const BASE = "https://learn.dcpracticegrowth.com";
+
+async function copyContentLink(id: string, e: React.MouseEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+  try {
+    await navigator.clipboard.writeText(`${BASE}/content/${id}`);
+    // Quick visual feedback via title attribute on button — toast not available here
+    const btn = e.currentTarget as HTMLButtonElement;
+    const orig = btn.title;
+    btn.title = "Copied!";
+    setTimeout(() => { btn.title = orig; }, 1500);
+  } catch {/* ignore */}
+}
 
 /** Returns true if this item should open directly (PDF/Book) instead of navigating to the player page */
 function isDirectOpen(item: ContentCardData): boolean {
@@ -91,6 +106,16 @@ export function ContentCard({ item }: { item: ContentCardData }) {
             <CheckCircle2 className="h-4 w-4" />
           </div>
         )}
+        {/* Share button */}
+        <button
+          type="button"
+          title="Copy link"
+          onClick={(e) => copyContentLink(item.id, e)}
+          className="absolute bottom-2 right-2 h-7 w-7 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 focus:opacity-100"
+          aria-label="Copy link to this lesson"
+        >
+          <Share2 className="h-3.5 w-3.5" />
+        </button>
       </div>
       <div className="p-4">
         {item.category?.name && (

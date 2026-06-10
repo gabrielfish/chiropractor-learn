@@ -14,6 +14,9 @@ export const Route = createFileRoute("/login")({
       { name: "description", content: "Sign in to access Ryan Rieder's complete chiropractic teaching library." },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+  }),
   component: LoginPage,
 });
 
@@ -55,6 +58,7 @@ const TESTIMONIALS = [
 ];
 
 function LoginPage() {
+  const { redirect: redirectParam } = Route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -112,7 +116,9 @@ function LoginPage() {
     // Use window.location.href instead of navigate() to avoid TanStack Router's
     // AuthSync race: the SIGNED_IN event fires router.invalidate() which cancels
     // navigate() before it completes, leaving the user stuck on /login.
-    if (roleSet.has("super_admin") || roleSet.has("author")) {
+    if (redirectParam && redirectParam.startsWith("/")) {
+      window.location.href = redirectParam;
+    } else if (roleSet.has("super_admin") || roleSet.has("author")) {
       window.location.href = "/admin";
     } else {
       window.location.href = "/dashboard";
@@ -139,6 +145,13 @@ function LoginPage() {
           <p className="text-muted-foreground mb-8">
             Search unlimited courses, watch video lessons, download resources, and grow your practice.
           </p>
+
+          {redirectParam && (
+            <div className="mb-6 rounded-lg border border-gold/30 bg-gold/5 px-4 py-3 flex items-center gap-3">
+              <span className="text-gold text-lg">🔒</span>
+              <p className="text-sm text-foreground font-medium">Sign in to access this content</p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
