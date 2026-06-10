@@ -2,10 +2,12 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, GraduationCap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { MemberNav } from "@/components/MemberNav";
 import { ContentCard } from "@/components/ContentCard";
+import { CourseCard } from "@/components/CourseCard";
+import type { CourseCardData } from "@/components/CourseCard";
 import * as Icons from "lucide-react";
 import {
   Breadcrumb,
@@ -94,14 +96,15 @@ function Dashboard() {
   const booksQ = useQuery({
     queryKey: ["dashboard-books"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from("content")
         .select("id, title, book_url, book_name")
         .eq("status", "published")
         .eq("content_type", "book");
       if (error) throw error;
       // Index by lowercase title for fast lookup
-      const byTitle = new Map((data ?? []).map((d) => [d.title.toLowerCase().trim(), d]));
+      const byTitle = new Map((data ?? []).map((d: any) => [d.title.toLowerCase().trim(), d]));
       return BOOK_TITLES.map((title) => ({
         title,
         content: byTitle.get(title.toLowerCase()) ?? null,
@@ -127,6 +130,54 @@ function Dashboard() {
       return counts;
     },
   });
+
+  const coursesQ = useQuery({
+    queryKey: ["published-courses"],
+    queryFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any
+      const { data: courses, error } = await db
+        .from("courses")
+        .select("*, category:categories(name,slug)")
+        .eq("status", "published")
+        .order("created_at", { ascending: false })
+      if (error) throw error
+      if (!courses || courses.length === 0) return [] as CourseCardData[]
+
+      const courseIds = (courses as any[]).map((c: any) => c.id as string)
+
+      const [{ data: mods }, { data: lsns }] = await Promise.all([
+        db.from("course_modules").select("id,course_id").in("course_id", courseIds),
+        db.from("course_lessons").select("id,course_id").in("course_id", courseIds),
+      ])
+
+      const { data: { user } } = await supabase.auth.getUser()
+      const progressMap = new Map<string,number>()
+      if (user) {
+        const { data: prog } = await db.from("course_progress")
+          .select("course_id").in("course_id", courseIds).eq("user_id", user.id).eq("completed", true)
+        for (const p of (prog ?? []) as any[]) progressMap.set(p.course_id as string, (progressMap.get(p.course_id as string) ?? 0) + 1)
+      }
+
+      const modMap = new Map<string,number>()
+      const lsnMap = new Map<string,number>()
+      for (const m of (mods ?? []) as any[]) modMap.set(m.course_id as string, (modMap.get(m.course_id as string)??0)+1)
+      for (const l of (lsns ?? []) as any[]) lsnMap.set(l.course_id as string, (lsnMap.get(l.course_id as string)??0)+1)
+
+      return (courses as any[]).map((c: any) => ({
+        id: c.id as string,
+        title: c.title as string,
+        description: c.description as string|null,
+        thumbnail_url: c.thumbnail_url as string|null,
+        display_author_name: (c.display_author_name as string|null) ?? 'Dr Ryan Rieder',
+        category: c.category as {name:string|null;slug:string|null}|null,
+        module_count: modMap.get(c.id as string) ?? 0,
+        lesson_count: lsnMap.get(c.id as string) ?? 0,
+        completed_count: progressMap.get(c.id as string) ?? 0,
+        status: c.status as string,
+      } as CourseCardData))
+    }
+  })
 
   const matchedCategory = categoriesQ.data?.find(
     (c) => c.name.toLowerCase() === query.toLowerCase()
@@ -285,7 +336,7 @@ function Dashboard() {
                 },
               ].map((book) => {
                 const match = booksQ.data?.find((b) => b.title === book.title);
-                const contentId = match?.content?.id ?? null;
+                const contentId = (match?.content as any)?.id ?? null;
                 return (
                   <div
                     key={book.title}
@@ -323,6 +374,20 @@ function Dashboard() {
                 );
               })}
             </div>}
+          </section>
+        )}
+
+        {/* Courses */}
+        {!query && (coursesQ.data?.length ?? 0) > 0 && (
+          <section className="mb-10">
+            <div className="flex items-center gap-2 mb-5">
+              <GraduationCap className="h-5 w-5 text-gold" />
+              <h2 className="font-display text-xl font-bold">Courses</h2>
+              <span className="text-sm text-muted-foreground">({coursesQ.data!.length})</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {coursesQ.data!.map(course => <CourseCard key={course.id} item={course} />)}
+            </div>
           </section>
         )}
 

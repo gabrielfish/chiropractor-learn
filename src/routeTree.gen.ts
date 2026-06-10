@@ -20,8 +20,13 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedContentIdRouteImport } from './routes/_authenticated/content.$id'
+import { Route as AuthenticatedCourseIdRouteImport } from './routes/_authenticated/course.$id'
 import { Route as AuthenticatedAdminAuthorsRouteImport } from './routes/_authenticated/admin.authors'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
+import { Route as AuthenticatedAdminLibraryRouteImport } from './routes/_authenticated/admin.library'
+import { Route as AuthenticatedAdminMembersRouteImport } from './routes/_authenticated/admin.members'
+import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_authenticated/admin.notifications'
+import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin.settings'
 
 const TeamSignupRoute = TeamSignupRouteImport.update({
   id: '/team-signup',
@@ -77,6 +82,11 @@ const AuthenticatedContentIdRoute = AuthenticatedContentIdRouteImport.update({
   path: '/content/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCourseIdRoute = AuthenticatedCourseIdRouteImport.update({
+  id: '/course/$id',
+  path: '/course/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminAuthorsRoute =
   AuthenticatedAdminAuthorsRouteImport.update({
     id: '/authors',
@@ -87,6 +97,30 @@ const AuthenticatedAdminAnalyticsRoute =
   AuthenticatedAdminAnalyticsRouteImport.update({
     id: '/analytics',
     path: '/analytics',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminLibraryRoute =
+  AuthenticatedAdminLibraryRouteImport.update({
+    id: '/library',
+    path: '/library',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminMembersRoute =
+  AuthenticatedAdminMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminNotificationsRoute =
+  AuthenticatedAdminNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminSettingsRoute =
+  AuthenticatedAdminSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 
@@ -101,7 +135,12 @@ export interface FileRoutesByFullPath {
   '/signup/confirm': typeof SignupConfirmRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/authors': typeof AuthenticatedAdminAuthorsRoute
+  '/admin/library': typeof AuthenticatedAdminLibraryRoute
+  '/admin/members': typeof AuthenticatedAdminMembersRoute
+  '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
+  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/content/$id': typeof AuthenticatedContentIdRoute
+  '/course/$id': typeof AuthenticatedCourseIdRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -114,7 +153,12 @@ export interface FileRoutesByTo {
   '/signup/confirm': typeof SignupConfirmRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/authors': typeof AuthenticatedAdminAuthorsRoute
+  '/admin/library': typeof AuthenticatedAdminLibraryRoute
+  '/admin/members': typeof AuthenticatedAdminMembersRoute
+  '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
+  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/content/$id': typeof AuthenticatedContentIdRoute
+  '/course/$id': typeof AuthenticatedCourseIdRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
@@ -130,7 +174,12 @@ export interface FileRoutesById {
   '/signup/confirm': typeof SignupConfirmRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/authors': typeof AuthenticatedAdminAuthorsRoute
+  '/_authenticated/admin/library': typeof AuthenticatedAdminLibraryRoute
+  '/_authenticated/admin/members': typeof AuthenticatedAdminMembersRoute
+  '/_authenticated/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
+  '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/content/$id': typeof AuthenticatedContentIdRoute
+  '/_authenticated/course/$id': typeof AuthenticatedCourseIdRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -146,7 +195,12 @@ export interface FileRouteTypes {
     | '/signup/confirm'
     | '/admin/analytics'
     | '/admin/authors'
+    | '/admin/library'
+    | '/admin/members'
+    | '/admin/notifications'
+    | '/admin/settings'
     | '/content/$id'
+    | '/course/$id'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -159,7 +213,12 @@ export interface FileRouteTypes {
     | '/signup/confirm'
     | '/admin/analytics'
     | '/admin/authors'
+    | '/admin/library'
+    | '/admin/members'
+    | '/admin/notifications'
+    | '/admin/settings'
     | '/content/$id'
+    | '/course/$id'
     | '/admin'
   id:
     | '__root__'
@@ -174,7 +233,12 @@ export interface FileRouteTypes {
     | '/signup/confirm'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/authors'
+    | '/_authenticated/admin/library'
+    | '/_authenticated/admin/members'
+    | '/_authenticated/admin/notifications'
+    | '/_authenticated/admin/settings'
     | '/_authenticated/content/$id'
+    | '/_authenticated/course/$id'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -265,11 +329,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContentIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/course/$id': {
+      id: '/_authenticated/course/$id'
+      path: '/course/$id'
+      fullPath: '/course/$id'
+      preLoaderRoute: typeof AuthenticatedCourseIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/authors': {
       id: '/_authenticated/admin/authors'
       path: '/authors'
       fullPath: '/admin/authors'
       preLoaderRoute: typeof AuthenticatedAdminAuthorsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/library': {
+      id: '/_authenticated/admin/library'
+      path: '/library'
+      fullPath: '/admin/library'
+      preLoaderRoute: typeof AuthenticatedAdminLibraryRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/members': {
+      id: '/_authenticated/admin/members'
+      path: '/members'
+      fullPath: '/admin/members'
+      preLoaderRoute: typeof AuthenticatedAdminMembersRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/notifications': {
+      id: '/_authenticated/admin/notifications'
+      path: '/notifications'
+      fullPath: '/admin/notifications'
+      preLoaderRoute: typeof AuthenticatedAdminNotificationsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/settings': {
+      id: '/_authenticated/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AuthenticatedAdminSettingsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/analytics': {
@@ -285,12 +384,20 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminAuthorsRoute: typeof AuthenticatedAdminAuthorsRoute
+  AuthenticatedAdminLibraryRoute: typeof AuthenticatedAdminLibraryRoute
+  AuthenticatedAdminMembersRoute: typeof AuthenticatedAdminMembersRoute
+  AuthenticatedAdminNotificationsRoute: typeof AuthenticatedAdminNotificationsRoute
+  AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
   AuthenticatedAdminAuthorsRoute: AuthenticatedAdminAuthorsRoute,
+  AuthenticatedAdminLibraryRoute: AuthenticatedAdminLibraryRoute,
+  AuthenticatedAdminMembersRoute: AuthenticatedAdminMembersRoute,
+  AuthenticatedAdminNotificationsRoute: AuthenticatedAdminNotificationsRoute,
+  AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
@@ -302,6 +409,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedContentIdRoute: typeof AuthenticatedContentIdRoute
+  AuthenticatedCourseIdRoute: typeof AuthenticatedCourseIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -309,6 +417,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedContentIdRoute: AuthenticatedContentIdRoute,
+  AuthenticatedCourseIdRoute: AuthenticatedCourseIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

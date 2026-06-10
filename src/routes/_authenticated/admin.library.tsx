@@ -15,8 +15,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Library, Pencil, Archive, Trash2, RotateCcw, Search, Loader2 } from "lucide-react";
+import { Library, Pencil, Archive, Trash2, RotateCcw, Search, Loader2, GraduationCap } from "lucide-react";
 import { AdminSidebar } from "@/components/AdminSidebar";
+import { listAdminCourses, deleteCourse as deleteCourseServerFn } from "@/lib/courses.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/_authenticated/admin/library")({
   head: () => ({ meta: [{ title: "Library — DCPG Admin" }] }),
@@ -35,17 +37,37 @@ function LibraryPage() {
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
 
+  const listCoursesFn = useServerFn(listAdminCourses);
+  const deleteCourseServer = useServerFn(deleteCourseServerFn);
+  const [deleteCourseTarget, setDeleteCourseTarget] = useState<{ id: string; title: string } | null>(null);
+
+  const coursesQ = useQuery({
+    queryKey: ["admin", "courses"],
+    queryFn: () => listCoursesFn(),
+  });
+
+  const delCourseMut = useMutation({
+    mutationFn: (id: string) => deleteCourseServer({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Course deleted");
+      setDeleteCourseTarget(null);
+      qc.invalidateQueries({ queryKey: ["admin", "courses"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const contentQ = useQuery({
     queryKey: ["admin", "content", isAuthorOnly ? user.id : "all"],
     queryFn: async () => {
-      let q = supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let q = (supabase as any)
         .from("content")
         .select("*, category:categories(name)")
         .order("created_at", { ascending: false });
       if (isAuthorOnly) q = q.eq("author_id", user.id);
       const { data, error } = await q;
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 
@@ -295,10 +317,65 @@ function LibraryPage() {
               </div>
             </div>
           )}
+
+          {/* Course Library Section */}
+          <div className="mt-12">
+            <div className="flex items-center gap-2 mb-1">
+              <GraduationCap className="h-7 w-7 text-gold" />
+              <h1 className="font-display text-3xl font-extrabold">Course Library</h1>
+            </div>
+            <p className="text-muted-foreground mb-5">All courses with modules and lessons.</p>
+
+            {coursesQ.isLoading && (
+              <div className="space-y-2">{[1, 2].map(i => <div key={i} className="h-14 rounded-xl bg-muted animate-pulse" />)}</div>
+            )}
+
+            {!coursesQ.isLoading && (
+              <div className="rounded-xl bg-card border border-border overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm min-w-[500px]">
+                    <thead className="bg-muted">
+                      <tr className="text-left">
+                        <th className="px-4 py-3 font-medium">Title</th>
+                        <th className="px-4 py-3 font-medium">Category</th>
+                        <th className="px-4 py-3 font-medium">Structure</th>
+                        <th className="px-4 py-3 font-medium">Status</th>
+                        <th className="px-4 py-3 font-medium">Date</th>
+                        <th className="px-4 py-3 font-medium text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(coursesQ.data?.courses ?? []).map((c: { id: string; title: string; status: string; category_name: string | null; module_count: number; lesson_count: number; created_at: string }) => {
+                        const statusClass = c.status === 'published' ? 'bg-success/15 text-success' : c.status === 'archived' ? 'bg-gold/15 text-gold' : 'bg-muted text-muted-foreground';
+                        return (
+                          <tr key={c.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                            <td className="px-4 py-3 font-medium max-w-[200px]"><span className="block truncate" title={c.title}>{c.title}</span></td>
+                            <td className="px-4 py-3 text-muted-foreground">{c.category_name ?? '—'}</td>
+                            <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{c.module_count} modules • {c.lesson_count} lessons</td>
+                            <td className="px-4 py-3"><span className={"text-xs px-2 py-0.5 rounded-full capitalize " + statusClass}>{c.status}</span></td>
+                            <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">{new Date(c.created_at).toLocaleDateString()}</td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button type="button" variant="ghost" size="sm" onClick={() => { window.location.href = '/admin?editCourse=' + c.id; }} aria-label="Edit"><Pencil className="h-4 w-4" /></Button>
+                                {isSuperAdmin && <Button type="button" variant="ghost" size="sm" onClick={() => setDeleteCourseTarget({ id: c.id, title: c.title })} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {(coursesQ.data?.courses ?? []).length === 0 && (
+                        <tr><td colSpan={6} className="px-4 py-14 text-center text-muted-foreground">No courses yet. Create one from the Upload page.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </main>
 
-      {/* Delete confirmation */}
+      {/* Delete lesson confirmation */}
       <AlertDialog open={deleteTarget !== null} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -318,6 +395,26 @@ function LibraryPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {del.isPending ? "Deleting…" : "Delete permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete course confirmation */}
+      <AlertDialog open={deleteCourseTarget !== null} onOpenChange={o => { if (!o) setDeleteCourseTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete course?</AlertDialogTitle>
+            <AlertDialogDescription>Permanently delete "{deleteCourseTarget?.title}" and all its modules, lessons and member progress? This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={delCourseMut.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={delCourseMut.isPending}
+              onClick={e => { e.preventDefault(); if (deleteCourseTarget) delCourseMut.mutate(deleteCourseTarget.id); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {delCourseMut.isPending ? "Deleting…" : "Delete permanently"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
