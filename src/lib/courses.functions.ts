@@ -178,6 +178,7 @@ export const saveCourse = createServerFn({ method: "POST" })
             .from("course_lessons")
             .insert({
               module_id: moduleId,
+              course_id: courseId,
               title: lesson.title,
               description: lesson.description ?? null,
               content_type: lesson.content_type,
