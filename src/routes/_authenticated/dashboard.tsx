@@ -380,12 +380,12 @@ function Dashboard() {
                 {
                   title: "New Patient Retention System",
                   desc: "Your system to attract, retain and grow a loyal patient base that stays for life.",
-                  cover: "/ss.webp",
+                  cover: "/prs.png",
                 },
                 {
                   title: "Practice Growth Speaking Secrets",
                   desc: "How Ryan used live events and workshops to generate consistent high quality new patients.",
-                  cover: "/prs.PNG",
+                  cover: "/ss.webp",
                 },
               ].map((book) => {
                 const match = booksQ.data?.find((b) => b.title === book.title);
