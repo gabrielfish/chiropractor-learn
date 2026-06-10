@@ -85,7 +85,7 @@ function AdminPage() {
   const [addingCat, setAddingCat] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [savingCat, setSavingCat] = useState(false);
-  const [publishedModal, setPublishedModal] = useState<{ id: string; title: string } | null>(null);
+  const [publishedModal, setPublishedModal] = useState<{ id: string | null; title: string; contentUrl?: string } | null>(null);
 
   const [contentMode, setContentMode] = useState<'lesson' | 'course'>('lesson');
   const [courseForm, setCourseForm] = useState<CourseFormState>(emptyCourseForm);
@@ -328,12 +328,15 @@ function AdminPage() {
         }))
       }})
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       toast.success(editingCourseId ? "Course updated!" : "Course saved!")
       setCourseForm(emptyCourseForm)
       setEditingCourseId(null)
       setContentMode('lesson')
       qc.invalidateQueries({ queryKey: ["admin", "courses"] })
+      if (!editingCourseId && courseForm.status === 'published' && result?.courseId) {
+        setPublishedModal({ id: null, title: courseForm.title, contentUrl: `/course/${result.courseId}` })
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -710,6 +713,7 @@ function AdminPage() {
       <PublishNotificationModal
         open={publishedModal !== null}
         contentId={publishedModal?.id ?? null}
+        contentUrl={publishedModal?.contentUrl}
         title={publishedModal?.title ?? ""}
         onClose={() => setPublishedModal(null)}
       />

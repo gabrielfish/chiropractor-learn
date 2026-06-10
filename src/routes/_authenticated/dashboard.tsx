@@ -30,6 +30,7 @@ function Dashboard() {
   const { q } = Route.useSearch();
   const query = q?.trim() ?? "";
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [contentFilter, setContentFilter] = useState<'all' | 'lessons' | 'courses'>('all')
 
   const categoriesQ = useQuery({
     queryKey: ["categories"],
@@ -164,7 +165,7 @@ function Dashboard() {
       for (const m of (mods ?? []) as any[]) modMap.set(m.course_id as string, (modMap.get(m.course_id as string)??0)+1)
       for (const l of (lsns ?? []) as any[]) lsnMap.set(l.course_id as string, (lsnMap.get(l.course_id as string)??0)+1)
 
-      return (courses as any[]).map((c: any) => ({
+      const mapped = (courses as any[]).map((c: any) => ({
         id: c.id as string,
         title: c.title as string,
         description: c.description as string|null,
@@ -176,6 +177,8 @@ function Dashboard() {
         completed_count: progressMap.get(c.id as string) ?? 0,
         status: c.status as string,
       } as CourseCardData))
+      const seen = new Set<string>()
+      return mapped.filter((c: CourseCardData) => { if (seen.has(c.id)) return false; seen.add(c.id); return true; })
     }
   })
 
@@ -183,11 +186,50 @@ function Dashboard() {
     (c) => c.name.toLowerCase() === query.toLowerCase()
   );
 
+  const filteredCourses = (coursesQ.data ?? []).filter(c => {
+    if (!query) return true
+    if (matchedCategory) return c.category?.name?.toLowerCase() === matchedCategory.name.toLowerCase()
+    const q = query.toLowerCase()
+    return (c.title?.toLowerCase() ?? '').includes(q) || (c.description?.toLowerCase() ?? '').includes(q)
+  })
+
   return (
     <div className="min-h-screen bg-background">
       <MemberNav />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12 flex gap-8">
+        {/* Left filter panel — desktop only */}
+        <aside className="hidden lg:block w-48 shrink-0">
+          <div className="sticky top-6">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Filter</p>
+            <nav className="space-y-1">
+              {([
+                { key: 'all', label: 'All Content' },
+                { key: 'lessons', label: 'Single Lessons' },
+                { key: 'courses', label: 'Courses' },
+              ] as const).map(({ key, label }) => (
+                <button key={key} type="button" onClick={() => setContentFilter(key)}
+                  className={"w-full text-left px-3 py-2 rounded-lg text-sm transition-colors " + (contentFilter === key ? "bg-gold/10 text-gold font-semibold" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
+                  {label}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </aside>
+        <main className="flex-1 min-w-0">
+        {/* Mobile filter pills */}
+        <div className="lg:hidden flex gap-2 mb-6 overflow-x-auto pb-1 -mx-1 px-1">
+          {([
+            { key: 'all', label: 'All Content' },
+            { key: 'lessons', label: 'Lessons' },
+            { key: 'courses', label: 'Courses' },
+          ] as const).map(({ key, label }) => (
+            <button key={key} type="button" onClick={() => setContentFilter(key)}
+              className={"shrink-0 px-4 py-1.5 rounded-full text-sm font-medium border transition-colors " + (contentFilter === key ? "bg-gold text-gold-foreground border-gold" : "border-border text-muted-foreground hover:border-gold/40 hover:text-foreground")}>
+              {label}
+            </button>
+          ))}
+        </div>
         {matchedCategory && (
           <Breadcrumb className="mb-6">
             <BreadcrumbList>
@@ -228,7 +270,7 @@ function Dashboard() {
         )}
 
         {/* Categories */}
-        {!query && (
+        {!query && contentFilter !== 'courses' && (
           <section className="mb-12">
             <h2 className="font-display text-xl font-bold mb-4">Browse by category</h2>
             {categoriesQ.isLoading ? (
@@ -244,7 +286,7 @@ function Dashboard() {
         )}
 
         {/* Tools & Resources */}
-        {!query && (
+        {!query && contentFilter !== 'courses' && (
           <section className="mb-12">
             <h2 className="font-display text-xl font-bold mb-4">Tools & Resources</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -304,7 +346,7 @@ function Dashboard() {
         )}
 
         {/* Ryan's Books */}
-        {!query && (
+        {!query && contentFilter !== 'courses' && (
           <section className="mb-12">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-xl font-bold">Ryan's Books</h2>
@@ -378,21 +420,21 @@ function Dashboard() {
         )}
 
         {/* Courses */}
-        {!query && (coursesQ.data?.length ?? 0) > 0 && (
+        {contentFilter !== 'lessons' && filteredCourses.length > 0 && (
           <section className="mb-10">
             <div className="flex items-center gap-2 mb-5">
               <GraduationCap className="h-5 w-5 text-gold" />
               <h2 className="font-display text-xl font-bold">Courses</h2>
-              <span className="text-sm text-muted-foreground">({coursesQ.data!.length})</span>
+              <span className="text-sm text-muted-foreground">({filteredCourses.length})</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {coursesQ.data!.map(course => <CourseCard key={course.id} item={course} />)}
+              {filteredCourses.map(course => <CourseCard key={course.id} item={course} />)}
             </div>
           </section>
         )}
 
         {/* Content */}
-        <section>
+        {contentFilter !== 'courses' && <section>
           <h2 className="font-display text-xl font-bold mb-4 flex items-center gap-2">
             {query ? "Matching lessons" : "Recently added"}
             {contentQ.isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
@@ -465,8 +507,9 @@ function Dashboard() {
               ))}
             </div>
           )}
-        </section>
-      </main>
+        </section>}
+        </main>
+      </div>
     </div>
   );
 }

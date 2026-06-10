@@ -15,11 +15,13 @@ import { notifyContentPublished } from "@/lib/notify.functions";
 
 export function PublishNotificationModal({
   contentId,
+  contentUrl,
   title,
   open,
   onClose,
 }: {
   contentId: string | null;
+  contentUrl?: string;
   title: string;
   open: boolean;
   onClose: () => void;
@@ -28,9 +30,10 @@ export function PublishNotificationModal({
   const notify = useServerFn(notifyContentPublished);
 
   const url =
-    contentId && typeof window !== "undefined"
+    contentUrl ??
+    (contentId && typeof window !== "undefined"
       ? `${window.location.origin}/content/${contentId}`
-      : "";
+      : "");
 
   const notifyMut = useMutation({
     mutationFn: async () => {

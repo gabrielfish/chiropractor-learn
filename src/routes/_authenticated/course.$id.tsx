@@ -146,11 +146,11 @@ function CoursePage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("course_progress")
-        .select("lesson_id")
+        .select("course_lesson_id")
         .eq("user_id", user.id)
         .eq("course_id", courseId);
       if (error) throw error;
-      return new Set((data ?? []).map((r: { lesson_id: string }) => r.lesson_id));
+      return new Set((data ?? []).map((r: { course_lesson_id: string }) => r.course_lesson_id));
     },
     enabled: !!courseQ.data,
   });
@@ -189,8 +189,8 @@ function CoursePage() {
     mutationFn: async (lessonId: string) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any).from("course_progress").upsert(
-        { user_id: user.id, course_id: courseId, lesson_id: lessonId, completed_at: new Date().toISOString() },
-        { onConflict: "user_id,course_id,lesson_id" }
+        { user_id: user.id, course_id: courseId, course_lesson_id: lessonId, completed: true, completed_at: new Date().toISOString() },
+        { onConflict: "user_id,course_lesson_id" }
       );
       if (error) throw error;
     },
@@ -426,12 +426,12 @@ function CoursePage() {
               )}
 
               {/* Controls bar */}
-              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-border pt-6 mt-6">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-border pt-6 mt-6">
                 <Button
                   variant="outline"
                   disabled={!prevLesson}
                   onClick={() => prevLesson && setActiveLessonId(prevLesson.id)}
-                  className="gap-1.5"
+                  className="gap-1.5 w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm"
                 >
                   <ArrowLeft className="h-4 w-4" /> Previous
                 </Button>
@@ -461,7 +461,7 @@ function CoursePage() {
                   variant="outline"
                   disabled={!nextLesson}
                   onClick={() => nextLesson && setActiveLessonId(nextLesson.id)}
-                  className="gap-1.5"
+                  className="gap-1.5 w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm"
                 >
                   Next <ArrowRight className="h-4 w-4" />
                 </Button>

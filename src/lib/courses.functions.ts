@@ -64,6 +64,20 @@ export const saveCourse = createServerFn({ method: "POST" })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabaseAdmin = _supabaseAdmin as any;
 
+    // Duplicate title check for new courses
+    if (data.id === null) {
+      const { data: existing } = await supabaseAdmin
+        .from("courses")
+        .select("id")
+        .eq("author_id", userId)
+        .ilike("title", data.title.trim())
+        .limit(1)
+        .maybeSingle();
+      if (existing) {
+        throw new Error(`A course named "${data.title}" already exists. Edit it from the Library.`);
+      }
+    }
+
     // Upsert course
     let courseId: string;
     if (data.id === null) {
