@@ -375,7 +375,7 @@ function Dashboard() {
                 {
                   title: "New Patient Avalanche System",
                   desc: "How to grow a seven figure chiropractic practice from six figures or less.",
-                  cover: "/ss.webp",
+                  cover: "/npa.webp",
                 },
                 {
                   title: "New Patient Retention System",
@@ -385,7 +385,7 @@ function Dashboard() {
                 {
                   title: "Practice Growth Speaking Secrets",
                   desc: "How Ryan used live events and workshops to generate consistent high quality new patients.",
-                  cover: "/prs.png",
+                  cover: "/prs.PNG",
                 },
               ].map((book) => {
                 const match = booksQ.data?.find((b) => b.title === book.title);
