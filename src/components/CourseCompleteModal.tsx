@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import confetti from "canvas-confetti";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Facebook, Linkedin, Twitter, MessageCircle, Award } from "lucide-react";
+import { Facebook, Linkedin, Award } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -25,30 +25,19 @@ export function CourseCompleteModal({ open, onClose, courseTitle, certificateId 
   }, [open]);
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
-  const casualMsg = `I just completed ${courseTitle} taught by Ryan Rieder on the DCPG Membership Portal! #ChiropracticGrowth #DCPG`;
-  const shortMsg = `Just completed "${courseTitle}" with Ryan Rieder on the DCPG Membership Portal! #ChiropracticGrowth #DCPG`;
-  const proMsg = `Just completed ${courseTitle} — Ryan Rieder's chiropractic growth training. Highly recommend for any chiropractor looking to grow their practice. #Chiropractic #PracticeGrowth`;
+  const fbMsg = `I just completed "${courseTitle}" with Dr Ryan Rieder on the DCPG Membership Portal! #ChiropracticGrowth #DCPG`;
+  const liMsg = `Excited to share that I just completed "${courseTitle}" with Dr Ryan Rieder at DC Practice Growth! 🎓 Highly recommend for any chiropractor looking to grow their practice. #Chiropractic #PracticeGrowth #DCPracticeGrowth`;
 
   const shares = [
     {
       label: "Facebook",
       icon: Facebook,
-      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(casualMsg)}`,
-    },
-    {
-      label: "WhatsApp",
-      icon: MessageCircle,
-      href: `https://wa.me/?text=${encodeURIComponent(`${casualMsg} ${shareUrl}`)}`,
-    },
-    {
-      label: "X / Twitter",
-      icon: Twitter,
-      href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shortMsg)}&url=${encodeURIComponent(shareUrl)}`,
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(fbMsg)}`,
     },
     {
       label: "LinkedIn",
       icon: Linkedin,
-      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}&summary=${encodeURIComponent(proMsg)}`,
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}&summary=${encodeURIComponent(liMsg)}`,
     },
   ];
 
@@ -66,7 +55,7 @@ export function CourseCompleteModal({ open, onClose, courseTitle, certificateId 
 
         <div className="space-y-3 pt-2">
           <p className="text-center text-sm text-muted-foreground">Share your win</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2">
             {shares.map(({ label, icon: Icon, href }) => (
               <Button
                 key={label}

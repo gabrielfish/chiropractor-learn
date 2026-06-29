@@ -8,7 +8,7 @@ export const Route = createFileRoute("/certificate/$id")({
   head: () => ({
     meta: [
       { title: "Certificate of Completion — DCPG Membership Portal" },
-      { name: "description", content: "Certificate of Completion from Ryan Rieder's DCPG Membership Portal." },
+      { name: "description", content: "Certificate of Completion from Dr Ryan Rieder's DC Practice Growth Membership Portal." },
     ],
   }),
   component: CertificatePage,
@@ -55,21 +55,41 @@ function CertificatePage() {
 
   const cert = certQ.data;
   const certUrl = `${BASE_URL}/certificate/${cert.id}`;
-  const typeLabel = cert.type === "course" ? "Course" : "Category";
-  const linkedInMsg = `I just earned a ${typeLabel} Certificate for "${cert.reference_name}" from Ryan Rieder's DC Practice Growth Membership Portal! 🎓 #Chiropractic #PracticeGrowth #DCPG`;
+
+  const descPart = cert.reference_description
+    ? ` This course covers ${cert.reference_description}.`
+    : "";
+  const linkedInMsg = `Excited to share that I just completed "${cert.reference_name}" with Dr Ryan Rieder at DC Practice Growth! 🎓${descPart} Highly recommend for any chiropractor looking to grow their practice. #Chiropractic #PracticeGrowth #DCPracticeGrowth`;
   const linkedInHref = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(certUrl)}&summary=${encodeURIComponent(linkedInMsg)}`;
 
   return (
     <>
-      {/* Print-specific CSS */}
+      {/* Print / PDF CSS — hides all UI chrome, prints only the certificate */}
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          body { background: white !important; margin: 0; padding: 0; }
-          .cert-page { min-height: 100vh; background: white; display: flex; align-items: center; justify-content: center; }
-          .cert-wrap { box-shadow: none !important; }
+          html, body {
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          .cert-page {
+            min-height: unset !important;
+            background: white !important;
+            padding: 0 !important;
+            display: block !important;
+          }
+          .cert-wrap {
+            box-shadow: none !important;
+            max-width: 100% !important;
+            margin: 0 auto !important;
+            border-width: 8px !important;
+          }
         }
-        @page { size: A4 landscape; margin: 10mm; }
+        @page {
+          size: A4 landscape;
+          margin: 8mm;
+        }
       `}</style>
 
       {/* Action buttons — hidden on print */}
@@ -107,189 +127,106 @@ function CertificatePage() {
         <div
           className="cert-wrap w-full bg-white"
           style={{
-            maxWidth: 860,
-            boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
-            border: "10px solid #0f172a",
+            maxWidth: 880,
+            boxShadow: "0 24px 80px rgba(0,0,0,0.18)",
+            border: "12px solid #0f172a",
             outline: "3px solid #c9a227",
-            outlineOffset: "-18px",
-            padding: "64px 72px 56px",
+            outlineOffset: "-20px",
+            padding: "60px 72px 52px",
             fontFamily: "Georgia, 'Times New Roman', serif",
             position: "relative",
           }}
         >
           {/* Corner ornaments */}
-          {(["top-3 left-3", "top-3 right-3", "bottom-3 left-3", "bottom-3 right-3"] as const).map((pos, i) => (
+          {([
+            { cls: "top-4 left-4", t: 3, b: 0, l: 3, r: 0 },
+            { cls: "top-4 right-4", t: 3, b: 0, l: 0, r: 3 },
+            { cls: "bottom-4 left-4", t: 0, b: 3, l: 3, r: 0 },
+            { cls: "bottom-4 right-4", t: 0, b: 3, l: 0, r: 3 },
+          ]).map(({ cls, t, b, l, r }, i) => (
             <div
               key={i}
-              className={`absolute ${pos} w-8 h-8 border-[3px] border-[#c9a227]`}
+              className={`absolute ${cls} w-9 h-9`}
               style={{
-                borderRadius: 0,
-                borderTopWidth: pos.includes("top") ? 3 : 0,
-                borderBottomWidth: pos.includes("bottom") ? 3 : 0,
-                borderLeftWidth: pos.includes("left") ? 3 : 0,
-                borderRightWidth: pos.includes("right") ? 3 : 0,
+                borderColor: "#c9a227",
+                borderStyle: "solid",
+                borderTopWidth: t,
+                borderBottomWidth: b,
+                borderLeftWidth: l,
+                borderRightWidth: r,
               }}
             />
           ))}
 
           {/* Logo */}
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-5">
             <img
               src="/dcpg-logo.png"
               alt="DC Practice Growth"
-              style={{ height: 52, objectFit: "contain" }}
+              style={{ height: 54, objectFit: "contain" }}
             />
           </div>
 
           {/* Gold divider */}
-          <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #c9a227, transparent)", marginBottom: 28 }} />
+          <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #c9a227, transparent)", marginBottom: 24 }} />
 
           {/* Heading */}
-          <div className="text-center mb-8">
-            <p
-              style={{
-                fontFamily: "Georgia, serif",
-                fontSize: 13,
-                letterSpacing: "0.25em",
-                textTransform: "uppercase",
-                color: "#6b7280",
-                marginBottom: 12,
-              }}
-            >
+          <div className="text-center mb-6">
+            <p style={{ fontFamily: "Georgia, serif", fontSize: 12, letterSpacing: "0.3em", textTransform: "uppercase", color: "#9ca3af", marginBottom: 10 }}>
               DC Practice Growth
             </p>
-            <h1
-              style={{
-                fontFamily: "Georgia, 'Times New Roman', serif",
-                fontSize: 46,
-                fontWeight: 700,
-                color: "#c9a227",
-                lineHeight: 1.1,
-                marginBottom: 0,
-                letterSpacing: "-0.5px",
-              }}
-            >
+            <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 52, fontWeight: 800, color: "#c9a227", lineHeight: 1.05, margin: 0, letterSpacing: "-0.5px" }}>
               Certificate of Completion
             </h1>
           </div>
 
-          {/* Body text */}
-          <div className="text-center" style={{ marginBottom: 32 }}>
-            <p
-              style={{
-                fontStyle: "italic",
-                color: "#9ca3af",
-                fontSize: 18,
-                marginBottom: 18,
-              }}
-            >
+          {/* Body */}
+          <div className="text-center" style={{ marginBottom: 28 }}>
+            <p style={{ fontStyle: "italic", color: "#9ca3af", fontSize: 17, marginBottom: 14 }}>
               This certifies that
             </p>
 
-            {/* Member name */}
-            <p
-              style={{
-                fontFamily: "Cambria, Georgia, serif",
-                fontSize: 52,
-                fontWeight: 700,
-                color: "#0f172a",
-                lineHeight: 1.1,
-                marginBottom: 20,
-                letterSpacing: "-1px",
-              }}
-            >
+            {/* Member name — larger, bolder, more impressive */}
+            <p style={{ fontFamily: "Cambria, Georgia, serif", fontSize: 64, fontWeight: 900, color: "#0f172a", lineHeight: 1.05, marginBottom: 18, letterSpacing: "-2px" }}>
               {cert.user_name}
             </p>
 
-            <p
-              style={{
-                fontStyle: "italic",
-                color: "#9ca3af",
-                fontSize: 18,
-                marginBottom: 16,
-              }}
-            >
+            <p style={{ fontStyle: "italic", color: "#9ca3af", fontSize: 17, marginBottom: 14 }}>
               has successfully completed
             </p>
 
             {/* Course/category name */}
-            <p
-              style={{
-                fontFamily: "Cambria, Georgia, serif",
-                fontSize: 32,
-                fontWeight: 700,
-                color: "#c9a227",
-                lineHeight: 1.2,
-                marginBottom: 8,
-              }}
-            >
+            <p style={{ fontFamily: "Cambria, Georgia, serif", fontSize: 34, fontWeight: 700, color: "#c9a227", lineHeight: 1.2, marginBottom: 6 }}>
               {cert.reference_name}
             </p>
 
-            <p
-              style={{
-                fontSize: 14,
-                color: "#9ca3af",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                marginBottom: 24,
-              }}
-            >
+            <p style={{ fontSize: 13, color: "#9ca3af", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 20 }}>
               {cert.type === "course" ? "Online Course" : "Category Curriculum"}
             </p>
 
-            {/* Date */}
-            <p
-              style={{
-                fontSize: 15,
-                color: "#6b7280",
-              }}
-            >
+            <p style={{ fontSize: 15, color: "#6b7280" }}>
               Issued on{" "}
-              <span style={{ fontWeight: 600, color: "#0f172a" }}>{formatDate(cert.issued_at)}</span>
+              <span style={{ fontWeight: 700, color: "#0f172a" }}>{formatDate(cert.issued_at)}</span>
             </p>
           </div>
 
           {/* Gold divider */}
-          <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #c9a227, transparent)", marginBottom: 28 }} />
+          <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #c9a227, transparent)", marginBottom: 24 }} />
 
           {/* Signature line */}
           <div className="flex items-end justify-between">
             <div>
-              <div
-                style={{
-                  fontFamily: "Brush Script MT, cursive, Georgia, serif",
-                  fontSize: 38,
-                  color: "#0f172a",
-                  lineHeight: 1,
-                  marginBottom: 6,
-                  letterSpacing: "-0.5px",
-                }}
-              >
+              <div style={{ fontFamily: "Brush Script MT, cursive, Georgia, serif", fontSize: 40, color: "#0f172a", lineHeight: 1, marginBottom: 6 }}>
                 Dr Ryan Rieder
               </div>
-              <div style={{ width: 200, height: 1, background: "#0f172a", marginBottom: 4 }} />
+              <div style={{ width: 220, height: 1, background: "#0f172a", marginBottom: 4 }} />
               <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>Dr. Ryan Rieder</p>
               <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>DC Practice Growth</p>
             </div>
 
             <div className="text-right">
-              <div
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: "50%",
-                  border: "3px solid #c9a227",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginLeft: "auto",
-                  marginBottom: 4,
-                }}
-              >
-                <Award
-                  style={{ width: 32, height: 32, color: "#c9a227" }}
-                />
+              <div style={{ width: 76, height: 76, borderRadius: "50%", border: "3px solid #c9a227", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: "auto", marginBottom: 4 }}>
+                <Award style={{ width: 34, height: 34, color: "#c9a227" }} />
               </div>
               <p style={{ fontSize: 11, color: "#9ca3af", margin: 0 }}>Certificate ID</p>
               <p style={{ fontSize: 10, color: "#9ca3af", fontFamily: "monospace", margin: 0 }}>

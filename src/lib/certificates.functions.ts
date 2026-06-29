@@ -259,15 +259,25 @@ export const getCertificatePublic = createServerFn({ method: "POST" })
     const db = supabaseAdmin as any;
     const { data: cert, error } = await db
       .from("certificates")
-      .select("id, user_name, type, reference_name, issued_at")
+      .select("id, user_name, type, reference_name, reference_id, issued_at")
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw error;
-    return cert as {
-      id: string;
-      user_name: string;
-      type: string;
-      reference_name: string;
-      issued_at: string;
-    } | null;
+    if (!cert) return null;
+
+    // Fetch description from the referenced course or category for LinkedIn sharing
+    let referenceDescription: string | null = null;
+    if (cert.type === "course") {
+      const { data: course } = await db.from("courses").select("description").eq("id", cert.reference_id).maybeSingle();
+      referenceDescription = (course as { description?: string | null } | null)?.description ?? null;
+    }
+
+    return {
+      id: cert.id as string,
+      user_name: cert.user_name as string,
+      type: cert.type as string,
+      reference_name: cert.reference_name as string,
+      reference_description: referenceDescription,
+      issued_at: cert.issued_at as string,
+    };
   });

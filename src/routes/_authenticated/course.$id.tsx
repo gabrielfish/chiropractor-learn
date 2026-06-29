@@ -21,6 +21,7 @@ import {
   Loader2,
   Menu,
   X,
+  Award,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/course/$id")({
@@ -166,6 +167,25 @@ function CoursePage() {
     enabled: !!courseQ.data,
   });
 
+  // Query for existing course certificate (so View Certificate persists across sessions)
+  const completedCount0 = progressQ.data ? [...progressQ.data].length : 0;
+  const certQ = useQuery({
+    queryKey: ["course-cert", courseId, user.id],
+    queryFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from("certificates")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("type", "course")
+        .eq("reference_id", courseId)
+        .maybeSingle();
+      return (data as { id: string } | null)?.id ?? null;
+    },
+    enabled: !!progressQ.data && completedCount0 > 0,
+    staleTime: 60_000,
+  });
+
   // Flatten all lessons in order
   const allLessons = useMemo<Lesson[]>(() => {
     if (!courseQ.data) return [];
@@ -176,6 +196,9 @@ function CoursePage() {
   const totalLessons = allLessons.length;
   const completedCount = allLessons.filter((l) => completedIds.has(l.id)).length;
   const progressPct = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+  const isComplete = totalLessons > 0 && completedCount >= totalLessons;
+  // Use freshly-earned cert ID (from this session) or the one stored in DB
+  const displayCertificateId = earnedCertificateId ?? certQ.data ?? null;
 
   const activeLesson = useMemo<Lesson | null>(() => {
     if (!allLessons.length) return null;
@@ -455,6 +478,16 @@ function CoursePage() {
                         <CheckCircle2 className="h-4 w-4 mr-2" />
                       )}
                       {markComplete.isPending ? "Saving…" : "Mark as Complete"}
+                    </Button>
+                  )}
+                  {isComplete && displayCertificateId && (
+                    <Button
+                      variant="outline"
+                      className="border-gold text-gold hover:bg-gold/10 gap-1.5 w-full sm:w-auto"
+                      onClick={() => window.open(`/certificate/${displayCertificateId}`, "_blank")}
+                    >
+                      <Award className="h-4 w-4" />
+                      View My Certificate
                     </Button>
                   )}
                 </div>
