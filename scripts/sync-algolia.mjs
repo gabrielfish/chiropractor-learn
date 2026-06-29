@@ -54,9 +54,27 @@ async function supabaseFetch(path) {
 const { algoliasearch } = await import("algoliasearch");
 const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
 
+// Configure index: explicitly list searchable attributes so tags are always searched
+console.log("Configuring Algolia index settings…");
+await client.setSettings({
+  indexName: INDEX_NAME,
+  indexSettings: {
+    searchableAttributes: [
+      "title",
+      "description",
+      "tags",
+      "category_name",
+      "display_author_name",
+    ],
+    attributesForFaceting: ["category_name", "type", "content_type"],
+    customRanking: ["desc(type)"],
+  },
+});
+console.log("  → Index settings updated");
+
 console.log("Fetching published content from Supabase…");
 const contentRows = await supabaseFetch(
-  "content?select=id,title,description,content_type,thumbnail_url,video_url,pdf_url,book_url,tags,display_author_name&status=eq.published",
+  "content?select=id,title,description,content_type,thumbnail_url,video_url,pdf_url,book_url,tags,display_author_name,category_id&status=eq.published",
 );
 console.log(`  → ${contentRows.length} content items`);
 
