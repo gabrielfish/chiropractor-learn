@@ -14,6 +14,7 @@ import { Plus, Pencil, X, Loader2, GraduationCap, ChevronUp, ChevronDown, GripVe
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { PublishNotificationModal } from "@/components/PublishNotificationModal";
 import { saveCourse } from "@/lib/courses.functions";
+import { syncContentToAlgolia, syncCourseToAlgolia } from "@/lib/algolia-sync.functions";
 import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -92,6 +93,8 @@ function AdminPage() {
   const [courseForm, setCourseForm] = useState<CourseFormState>(emptyCourseForm);
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const saveCourseF = useServerFn(saveCourse);
+  const syncContentF = useServerFn(syncContentToAlgolia);
+  const syncCourseF = useServerFn(syncCourseToAlgolia);
 
   let _localIdCounter = 0;
 
@@ -295,6 +298,9 @@ function AdminPage() {
       resetForm();
       qc.invalidateQueries({ queryKey: ["admin", "content"] });
       qc.invalidateQueries({ queryKey: ["content"] });
+      if (newId) {
+        syncContentF({ data: { contentId: newId } }).catch(() => {});
+      }
       if (isNew && wasPublished && newId) {
         setPublishedModal({ id: newId, title: newTitle });
       }
@@ -331,10 +337,14 @@ function AdminPage() {
     },
     onSuccess: (result) => {
       toast.success(editingCourseId ? "Course updated!" : "Course saved!")
+      const savedCourseId = result?.courseId ?? editingCourseId
       setCourseForm(emptyCourseForm)
       setEditingCourseId(null)
       setContentMode('lesson')
       qc.invalidateQueries({ queryKey: ["admin", "courses"] })
+      if (savedCourseId) {
+        syncCourseF({ data: { courseId: savedCourseId } }).catch(() => {})
+      }
       if (!editingCourseId && courseForm.status === 'published' && result?.courseId) {
         setPublishedModal({ id: null, title: courseForm.title, contentUrl: `/course/${result.courseId}` })
       }

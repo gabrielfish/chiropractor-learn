@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Search, Loader2, GraduationCap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getSearchClient, ALGOLIA_INDEX, type AlgoliaHit } from "@/lib/algolia";
 import { MemberNav } from "@/components/MemberNav";
 import { ContentCard } from "@/components/ContentCard";
 import { CourseCard } from "@/components/CourseCard";
@@ -189,16 +190,54 @@ function Dashboard() {
     }
   })
 
+  const algoliaQ = useQuery({
+    queryKey: ["algolia-search", query],
+    enabled: !!query,
+    queryFn: async (): Promise<AlgoliaHit[] | null> => {
+      const client = getSearchClient();
+      if (!client) return null;
+      const res = await client.searchSingleIndex({
+        indexName: ALGOLIA_INDEX,
+        searchParams: { query, hitsPerPage: 50 },
+      });
+      return (res.hits ?? []) as AlgoliaHit[];
+    },
+  });
+
   const matchedCategory = categoriesQ.data?.find(
     (c) => c.name.toLowerCase() === query.toLowerCase()
   );
 
-  const filteredCourses = (coursesQ.data ?? []).filter(c => {
-    if (!query) return true
-    if (matchedCategory) return c.category?.name?.toLowerCase() === matchedCategory.name.toLowerCase()
-    const q = query.toLowerCase()
-    return (c.title?.toLowerCase() ?? '').includes(q) || (c.description?.toLowerCase() ?? '').includes(q)
-  })
+  // When Algolia returns results, use them. When no query, show everything from Supabase.
+  const algoliaHits = algoliaQ.data ?? null;
+  const usingAlgolia = !!query && algoliaHits !== null;
+
+  const algoliaContentHits: AlgoliaHit[] = usingAlgolia
+    ? algoliaHits.filter((h) => h.type === "content")
+    : [];
+  const algoliaCourseHits: AlgoliaHit[] = usingAlgolia
+    ? algoliaHits.filter((h) => h.type === "course")
+    : [];
+
+  const filteredCourses: CourseCardData[] = usingAlgolia
+    ? algoliaCourseHits.map((h) => ({
+        id: h.id,
+        title: h.title,
+        description: h.description ?? null,
+        thumbnail_url: h.thumbnail_url ?? null,
+        display_author_name: h.display_author_name ?? "Dr Ryan Rieder",
+        category: h.category_name ? { name: h.category_name, slug: h.category_slug ?? null } : null,
+        module_count: 0,
+        lesson_count: 0,
+        completed_count: 0,
+        status: "published",
+      }))
+    : (coursesQ.data ?? []).filter(c => {
+        if (!query) return true
+        if (matchedCategory) return c.category?.name?.toLowerCase() === matchedCategory.name.toLowerCase()
+        const lq = query.toLowerCase()
+        return (c.title?.toLowerCase() ?? '').includes(lq) || (c.description?.toLowerCase() ?? '').includes(lq)
+      })
 
   return (
     <div className="min-h-screen bg-background">
@@ -271,7 +310,9 @@ function Dashboard() {
           <h2 className="font-display text-2xl font-bold mb-6">
             Results for "{query}"{" "}
             <span className="text-muted-foreground font-normal text-base">
-              ({contentQ.data?.length ?? 0})
+              ({usingAlgolia
+                ? algoliaHits!.length
+                : (contentQ.data?.length ?? 0) + filteredCourses.length})
             </span>
           </h2>
         )}
@@ -476,15 +517,15 @@ function Dashboard() {
           <section>
             <h2 className="font-display text-xl font-bold mb-4 flex items-center gap-2">
               {query ? "Matching lessons" : "Recently added"}
-              {contentQ.isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+              {(contentQ.isLoading || algoliaQ.isLoading) && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
             </h2>
-            {contentQ.isLoading ? (
+            {(usingAlgolia ? algoliaQ.isLoading : contentQ.isLoading) ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="aspect-[16/12] rounded-xl bg-muted animate-pulse" />
                 ))}
               </div>
-            ) : (contentQ.data ?? []).length === 0 ? (
+            ) : (usingAlgolia ? algoliaContentHits : (contentQ.data ?? [])).length === 0 ? (
               query ? (
                 <div className="text-center py-12">
                   <button
@@ -524,20 +565,37 @@ function Dashboard() {
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {(contentQ.data ?? []).slice(0, visibleLessonCount).map((item) => (
+                  {(usingAlgolia
+                    ? algoliaContentHits.map((h) => ({
+                        id: h.id,
+                        title: h.title,
+                        description: h.description ?? null,
+                        thumbnail_url: h.thumbnail_url ?? null,
+                        video_url: h.video_url ?? null,
+                        pdf_url: h.pdf_url ?? null,
+                        book_url: h.book_url ?? null,
+                        content_type: h.content_type ?? null,
+                        display_author_name: h.display_author_name ?? null,
+                        category: h.category_name ? { name: h.category_name, slug: h.category_slug ?? null } : null,
+                      }))
+                    : (contentQ.data ?? [])
+                  ).slice(0, visibleLessonCount).map((item) => (
                     <ContentCard key={item.id} item={item as never} />
                   ))}
                 </div>
-                {visibleLessonCount < (contentQ.data ?? []).length && (
-                  <div className="flex justify-center mt-6">
-                    <button
-                      onClick={() => setVisibleLessonCount(n => n + 9)}
-                      className="px-6 py-2.5 rounded-full border-2 border-border hover:border-gold text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      Load More ({(contentQ.data ?? []).length - visibleLessonCount} remaining)
-                    </button>
-                  </div>
-                )}
+                {(() => {
+                  const total = usingAlgolia ? algoliaContentHits.length : (contentQ.data ?? []).length;
+                  return visibleLessonCount < total ? (
+                    <div className="flex justify-center mt-6">
+                      <button
+                        onClick={() => setVisibleLessonCount(n => n + 9)}
+                        className="px-6 py-2.5 rounded-full border-2 border-border hover:border-gold text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Load More ({total - visibleLessonCount} remaining)
+                      </button>
+                    </div>
+                  ) : null;
+                })()}
               </>
             )}
           </section>
