@@ -1,5 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { MemberNav } from "@/components/MemberNav";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { CheckCircle2, Download, FileText, Book, ArrowLeft, Loader2 } from "luci
 import { useState } from "react";
 import { toast } from "sonner";
 import { LessonCompleteModal } from "@/components/LessonCompleteModal";
+import { checkAndIssueCategory } from "@/lib/certificates.functions";
 
 export const Route = createFileRoute("/_authenticated/content/$id")({
   head: () => ({ meta: [{ title: "Lesson — DCPG Membership Portal" }] }),
@@ -40,6 +42,7 @@ function ContentDetail() {
   const qc = useQueryClient();
   const [commentBody, setCommentBody] = useState("");
   const [celebrateOpen, setCelebrateOpen] = useState(false);
+  const checkAndIssueCategoryF = useServerFn(checkAndIssueCategory);
 
   const contentQ = useQuery({
     queryKey: ["content", id],
@@ -96,6 +99,22 @@ function ContentDetail() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["progress", id, user.id] });
       setCelebrateOpen(true);
+      checkAndIssueCategoryF({ data: { contentId: id } })
+        .then((result) => {
+          if (result?.issued && result?.certificateId) {
+            toast.success(
+              `🎓 Category Certificate earned! View →`,
+              {
+                action: {
+                  label: "View",
+                  onClick: () => window.open(`/certificate/${result.certificateId}`, "_blank"),
+                },
+                duration: 8000,
+              }
+            );
+          }
+        })
+        .catch(() => {});
     },
     onError: (e: Error) => toast.error(e.message),
   });

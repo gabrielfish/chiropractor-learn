@@ -1,16 +1,18 @@
 import { useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import confetti from "canvas-confetti";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Facebook, Linkedin, Twitter, MessageCircle } from "lucide-react";
+import { Facebook, Linkedin, Twitter, MessageCircle, Award } from "lucide-react";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   courseTitle: string;
+  certificateId?: string | null;
 }
 
-export function CourseCompleteModal({ open, onClose, courseTitle }: Props) {
+export function CourseCompleteModal({ open, onClose, courseTitle, certificateId }: Props) {
   useEffect(() => {
     if (!open) return;
     const end = Date.now() + 1200;
@@ -23,6 +25,7 @@ export function CourseCompleteModal({ open, onClose, courseTitle }: Props) {
     confetti({ particleCount: 120, spread: 90, origin: { y: 0.6 }, colors });
   }, [open]);
 
+  const navigate = useNavigate();
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const casualMsg = `I just completed ${courseTitle} taught by Ryan Rieder on the DCPG Membership Portal! #ChiropracticGrowth #DCPG`;
   const shortMsg = `Just completed "${courseTitle}" with Ryan Rieder on the DCPG Membership Portal! #ChiropracticGrowth #DCPG`;
@@ -79,8 +82,18 @@ export function CourseCompleteModal({ open, onClose, courseTitle }: Props) {
               </Button>
             ))}
           </div>
+          {certificateId && (
+            <Button
+              onClick={() => navigate({ to: `/certificate/${certificateId}` })}
+              variant="outline"
+              className="w-full border-gold text-gold hover:bg-gold/10 gap-2"
+            >
+              <Award className="h-4 w-4" />
+              View Certificate
+            </Button>
+          )}
           <Button
-            onClick={() => { window.location.href = '/dashboard'; }}
+            onClick={() => navigate({ to: "/dashboard" })}
             className="w-full bg-gold text-gold-foreground hover:bg-gold/90 mt-2"
           >
             Back to Dashboard

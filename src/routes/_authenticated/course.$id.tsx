@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect, useMemo } from "react";
+import { checkAndIssueCourse } from "@/lib/certificates.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { MemberNav } from "@/components/MemberNav";
 import { CourseCompleteModal } from "@/components/CourseCompleteModal";
@@ -80,6 +82,8 @@ function CoursePage() {
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [courseCompleteOpen, setCourseCompleteOpen] = useState(false);
+  const [earnedCertificateId, setEarnedCertificateId] = useState<string | null>(null);
+  const checkAndIssueCourseF = useServerFn(checkAndIssueCourse);
 
   // Main course data query
   const courseQ = useQuery<CourseData>({
@@ -199,7 +203,12 @@ function CoursePage() {
       // Check if all lessons will be complete after this
       const newCompletedCount = completedCount + (completedIds.has(lessonId) ? 0 : 1);
       if (newCompletedCount >= totalLessons) {
-        setCourseCompleteOpen(true);
+        checkAndIssueCourseF({ data: { courseId } })
+          .then((result) => {
+            if (result?.certificateId) setEarnedCertificateId(result.certificateId);
+          })
+          .catch(() => {})
+          .finally(() => setCourseCompleteOpen(true));
       } else if (nextLesson) {
         setActiveLessonId(nextLesson.id);
       }
@@ -458,6 +467,7 @@ function CoursePage() {
           open={courseCompleteOpen}
           onClose={() => setCourseCompleteOpen(false)}
           courseTitle={course.title}
+          certificateId={earnedCertificateId}
         />
       )}
     </div>

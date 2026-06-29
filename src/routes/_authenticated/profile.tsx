@@ -27,6 +27,8 @@ import {
   submitSupportRequest,
   sendPasswordReset,
 } from "@/lib/profile.functions";
+import { getMyCertificates } from "@/lib/certificates.functions";
+import { Award, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({ meta: [{ title: "Profile — DCPG Membership Portal" }] }),
@@ -50,8 +52,10 @@ function ProfilePage() {
   const saveNotifs = useServerFn(updateNotifications);
   const submitSupport = useServerFn(submitSupportRequest);
   const resetPassword = useServerFn(sendPasswordReset);
+  const fetchCertificates = useServerFn(getMyCertificates);
 
   const profileQ = useQuery({ queryKey: ["my-profile"], queryFn: () => fetchProfile() });
+  const certsQ = useQuery({ queryKey: ["my-certificates"], queryFn: () => fetchCertificates() });
 
   // Edit profile state
   const [fullName, setFullName] = useState("");
@@ -282,6 +286,63 @@ function ProfilePage() {
             </div>
           </Section>
         </form>
+
+        {/* My Certificates */}
+        <div className="mt-8">
+          <Section title="My Certificates" description="Certificates you have earned by completing courses and categories.">
+            {certsQ.isLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading certificates…
+              </div>
+            )}
+            {!certsQ.isLoading && (!certsQ.data || certsQ.data.length === 0) && (
+              <div className="flex flex-col items-center gap-3 py-8 text-center">
+                <Award className="h-10 w-10 text-gold/30" />
+                <p className="text-sm text-muted-foreground">No certificates yet. Complete a course or category to earn one.</p>
+              </div>
+            )}
+            {certsQ.data && certsQ.data.length > 0 && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {certsQ.data.map((cert) => (
+                  <div
+                    key={cert.id}
+                    className="flex items-start gap-3 rounded-lg border border-gold/20 bg-card p-4"
+                  >
+                    <Award className="h-6 w-6 shrink-0 text-gold mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-foreground truncate">{cert.reference_name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {cert.type === "course" ? "Course" : "Category"} · {new Date(cert.issued_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+                      </p>
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs border-gold/40 text-gold hover:bg-gold/10"
+                        >
+                          <a href={`/certificate/${cert.id}`} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-3 w-3 mr-1" /> View
+                          </a>
+                        </Button>
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs border-border text-muted-foreground hover:bg-muted"
+                        >
+                          <a href={`/certificate/${cert.id}`} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.preventDefault(); const win = window.open(`/certificate/${cert.id}`, "_blank"); win?.addEventListener("load", () => win.print()); }}>
+                            Download PDF
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+        </div>
       </main>
     </div>
   );
