@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect, useMemo } from "react";
-import { checkAndIssueCourse } from "@/lib/certificates.functions";
+import { checkAndIssueCourse, debugCourseProgress } from "@/lib/certificates.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { MemberNav } from "@/components/MemberNav";
 import { CourseCompleteModal } from "@/components/CourseCompleteModal";
@@ -84,6 +84,13 @@ function CoursePage() {
   const [courseCompleteOpen, setCourseCompleteOpen] = useState(false);
   const [earnedCertificateId, setEarnedCertificateId] = useState<string | null>(null);
   const checkAndIssueCourseF = useServerFn(checkAndIssueCourse);
+  const debugCourseProgressF = useServerFn(debugCourseProgress);
+
+  // Expose debug helper to browser console: window.__debugCert()
+  useEffect(() => {
+    (window as any).__debugCert = () =>
+      debugCourseProgressF({ data: { courseId } }).then((r) => { console.log("[debugCert]", r); return r; });
+  }, [courseId, debugCourseProgressF]);
 
   // Main course data query
   const courseQ = useQuery<CourseData>({

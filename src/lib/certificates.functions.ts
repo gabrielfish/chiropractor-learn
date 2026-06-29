@@ -42,52 +42,64 @@ export const checkAndIssueCourse = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    console.log("[cert:course] START — userId:", userId, "courseId:", data.courseId);
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabaseAdmin as any;
 
-    // Get user's display name for the certificate
-    const { data: profile } = await supabaseAdmin
+    // Get user's display name
+    const { data: profile, error: profileErr } = await supabaseAdmin
       .from("profiles")
       .select("full_name")
       .eq("id", userId)
       .maybeSingle();
+    if (profileErr) console.error("[cert:course] profile fetch error:", profileErr);
     const userName = (profile as { full_name?: string | null } | null)?.full_name ?? "Member";
+    console.log("[cert:course] userName:", userName);
 
-    // Get course title
-    const { data: course } = await db.from("courses").select("id,title").eq("id", data.courseId).single();
-    if (!course) return { issued: false, certificateId: null };
+    // Get course
+    const { data: course, error: courseErr } = await db
+      .from("courses").select("id,title").eq("id", data.courseId).single();
+    if (courseErr) console.error("[cert:course] course fetch error:", courseErr);
+    if (!course) { console.log("[cert:course] course not found — aborting"); return { issued: false, certificateId: null }; }
+    console.log("[cert:course] course title:", course.title);
 
-    // Count total lessons in the course
-    const { data: modules } = await db.from("course_modules").select("id").eq("course_id", data.courseId);
+    // Get modules
+    const { data: modules, error: modulesErr } = await db
+      .from("course_modules").select("id").eq("course_id", data.courseId);
+    if (modulesErr) console.error("[cert:course] modules fetch error:", modulesErr);
     const moduleIds = ((modules ?? []) as { id: string }[]).map((m) => m.id);
-    if (!moduleIds.length) return { issued: false, certificateId: null };
+    console.log("[cert:course] moduleIds:", moduleIds);
+    if (!moduleIds.length) { console.log("[cert:course] no modules — aborting"); return { issued: false, certificateId: null }; }
 
-    const { count: totalLessons } = await db
+    // Count total lessons
+    const { count: totalLessons, error: totalErr } = await db
       .from("course_lessons")
       .select("id", { count: "exact", head: true })
       .in("module_id", moduleIds);
+    if (totalErr) console.error("[cert:course] totalLessons count error:", totalErr);
+    console.log("[cert:course] totalLessons:", totalLessons);
+    if (!totalLessons) { console.log("[cert:course] totalLessons=0 — aborting"); return { issued: false, certificateId: null }; }
 
-    if (!totalLessons) return { issued: false, certificateId: null };
-
-    // Count completed lessons for this user in this course
-    // course_progress has no 'id' column — use course_lesson_id
-    const { count: completedLessons, error: countErr } = await db
+    // Count completed lessons — select ALL rows for this user+course (every row = a completed lesson)
+    const { count: completedLessons, error: completedErr } = await db
       .from("course_progress")
       .select("course_lesson_id", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("course_id", data.courseId);
+    if (completedErr) console.error("[cert:course] completedLessons count error:", completedErr);
+    console.log("[cert:course] completedLessons:", completedLessons, "/ totalLessons:", totalLessons);
 
-    if (countErr) {
-      console.error("[certificate] course_progress count error:", countErr);
+    if ((completedLessons ?? 0) < totalLessons) {
+      console.log("[cert:course] not all lessons complete — not issuing certificate");
       return { issued: false, certificateId: null };
     }
 
-    console.log("[certificate] completedLessons:", completedLessons, "/ totalLessons:", totalLessons);
-
-    if ((completedLessons ?? 0) < totalLessons) return { issued: false, certificateId: null };
-
-    return upsertCertificate(db, userId, userName, "course", data.courseId, course.title);
+    console.log("[cert:course] all lessons complete — calling upsertCertificate");
+    const result = await upsertCertificate(db, userId, userName, "course", data.courseId, course.title);
+    console.log("[cert:course] upsertCertificate result:", result);
+    return result;
   });
 
 // ─── Check and issue category certificate ────────────────────────────────────
@@ -178,6 +190,46 @@ export const getMyCertificates = createServerFn({ method: "POST" })
       .order("issued_at", { ascending: false });
     if (error) throw error;
     return (data ?? []) as { id: string; type: string; reference_name: string; issued_at: string }[];
+  });
+
+// ─── Debug: check course progress counts (remove after debugging) ─────────────
+
+export const debugCourseProgress = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ courseId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabaseAdmin as any;
+
+    const { data: modules } = await db.from("course_modules").select("id").eq("course_id", data.courseId);
+    const moduleIds = ((modules ?? []) as { id: string }[]).map((m) => m.id);
+
+    const { count: totalLessons, error: totalErr } = await db
+      .from("course_lessons").select("id", { count: "exact", head: true }).in("module_id", moduleIds);
+
+    const { count: completedLessons, error: completedErr } = await db
+      .from("course_progress").select("course_lesson_id", { count: "exact", head: true })
+      .eq("user_id", userId).eq("course_id", data.courseId);
+
+    const { data: existingCert } = await db
+      .from("certificates").select("id,issued_at")
+      .eq("user_id", userId).eq("type", "course").eq("reference_id", data.courseId).maybeSingle();
+
+    return {
+      userId,
+      courseId: data.courseId,
+      moduleCount: moduleIds.length,
+      totalLessons,
+      totalLessonsError: totalErr?.message ?? null,
+      completedLessons,
+      completedLessonsError: completedErr?.message ?? null,
+      allComplete: (completedLessons ?? 0) >= (totalLessons ?? 1),
+      existingCertificate: existingCert ?? null,
+    };
   });
 
 // ─── Get certificate by ID (no auth required — publicly shareable) ────────────
