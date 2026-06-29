@@ -8,6 +8,7 @@ import { getSearchClient, ALGOLIA_INDEX, type AlgoliaHit } from "@/lib/algolia";
 import { MemberNav } from "@/components/MemberNav";
 import { ContentCard } from "@/components/ContentCard";
 import { CourseCard } from "@/components/CourseCard";
+import { AlgoliaSearchCard } from "@/components/AlgoliaSearchCard";
 import type { CourseCardData } from "@/components/CourseCard";
 import * as Icons from "lucide-react";
 import {
@@ -34,10 +35,12 @@ function Dashboard() {
   const [contentFilter, setContentFilter] = useState<'all' | 'lessons' | 'courses'>('all')
   const [visibleLessonCount, setVisibleLessonCount] = useState(9)
   const [visibleCourseCount, setVisibleCourseCount] = useState(9)
+  const [visibleAlgoliaCount, setVisibleAlgoliaCount] = useState(20)
 
   useEffect(() => {
     setVisibleLessonCount(9)
     setVisibleCourseCount(9)
+    setVisibleAlgoliaCount(20)
   }, [contentFilter, query])
 
   const categoriesQ = useQuery({
@@ -307,13 +310,16 @@ function Dashboard() {
         </section>
 
         {query && !matchedCategory && (
-          <h2 className="font-display text-2xl font-bold mb-6">
-            Results for "{query}"{" "}
-            <span className="text-muted-foreground font-normal text-base">
-              ({usingAlgolia
-                ? algoliaHits!.length
-                : (contentQ.data?.length ?? 0) + filteredCourses.length})
-            </span>
+          <h2 className="font-display text-2xl font-bold mb-6 flex items-center gap-2">
+            Results for "{query}"
+            {algoliaQ.isLoading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+            {!algoliaQ.isLoading && (
+              <span className="text-muted-foreground font-normal text-base">
+                ({usingAlgolia
+                  ? algoliaHits!.length
+                  : (contentQ.data?.length ?? 0) + filteredCourses.length})
+              </span>
+            )}
           </h2>
         )}
 
@@ -488,8 +494,67 @@ function Dashboard() {
           </section>
         )}
 
-        {/* Courses */}
-        {contentFilter !== 'lessons' && filteredCourses.length > 0 && (
+        {/* ── Algolia unified results grid (when search is active + Algolia configured) ── */}
+        {usingAlgolia && (
+          <section className="mb-10">
+            {algoliaQ.isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="aspect-[16/12] rounded-xl bg-muted animate-pulse" />
+                ))}
+              </div>
+            ) : algoliaHits!.length === 0 ? (
+              <div className="text-center py-12">
+                <button
+                  onClick={() => {
+                    searchInputRef.current?.focus();
+                    searchInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }}
+                  className="mx-auto mb-6 w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center cursor-pointer hover:bg-primary/10 transition-colors"
+                  aria-label="Focus search bar"
+                >
+                  <Search className="h-8 w-8 text-gold" />
+                </button>
+                <h3 className="font-display text-xl font-bold text-foreground mb-2">
+                  No results for "{query}"
+                </h3>
+                <p className="text-muted-foreground max-w-md mx-auto mb-10">
+                  Try different keywords — for example "new patient" instead of "how do I get more new patients"
+                </p>
+                <div className="text-left">
+                  <h4 className="font-display text-lg font-bold text-foreground mb-4">Browse by category instead</h4>
+                  <CategoryGrid categories={categoriesQ.data} categoryCounts={categoryCountsQ.data} />
+                  <div className="mt-6">
+                    <Link to="/dashboard" className="text-sm text-primary hover:text-gold transition-colors inline-flex items-center gap-1">
+                      <span>←</span> Back to dashboard
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {algoliaHits!.slice(0, visibleAlgoliaCount).map((hit) => (
+                    <AlgoliaSearchCard key={hit.objectID} hit={hit} />
+                  ))}
+                </div>
+                {visibleAlgoliaCount < algoliaHits!.length && (
+                  <div className="flex justify-center mt-6">
+                    <button
+                      onClick={() => setVisibleAlgoliaCount(n => n + 20)}
+                      className="px-6 py-2.5 rounded-full border-2 border-border hover:border-gold text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Load More ({algoliaHits!.length - visibleAlgoliaCount} remaining)
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </section>
+        )}
+
+        {/* ── Courses (Supabase browse / fallback only — hidden when Algolia active) ── */}
+        {!usingAlgolia && contentFilter !== 'lessons' && filteredCourses.length > 0 && (
           <section className="mb-10">
             <div className="flex items-center gap-2 mb-5">
               <GraduationCap className="h-5 w-5 text-gold" />
@@ -512,8 +577,8 @@ function Dashboard() {
           </section>
         )}
 
-        {/* Content */}
-        {contentFilter !== 'courses' && (
+        {/* Content (Supabase browse / fallback — hidden when Algolia active) */}
+        {!usingAlgolia && contentFilter !== 'courses' && (
           <section>
             <h2 className="font-display text-xl font-bold mb-4 flex items-center gap-2">
               {query ? "Matching lessons" : "Recently added"}
