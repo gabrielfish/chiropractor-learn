@@ -71,12 +71,19 @@ export const checkAndIssueCourse = createServerFn({ method: "POST" })
     if (!totalLessons) return { issued: false, certificateId: null };
 
     // Count completed lessons for this user in this course
-    const { count: completedLessons } = await db
+    // course_progress has no 'id' column — use course_lesson_id
+    const { count: completedLessons, error: countErr } = await db
       .from("course_progress")
-      .select("id", { count: "exact", head: true })
+      .select("course_lesson_id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .eq("course_id", data.courseId)
-      .eq("completed", true);
+      .eq("course_id", data.courseId);
+
+    if (countErr) {
+      console.error("[certificate] course_progress count error:", countErr);
+      return { issued: false, certificateId: null };
+    }
+
+    console.log("[certificate] completedLessons:", completedLessons, "/ totalLessons:", totalLessons);
 
     if ((completedLessons ?? 0) < totalLessons) return { issued: false, certificateId: null };
 

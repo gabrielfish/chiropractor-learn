@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Play, FileText, BookOpen, CheckCircle2, Share2 } from "lucide-react";
+import { toast } from "sonner";
 
 const BASE = "https://learn.dcpracticegrowth.com";
 
@@ -8,12 +9,10 @@ async function copyContentLink(id: string, e: React.MouseEvent) {
   e.stopPropagation();
   try {
     await navigator.clipboard.writeText(`${BASE}/content/${id}`);
-    // Quick visual feedback via title attribute on button — toast not available here
-    const btn = e.currentTarget as HTMLButtonElement;
-    const orig = btn.title;
-    btn.title = "Copied!";
-    setTimeout(() => { btn.title = orig; }, 1500);
-  } catch {/* ignore */}
+    toast.success("Link copied! Anyone who clicks this will need to log in to view it.");
+  } catch {
+    toast.error("Could not copy link — please copy it from the address bar.");
+  }
 }
 
 /** Returns true if this item should open directly (PDF/Book) instead of navigating to the player page */
@@ -109,7 +108,6 @@ export function ContentCard({ item }: { item: ContentCardData }) {
         {/* Share button */}
         <button
           type="button"
-          title="Copy link"
           onClick={(e) => copyContentLink(item.id, e)}
           className="absolute bottom-2 right-2 h-7 w-7 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 focus:opacity-100"
           aria-label="Copy link to this lesson"
