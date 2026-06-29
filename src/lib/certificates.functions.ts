@@ -13,7 +13,8 @@ async function upsertCertificate(
   referenceId: string,
   referenceName: string,
 ): Promise<{ issued: boolean; certificateId: string | null }> {
-  const { data: existing } = await db
+  // Check for existing certificate first (idempotent)
+  const { data: existing, error: selectErr } = await db
     .from("certificates")
     .select("id")
     .eq("user_id", userId)
@@ -21,7 +22,16 @@ async function upsertCertificate(
     .eq("reference_id", referenceId)
     .maybeSingle();
 
-  if (existing) return { issued: false, certificateId: existing.id as string };
+  if (selectErr) {
+    console.error("[cert:upsert] SELECT existing error:", JSON.stringify(selectErr));
+  }
+
+  if (existing) {
+    console.log("[cert:upsert] certificate already exists:", existing.id);
+    return { issued: false, certificateId: existing.id as string };
+  }
+
+  console.log("[cert:upsert] inserting certificate — userId:", userId, "type:", type, "referenceId:", referenceId);
 
   const { data, error } = await db
     .from("certificates")
@@ -29,7 +39,12 @@ async function upsertCertificate(
     .select("id")
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("[cert:upsert] INSERT error code:", error.code, "message:", error.message, "details:", error.details, "hint:", error.hint);
+    throw error;
+  }
+
+  console.log("[cert:upsert] certificate inserted successfully:", data.id);
   return { issued: true, certificateId: data.id as string };
 }
 
