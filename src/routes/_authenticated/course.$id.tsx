@@ -203,12 +203,16 @@ function CoursePage() {
       // Check if all lessons will be complete after this
       const newCompletedCount = completedCount + (completedIds.has(lessonId) ? 0 : 1);
       if (newCompletedCount >= totalLessons) {
+        // Open the modal immediately — certificate button appears once the async call resolves
+        setCourseCompleteOpen(true);
         checkAndIssueCourseF({ data: { courseId } })
           .then((result) => {
+            console.log("[certificate] checkAndIssueCourse result:", result);
             if (result?.certificateId) setEarnedCertificateId(result.certificateId);
           })
-          .catch(() => {})
-          .finally(() => setCourseCompleteOpen(true));
+          .catch((err) => {
+            console.error("[certificate] checkAndIssueCourse error:", err);
+          });
       } else if (nextLesson) {
         setActiveLessonId(nextLesson.id);
       }

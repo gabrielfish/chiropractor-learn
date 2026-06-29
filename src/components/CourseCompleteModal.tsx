@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import confetti from "canvas-confetti";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,6 @@ export function CourseCompleteModal({ open, onClose, courseTitle, certificateId 
     confetti({ particleCount: 120, spread: 90, origin: { y: 0.6 }, colors });
   }, [open]);
 
-  const navigate = useNavigate();
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const casualMsg = `I just completed ${courseTitle} taught by Ryan Rieder on the DCPG Membership Portal! #ChiropracticGrowth #DCPG`;
   const shortMsg = `Just completed "${courseTitle}" with Ryan Rieder on the DCPG Membership Portal! #ChiropracticGrowth #DCPG`;
@@ -84,7 +82,10 @@ export function CourseCompleteModal({ open, onClose, courseTitle, certificateId 
           </div>
           {certificateId && (
             <Button
-              onClick={() => navigate({ to: `/certificate/${certificateId}` })}
+              onClick={() => {
+                console.log("[certificate] navigating to certificate:", certificateId);
+                window.open(`/certificate/${certificateId}`, "_blank");
+              }}
               variant="outline"
               className="w-full border-gold text-gold hover:bg-gold/10 gap-2"
             >
@@ -93,7 +94,7 @@ export function CourseCompleteModal({ open, onClose, courseTitle, certificateId 
             </Button>
           )}
           <Button
-            onClick={() => navigate({ to: "/dashboard" })}
+            onClick={() => { window.location.href = "/dashboard"; }}
             className="w-full bg-gold text-gold-foreground hover:bg-gold/90 mt-2"
           >
             Back to Dashboard
