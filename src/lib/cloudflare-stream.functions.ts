@@ -28,7 +28,7 @@ export const getCloudflareUploadUrl = createServerFn({ method: "POST" })
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        maxDurationSeconds: 21600, // 6 hours max
+        maxDurationSeconds: 3600,
         requireSignedURLs: false,
       }),
     });
@@ -47,7 +47,7 @@ export const getCloudflareUploadUrl = createServerFn({ method: "POST" })
       errors?: { message: string }[];
     };
 
-    console.log("[CF Stream] success:", json.success, "uid:", json.result?.uid);
+    console.log("[CF Stream] uid:", json.result?.uid);
 
     if (!json.success || !json.result) {
       const msg = json.errors?.map((e) => e.message).join("; ") ?? "Unknown error";

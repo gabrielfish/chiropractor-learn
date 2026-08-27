@@ -540,16 +540,9 @@ function AdminPage() {
                               setCfUploading(true);
                               try {
                                 const { uploadUrl, videoId } = await getCloudflareUploadUrlF({ data: undefined });
-                                const uploadRes = await fetch(uploadUrl, {
-                                  method: "PATCH",
-                                  headers: {
-                                    "Tus-Resumable": "1.0.0",
-                                    "Upload-Offset": "0",
-                                    "Content-Type": "application/offset+octet-stream",
-                                    "Upload-Length": String(file.size),
-                                  },
-                                  body: file,
-                                });
+                                const form = new FormData();
+                                form.append("file", file);
+                                const uploadRes = await fetch(uploadUrl, { method: "POST", body: form });
                                 if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`);
                                 setForm((f) => ({ ...f, cloudflare_video_id: videoId }));
                                 toast.success("Video uploaded to Cloudflare Stream");
@@ -767,16 +760,9 @@ function AdminPage() {
                                           onFile={async file => {
                                             try {
                                               const { uploadUrl, videoId } = await getCloudflareUploadUrlF({ data: undefined });
-                                              const uploadRes = await fetch(uploadUrl, {
-                                                method: "PATCH",
-                                                headers: {
-                                                  "Tus-Resumable": "1.0.0",
-                                                  "Upload-Offset": "0",
-                                                  "Content-Type": "application/offset+octet-stream",
-                                                  "Upload-Length": String(file.size),
-                                                },
-                                                body: file,
-                                              });
+                                              const lessonForm = new FormData();
+                                              lessonForm.append("file", file);
+                                              const uploadRes = await fetch(uploadUrl, { method: "POST", body: lessonForm });
                                               if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`);
                                               updateLesson(mi, li, { cloudflare_video_id: videoId } as any);
                                               toast.success("Video uploaded to Cloudflare Stream");
