@@ -18,24 +18,26 @@ export const getCloudflareUploadUrl = createServerFn({ method: "POST" })
       );
     }
 
-    const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/direct_upload`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          maxDurationSeconds: 21600, // 6 hours max
-          requireSignedURLs: false,
-          allowedOrigins: ["learn.dcpracticegrowth.com", "localhost"],
-        }),
-      }
-    );
+    const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/direct_upload`;
+    console.log("[CF Stream] POST", apiUrl);
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        maxDurationSeconds: 21600, // 6 hours max
+        requireSignedURLs: false,
+      }),
+    });
+
+    console.log("[CF Stream] response status:", response.status);
 
     if (!response.ok) {
       const text = await response.text();
+      console.error("[CF Stream] API error:", text);
       throw new Error(`Cloudflare API error ${response.status}: ${text}`);
     }
 
@@ -44,6 +46,8 @@ export const getCloudflareUploadUrl = createServerFn({ method: "POST" })
       success: boolean;
       errors?: { message: string }[];
     };
+
+    console.log("[CF Stream] success:", json.success, "uid:", json.result?.uid);
 
     if (!json.success || !json.result) {
       const msg = json.errors?.map((e) => e.message).join("; ") ?? "Unknown error";
