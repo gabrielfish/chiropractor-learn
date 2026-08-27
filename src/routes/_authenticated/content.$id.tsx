@@ -6,6 +6,7 @@ import { MemberNav } from "@/components/MemberNav";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Download, FileText, Book, ArrowLeft, Loader2 } from "lucide-react";
+import { VideoPlayer } from "@/components/VideoPlayer";
 import { useState } from "react";
 import { toast } from "sonner";
 import { LessonCompleteModal } from "@/components/LessonCompleteModal";
@@ -21,20 +22,6 @@ export const Route = createFileRoute("/_authenticated/content/$id")({
   ),
 });
 
-function youtubeEmbed(url: string | null | undefined): string | null {
-  if (!url) return null;
-  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
-  if (!m) return null;
-  // rel=0          — suppress related videos from other channels at end
-  // modestbranding=1 — hide YouTube wordmark in control bar
-  // iv_load_policy=3 — disable video annotations
-  // disablekb=0    — keep keyboard controls enabled for accessibility
-  return `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1`;
-}
-
-function isYoutube(url: string | null | undefined): boolean {
-  return !!url && /(?:youtube\.com|youtu\.be)/.test(url);
-}
 
 function ContentDetail() {
   const { id } = Route.useParams();
@@ -49,7 +36,7 @@ function ContentDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content")
-        .select("*, category:categories(name,slug)")
+        .select("*, cloudflare_video_id, category:categories(name,slug)")
         .eq("id", id)
         .single();
       if (error) throw error;
@@ -176,7 +163,6 @@ function ContentDetail() {
   }
   if (!item) return null;
 
-  const embed = youtubeEmbed(item.video_url);
   const completed = !!progressQ.data?.completed;
 
   return (
@@ -190,31 +176,12 @@ function ContentDetail() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            {embed ? (
-              <div className="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-card">
-                <iframe
-                  src={embed}
-                  title={item.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  className="w-full h-full"
-                />
-              </div>
-            ) : item.video_url && !isYoutube(item.video_url) ? (
-              <div className="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-card">
-                <video
-                  src={item.video_url}
-                  controls
-                  playsInline
-                  poster={item.thumbnail_url ?? undefined}
-                  className="w-full h-full"
-                />
-              </div>
-            ) : (
-              <div className="aspect-video w-full rounded-xl bg-primary flex items-center justify-center text-primary-foreground">
-                <p>No video for this lesson</p>
-              </div>
-            )}
+            <VideoPlayer
+              cloudflareVideoId={(item as any).cloudflare_video_id}
+              videoUrl={item.video_url}
+              title={item.title}
+              posterUrl={item.thumbnail_url}
+            />
 
             <div className="mt-6">
               {item.category && <Badge className="bg-gold/15 text-gold hover:bg-gold/15 border-0 mb-3">{item.category.name}</Badge>}

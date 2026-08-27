@@ -15,6 +15,7 @@ import { AdminSidebar } from "@/components/AdminSidebar";
 import { PublishNotificationModal } from "@/components/PublishNotificationModal";
 import { saveCourse } from "@/lib/courses.functions";
 import { syncContentToAlgolia, syncCourseToAlgolia } from "@/lib/algolia-sync.functions";
+import { getCloudflareUploadUrl } from "@/lib/cloudflare-stream.functions";
 import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -35,6 +36,7 @@ type FormState = {
   category_id: string;
   content_type: ContentType;
   video_url: string;
+  cloudflare_video_id: string;
   pdf_url: string;
   thumbnail_url: string;
   status: ContentStatus;
@@ -47,6 +49,7 @@ const emptyForm: FormState = {
   category_id: "",
   content_type: "",
   video_url: "",
+  cloudflare_video_id: "",
   pdf_url: "",
   thumbnail_url: "",
   status: "published",
@@ -56,8 +59,9 @@ const emptyForm: FormState = {
 type LessonDraft = {
   id: string | null; localId: string; title: string;
   content_type: 'video' | 'pdf' | 'text'; video_url: string;
+  cloudflare_video_id: string;
   pdf_url: string; text_content: string; description: string;
-  lessonVideoSource?: 'youtube' | 'upload';
+  lessonVideoSource?: 'youtube' | 'upload' | 'cloudflare';
 }
 type ModuleDraft = {
   id: string | null; localId: string; title: string;
@@ -83,7 +87,9 @@ function AdminPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [useCustomThumb, setUseCustomThumb] = useState(false);
-  const [videoSource, setVideoSource] = useState<"youtube" | "upload">("youtube");
+  const [videoSource, setVideoSource] = useState<"youtube" | "upload" | "cloudflare">("youtube");
+  const [cfUploading, setCfUploading] = useState(false);
+  const getCloudflareUploadUrlF = useServerFn(getCloudflareUploadUrl);
   const [addingCat, setAddingCat] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [savingCat, setSavingCat] = useState(false);
@@ -160,19 +166,21 @@ function AdminPage() {
     status: ContentStatus;
   }) => {
     setEditingId(row.id);
+    const cfId = (row as { cloudflare_video_id?: string | null }).cloudflare_video_id ?? "";
     setForm({
       title: row.title ?? "",
       description: row.description ?? "",
       category_id: row.category_id ?? "",
       content_type: (row.content_type as ContentType) ?? "",
       video_url: row.video_url ?? "",
+      cloudflare_video_id: cfId,
       pdf_url: row.pdf_url ?? "",
       thumbnail_url: row.thumbnail_url ?? "",
       status: row.status,
       display_author_name: (row as { display_author_name?: string | null }).display_author_name ?? "",
     });
     const isYt = !!row.video_url && /youtu\.?be/.test(row.video_url);
-    setVideoSource(isYt ? "youtube" : row.video_url ? "upload" : "youtube");
+    setVideoSource(cfId ? "cloudflare" : isYt ? "youtube" : row.video_url ? "upload" : "youtube");
     const ytAuto = isYt ? youtubeThumbnail(row.video_url ?? "") : null;
     setUseCustomThumb(!!row.thumbnail_url && row.thumbnail_url !== ytAuto);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -216,8 +224,10 @@ function AdminPage() {
             description: (l.description as string) ?? '',
             content_type: (l.content_type as 'video' | 'pdf' | 'text') ?? 'video',
             video_url: (l.video_url as string) ?? '',
+            cloudflare_video_id: (l.cloudflare_video_id as string) ?? '',
             pdf_url: (l.pdf_url as string) ?? '',
             text_content: (l.text_content as string) ?? '',
+            lessonVideoSource: (l.cloudflare_video_id ? 'cloudflare' : l.video_url && !/youtu/.test(l.video_url) ? 'upload' : 'youtube') as 'youtube' | 'upload' | 'cloudflare',
           }))
       }))
     })
@@ -258,6 +268,7 @@ function AdminPage() {
         category_id: form.category_id || null,
         content_type: form.content_type || null,
         video_url: form.video_url || null,
+        cloudflare_video_id: form.cloudflare_video_id || null,
         pdf_url: form.pdf_url || null,
         thumbnail_url: effectiveThumb || null,
         status: form.status,
@@ -308,7 +319,7 @@ function AdminPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const mkLesson = () => ({ id: null, localId: 'new-' + (++_localIdCounter), title: '', content_type: 'video' as const, video_url: '', pdf_url: '', text_content: '', description: '', lessonVideoSource: 'youtube' as const })
+  const mkLesson = () => ({ id: null, localId: 'new-' + (++_localIdCounter), title: '', content_type: 'video' as const, video_url: '', cloudflare_video_id: '', pdf_url: '', text_content: '', description: '', lessonVideoSource: 'youtube' as const })
   const mkModule = (): ModuleDraft => ({ id: null, localId: 'mod-' + (++_localIdCounter), title: '', description: '', lessons: [mkLesson()] })
   const addMod = () => setCourseForm(f => ({ ...f, modules: [...f.modules, mkModule()] }))
   const removeMod = (i: number) => setCourseForm(f => ({ ...f, modules: f.modules.filter((_, x) => x !== i) }))
@@ -330,6 +341,7 @@ function AdminPage() {
           lessons: m.lessons.map((l, li) => ({
             id: l.id, title: l.title, description: l.description || null,
             content_type: l.content_type, video_url: l.video_url || null,
+            cloudflare_video_id: l.cloudflare_video_id || null,
             pdf_url: l.pdf_url || null, text_content: l.text_content || null, order_index: li,
           }))
         }))
@@ -491,21 +503,57 @@ function AdminPage() {
                   <div className="inline-flex rounded-md border border-border bg-muted p-1">
                     <button
                       type="button"
-                      onClick={() => { setVideoSource("youtube"); setForm((f) => ({ ...f, video_url: "" })); }}
+                      onClick={() => { setVideoSource("youtube"); setForm((f) => ({ ...f, video_url: "", cloudflare_video_id: "" })); }}
                       className={`px-3 py-1.5 text-sm rounded ${videoSource === "youtube" ? "bg-card text-foreground shadow-sm font-medium" : "text-muted-foreground"}`}
                     >
                       YouTube URL
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setVideoSource("upload"); setForm((f) => ({ ...f, video_url: "" })); }}
+                      onClick={() => { setVideoSource("upload"); setForm((f) => ({ ...f, video_url: "", cloudflare_video_id: "" })); }}
                       className={`px-3 py-1.5 text-sm rounded ${videoSource === "upload" ? "bg-card text-foreground shadow-sm font-medium" : "text-muted-foreground"}`}
                     >
-                      Upload Video File
+                      Upload File
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setVideoSource("cloudflare"); setForm((f) => ({ ...f, video_url: "", cloudflare_video_id: "" })); }}
+                      className={`px-3 py-1.5 text-sm rounded ${videoSource === "cloudflare" ? "bg-card text-foreground shadow-sm font-medium" : "text-muted-foreground"}`}
+                    >
+                      Cloudflare Stream
                     </button>
                   </div>
                   {videoSource === "youtube" ? (
                     <Input placeholder="https://youtu.be/…" value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} />
+                  ) : videoSource === "cloudflare" ? (
+                    <div className="space-y-2">
+                      {form.cloudflare_video_id ? (
+                        <p className="text-xs text-green-600 font-medium">✓ Uploaded to Cloudflare Stream (ID: {form.cloudflare_video_id})</p>
+                      ) : (
+                        <div className="space-y-2">
+                          <FileDropzone
+                            label="Upload to Cloudflare Stream"
+                            accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
+                            uploaded={false}
+                            hint="MP4, MOV, or WebM — uploads directly to Cloudflare"
+                            onFile={async (file) => {
+                              setCfUploading(true);
+                              try {
+                                const { uploadUrl, videoId } = await getCloudflareUploadUrlF({ data: undefined });
+                                await fetch(uploadUrl, { method: "PUT", body: file });
+                                setForm((f) => ({ ...f, cloudflare_video_id: videoId }));
+                                toast.success("Video uploaded to Cloudflare Stream");
+                              } catch (e) {
+                                toast.error(e instanceof Error ? e.message : "Cloudflare upload failed");
+                              } finally {
+                                setCfUploading(false);
+                              }
+                            }}
+                          />
+                          {cfUploading && <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Loader2 className="h-3 w-3 animate-spin" /> Uploading to Cloudflare Stream…</p>}
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <div className="space-y-2">
                       <FileDropzone
@@ -526,9 +574,6 @@ function AdminPage() {
                       {form.video_url && (
                         <video src={form.video_url} controls className="w-full max-h-56 rounded-md border border-border bg-black" />
                       )}
-                      <p className="text-xs text-muted-foreground">
-                        For large video files we recommend using Cloudflare Stream — ask your developer to set this up.
-                      </p>
                     </div>
                   )}
                   <div className="flex items-center justify-between pt-3">
@@ -685,19 +730,40 @@ function AdminPage() {
                                   <div className="flex items-center gap-2">
                                     <div className="inline-flex rounded-md border border-border bg-muted p-0.5 text-xs">
                                       <button type="button"
-                                        onClick={() => updateLesson(mi, li, { lessonVideoSource: 'youtube' } as any)}
+                                        onClick={() => updateLesson(mi, li, { lessonVideoSource: 'youtube', video_url: '', cloudflare_video_id: '' } as any)}
                                         className={"px-2.5 py-1 rounded " + (((lesson as any).lessonVideoSource ?? 'youtube') === 'youtube' ? "bg-card text-foreground shadow-sm font-medium" : "text-muted-foreground")}>
                                         YouTube URL
                                       </button>
                                       <button type="button"
-                                        onClick={() => updateLesson(mi, li, { lessonVideoSource: 'upload', video_url: '' } as any)}
+                                        onClick={() => updateLesson(mi, li, { lessonVideoSource: 'upload', video_url: '', cloudflare_video_id: '' } as any)}
                                         className={"px-2.5 py-1 rounded " + (((lesson as any).lessonVideoSource ?? 'youtube') === 'upload' ? "bg-card text-foreground shadow-sm font-medium" : "text-muted-foreground")}>
                                         Upload File
+                                      </button>
+                                      <button type="button"
+                                        onClick={() => updateLesson(mi, li, { lessonVideoSource: 'cloudflare', video_url: '', cloudflare_video_id: '' } as any)}
+                                        className={"px-2.5 py-1 rounded " + (((lesson as any).lessonVideoSource ?? 'youtube') === 'cloudflare' ? "bg-card text-foreground shadow-sm font-medium" : "text-muted-foreground")}>
+                                        CF Stream
                                       </button>
                                     </div>
                                   </div>
                                   {((lesson as any).lessonVideoSource ?? 'youtube') === 'youtube' ? (
                                     <Input placeholder="YouTube URL (optional)" value={lesson.video_url} onChange={e => updateLesson(mi, li, { video_url: e.target.value })} />
+                                  ) : ((lesson as any).lessonVideoSource ?? 'youtube') === 'cloudflare' ? (
+                                    <div className="space-y-1">
+                                      {lesson.cloudflare_video_id ? (
+                                        <p className="text-xs text-green-600">✓ Cloudflare Stream (ID: {lesson.cloudflare_video_id})</p>
+                                      ) : (
+                                        <FileDropzone label="Upload to Cloudflare Stream" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" uploaded={false} hint="Uploads directly to Cloudflare"
+                                          onFile={async file => {
+                                            try {
+                                              const { uploadUrl, videoId } = await getCloudflareUploadUrlF({ data: undefined });
+                                              await fetch(uploadUrl, { method: "PUT", body: file });
+                                              updateLesson(mi, li, { cloudflare_video_id: videoId } as any);
+                                              toast.success("Video uploaded to Cloudflare Stream");
+                                            } catch(e) { toast.error(e instanceof Error ? e.message : "Cloudflare upload failed"); }
+                                          }} />
+                                      )}
+                                    </div>
                                   ) : (
                                     <div className="space-y-1">
                                       <FileDropzone label="Upload video file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" uploaded={!!lesson.video_url} hint="MP4, MOV, or WebM"

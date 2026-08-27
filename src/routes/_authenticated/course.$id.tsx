@@ -23,18 +23,12 @@ import {
   X,
   Award,
 } from "lucide-react";
+import { VideoPlayer } from "@/components/VideoPlayer";
 
 export const Route = createFileRoute("/_authenticated/course/$id")({
   head: () => ({ meta: [{ title: "Course — DCPG Membership Portal" }] }),
   component: CoursePage,
 });
-
-function youtubeEmbed(url: string | null | undefined): string | null {
-  if (!url) return null;
-  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
-  if (!m) return null;
-  return `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1`;
-}
 
 type ContentType = "video" | "pdf" | "text" | string;
 
@@ -44,6 +38,7 @@ interface Lesson {
   description: string | null;
   content_type: ContentType;
   video_url: string | null;
+  cloudflare_video_id: string | null;
   pdf_url: string | null;
   text_content: string | null;
   order_index: number;
@@ -119,7 +114,7 @@ function CoursePage() {
       if (moduleIds.length > 0) {
         const { data: rawLessons, error: lessonErr } = await db
           .from("course_lessons")
-          .select("id,title,description,content_type,video_url,pdf_url,text_content,order_index,module_id")
+          .select("id,title,description,content_type,video_url,cloudflare_video_id,pdf_url,text_content,order_index,module_id")
           .in("module_id", moduleIds)
           .order("order_index", { ascending: true });
         if (lessonErr) throw lessonErr;
@@ -333,7 +328,6 @@ function CoursePage() {
   );
 
   const lessonDone = activeLesson ? completedIds.has(activeLesson.id) : false;
-  const embed = activeLesson ? youtubeEmbed(activeLesson.video_url) : null;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -406,17 +400,14 @@ function CoursePage() {
                 </p>
               )}
 
-              {/* Video — shown if video_url is set */}
-              {activeLesson.video_url && (
-                embed ? (
-                  <div className="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-card mb-6">
-                    <iframe src={embed} title={activeLesson.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen className="w-full h-full" />
-                  </div>
-                ) : (
-                  <div className="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-card mb-6">
-                    <video src={activeLesson.video_url} controls playsInline className="w-full h-full" />
-                  </div>
-                )
+              {/* Video */}
+              {(activeLesson.cloudflare_video_id || activeLesson.video_url) && (
+                <VideoPlayer
+                  cloudflareVideoId={activeLesson.cloudflare_video_id}
+                  videoUrl={activeLesson.video_url}
+                  title={activeLesson.title}
+                  className="mb-6"
+                />
               )}
 
               {/* PDF — shown if pdf_url is set regardless of content_type */}
