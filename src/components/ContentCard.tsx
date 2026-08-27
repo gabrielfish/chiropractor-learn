@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Play, FileText, BookOpen, CheckCircle2, Share2 } from "lucide-react";
 import { toast } from "sonner";
+import { cfThumbnail } from "@/components/VideoPlayer";
 
 const BASE = "https://learn.dcpracticegrowth.com";
 
@@ -30,6 +31,7 @@ export interface ContentCardData {
   title: string;
   description?: string | null;
   thumbnail_url?: string | null;
+  cloudflare_video_id?: string | null;
   video_duration?: string | null;
   video_url?: string | null;
   pdf_url?: string | null;
@@ -90,8 +92,13 @@ export function ContentCard({ item }: { item: ContentCardData }) {
   const inner = (
     <>
       <div className="aspect-video bg-muted relative overflow-hidden">
-        {item.thumbnail_url ? (
-          <img src={item.thumbnail_url} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+        {(item.thumbnail_url || item.cloudflare_video_id) ? (
+          <img
+            src={item.thumbnail_url ?? cfThumbnail(item.cloudflare_video_id!)}
+            alt={item.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+          />
         ) : (
           <ContentTypePlaceholder item={item} />
         )}

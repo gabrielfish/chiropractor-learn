@@ -4,9 +4,13 @@
  * 2. YouTube embed      (videoUrl matches youtube.com / youtu.be)
  * 3. Raw video file     (videoUrl is any other URL)
  * 4. Empty placeholder
- *
- * Cloudflare player has no download button (allowedOrigins + no download attr).
  */
+
+const CF_CUSTOMER = "customer-3ojbg1863az";
+
+export function cfThumbnail(videoId: string): string {
+  return `https://${CF_CUSTOMER}.cloudflarestream.com/${videoId}/thumbnails/thumbnail.jpg`;
+}
 
 interface VideoPlayerProps {
   cloudflareVideoId?: string | null;
@@ -38,15 +42,15 @@ export function VideoPlayer({
 
   // 1. Cloudflare Stream
   if (cloudflareVideoId) {
+    const cfPoster = posterUrl ?? cfThumbnail(cloudflareVideoId);
     return (
-      <div className={wrapClass}>
+      <div className={wrapClass} style={cfPoster ? { backgroundImage: `url(${cfPoster})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}>
         <iframe
           src={`https://iframe.cloudflarestream.com/${cloudflareVideoId}`}
           title={title}
           allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
           allowFullScreen
           className="w-full h-full border-0"
-          // Cloudflare Stream iframes don't expose a download button by default
         />
       </div>
     );

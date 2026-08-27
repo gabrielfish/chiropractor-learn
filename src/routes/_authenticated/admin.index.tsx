@@ -16,6 +16,7 @@ import { PublishNotificationModal } from "@/components/PublishNotificationModal"
 import { saveCourse } from "@/lib/courses.functions";
 import { syncContentToAlgolia, syncCourseToAlgolia } from "@/lib/algolia-sync.functions";
 import { getCloudflareUploadUrl } from "@/lib/cloudflare-stream.functions";
+import { cfThumbnail } from "@/components/VideoPlayer";
 import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -544,7 +545,12 @@ function AdminPage() {
                                 form.append("file", file);
                                 const uploadRes = await fetch(uploadUrl, { method: "POST", body: form });
                                 if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`);
-                                setForm((f) => ({ ...f, cloudflare_video_id: videoId }));
+                                setForm((f) => ({
+                                  ...f,
+                                  cloudflare_video_id: videoId,
+                                  thumbnail_url: f.thumbnail_url || cfThumbnail(videoId),
+                                }));
+                                setUseCustomThumb(true);
                                 toast.success("Video uploaded to Cloudflare Stream");
                               } catch (e) {
                                 toast.error(e instanceof Error ? e.message : "Cloudflare upload failed");
