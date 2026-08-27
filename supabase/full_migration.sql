@@ -689,6 +689,9 @@ GRANT ALL ON public.support_requests TO service_role;
 GRANT SELECT, INSERT ON public.search_logs TO authenticated;
 GRANT ALL ON public.search_logs TO service_role;
 
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.invites TO authenticated;
+GRANT ALL ON public.invites TO service_role;
+
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.courses TO authenticated;
 GRANT ALL ON public.courses TO service_role;
 
@@ -715,52 +718,7 @@ CREATE INDEX IF NOT EXISTS idx_search_logs_created_at ON public.search_logs(crea
 CREATE INDEX IF NOT EXISTS idx_search_logs_query ON public.search_logs(lower(query));
 
 -- ---------------------------------------------------------------------------
--- 9. Storage bucket policies
--- NOTE: Create the 'avatars' and 'content-files' buckets in the Supabase
--- Dashboard before running these. They cannot be created via SQL alone.
--- ---------------------------------------------------------------------------
-CREATE POLICY IF NOT EXISTS "Users upload own avatar"
-  ON storage.objects FOR INSERT TO authenticated
-  WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
-
-CREATE POLICY IF NOT EXISTS "Users update own avatar"
-  ON storage.objects FOR UPDATE TO authenticated
-  USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
-
-CREATE POLICY IF NOT EXISTS "Users delete own avatar"
-  ON storage.objects FOR DELETE TO authenticated
-  USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
-
-CREATE POLICY IF NOT EXISTS "Admins and authors read content files"
-  ON storage.objects FOR SELECT TO authenticated
-  USING (
-    bucket_id = 'content-files'
-    AND (public.has_role(auth.uid(), 'super_admin') OR public.has_role(auth.uid(), 'author'))
-  );
-
-CREATE POLICY IF NOT EXISTS "Admins upload content files"
-  ON storage.objects FOR INSERT TO authenticated
-  WITH CHECK (
-    bucket_id = 'content-files'
-    AND (public.has_role(auth.uid(), 'super_admin') OR public.has_role(auth.uid(), 'author'))
-  );
-
-CREATE POLICY IF NOT EXISTS "Admins update content files"
-  ON storage.objects FOR UPDATE TO authenticated
-  USING (
-    bucket_id = 'content-files'
-    AND (public.has_role(auth.uid(), 'super_admin') OR public.has_role(auth.uid(), 'author'))
-  );
-
-CREATE POLICY IF NOT EXISTS "Admins delete content files"
-  ON storage.objects FOR DELETE TO authenticated
-  USING (
-    bucket_id = 'content-files'
-    AND (public.has_role(auth.uid(), 'super_admin') OR public.has_role(auth.uid(), 'author'))
-  );
-
--- ---------------------------------------------------------------------------
--- 10. Seed data (static / configuration rows from original migrations)
+-- 9. Seed data (static / configuration rows from original migrations)
 -- ---------------------------------------------------------------------------
 
 -- Categories
@@ -785,7 +743,7 @@ VALUES ('INNERCIRCLE', 'Member invite link', true)
 ON CONFLICT (token) DO NOTHING;
 
 -- ---------------------------------------------------------------------------
--- 11. TRANSACTIONAL DATA — must be exported separately
+-- 10. TRANSACTIONAL DATA — must be exported separately
 -- ---------------------------------------------------------------------------
 -- The following tables contain live member/content data that cannot be
 -- queried here. Export them from your old Supabase project:
