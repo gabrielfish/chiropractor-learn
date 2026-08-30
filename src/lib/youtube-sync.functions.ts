@@ -232,12 +232,115 @@ export const syncYouTubeChannel = createServerFn({ method: "POST" })
     return insertVideos(videos, categories);
   });
 
+interface CourseResult {
+  courseId: string;
+  courseTitle: string;
+  lessonsCreated: number;
+}
+
+async function fetchPlaylistMetadata(
+  playlistId: string,
+  apiKey: string
+): Promise<{ title: string; description: string }> {
+  const url =
+    `https://www.googleapis.com/youtube/v3/playlists` +
+    `?part=snippet&id=${encodeURIComponent(playlistId)}&key=${encodeURIComponent(apiKey)}`;
+  const data = await fetchYouTubePage(url);
+  const snippet = data.items?.[0]?.snippet;
+  if (!snippet) throw new Error(`Playlist "${playlistId}" not found`);
+  return { title: snippet.title ?? playlistId, description: snippet.description ?? "" };
+}
+
+async function createCourseFromPlaylist(
+  videos: YouTubeVideo[],
+  categories: { id: string; name: string }[],
+  playlistMeta: { title: string; description: string },
+  courseTitle: string | undefined,
+  userId: string
+): Promise<CourseResult> {
+  const title = courseTitle?.trim() || playlistMeta.title;
+  const thumbnail = videos[0]?.thumbnailUrl || null;
+
+  // Assign category based on playlist title/description
+  const categoryId = await assignCategory(title, playlistMeta.description, categories);
+
+  // Create course
+  const { data: courseRow, error: courseErr } = await supabaseAdmin
+    .from("courses")
+    .insert({
+      title,
+      description: playlistMeta.description || null,
+      thumbnail_url: thumbnail,
+      category_id: categoryId,
+      display_author_name: "Dr Ryan Rieder",
+      status: "draft",
+      author_id: userId,
+    } as Record<string, unknown>)
+    .select("id")
+    .single();
+
+  if (courseErr || !courseRow) {
+    throw new Error(`Failed to create course: ${courseErr?.message}`);
+  }
+
+  const courseId = (courseRow as { id: string }).id;
+
+  // Create one module for the playlist
+  const { data: moduleRow, error: moduleErr } = await supabaseAdmin
+    .from("course_modules")
+    .insert({
+      course_id: courseId,
+      title: "Module 1",
+      description: null,
+      order_index: 0,
+    } as Record<string, unknown>)
+    .select("id")
+    .single();
+
+  if (moduleErr || !moduleRow) {
+    throw new Error(`Failed to create module: ${moduleErr?.message}`);
+  }
+
+  const moduleId = (moduleRow as { id: string }).id;
+
+  // Create lessons for each video
+  let lessonsCreated = 0;
+  for (let i = 0; i < videos.length; i++) {
+    const v = videos[i];
+    const { error: lessonErr } = await supabaseAdmin
+      .from("course_lessons")
+      .insert({
+        module_id: moduleId,
+        course_id: courseId,
+        title: v.title,
+        description: v.description || null,
+        content_type: "video",
+        video_url: `https://www.youtube.com/watch?v=${v.videoId}`,
+        pdf_url: null,
+        text_content: null,
+        order_index: i,
+      } as Record<string, unknown>);
+
+    if (lessonErr) {
+      console.error(`[YT Sync] Failed to create lesson for ${v.videoId}:`, lessonErr.message);
+    } else {
+      lessonsCreated++;
+    }
+  }
+
+  return { courseId, courseTitle: title, lessonsCreated };
+}
+
 export const syncYouTubePlaylist = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: { playlistId: string; maxResults?: number; publishedAfter?: string }) => d)
-  .handler(async ({ data }) => {
+  .validator(
+    (d: { playlistId: string; maxResults?: number; publishedAfter?: string; courseTitle?: string }) => d
+  )
+  .handler(async ({ data, context }) => {
     const apiKey = process.env.YOUTUBE_API_KEY;
     if (!apiKey) throw new Error("YOUTUBE_API_KEY environment variable is not set");
+
+    const userId = (context as { userId: string }).userId;
 
     const opts: SyncOptions = {
       maxResults: data.maxResults ?? 50,
@@ -250,6 +353,10 @@ export const syncYouTubePlaylist = createServerFn({ method: "POST" })
       .order("order");
     const categories = (cats ?? []) as { id: string; name: string }[];
 
-    const videos = await fetchPlaylistVideos(data.playlistId, apiKey, opts);
-    return insertVideos(videos, categories);
+    const [playlistMeta, videos] = await Promise.all([
+      fetchPlaylistMetadata(data.playlistId, apiKey),
+      fetchPlaylistVideos(data.playlistId, apiKey, opts),
+    ]);
+
+    return createCourseFromPlaylist(videos, categories, playlistMeta, data.courseTitle, userId);
   });

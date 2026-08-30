@@ -32,10 +32,12 @@ function SettingsPage() {
 
   const [ytChannelId, setYtChannelId] = useState("");
   const [ytPlaylistId, setYtPlaylistId] = useState("");
+  const [ytCourseTitle, setYtCourseTitle] = useState("");
   const [ytMaxResults, setYtMaxResults] = useState(50);
   const [ytPublishedAfter, setYtPublishedAfter] = useState("");
   const [ytProgress, setYtProgress] = useState<string | null>(null);
   const [ytResult, setYtResult] = useState<{ imported: number; skipped: number } | null>(null);
+  const [ytCourseResult, setYtCourseResult] = useState<{ courseTitle: string; lessonsCreated: number } | null>(null);
 
   const syncMut = useMutation({
     mutationFn: () => syncAllFn({ data: undefined }),
@@ -68,23 +70,24 @@ function SettingsPage() {
 
   const ytPlaylistMut = useMutation({
     mutationFn: () => {
-      setYtProgress("Fetching videos from YouTube playlist…");
+      setYtProgress("Fetching playlist and creating course…");
       return syncPlaylistFn({
         data: {
           playlistId: ytPlaylistId.trim(),
           maxResults: ytMaxResults,
           publishedAfter: ytPublishedAfter || undefined,
+          courseTitle: ytCourseTitle.trim() || undefined,
         },
       });
     },
     onSuccess: (result) => {
-      const r = result as { imported: number; skipped: number };
-      setYtResult(r);
+      const r = result as { courseTitle: string; lessonsCreated: number };
+      setYtCourseResult(r);
       setYtProgress(null);
     },
     onError: () => {
       setYtProgress(null);
-      setYtResult(null);
+      setYtCourseResult(null);
     },
   });
 
@@ -162,9 +165,10 @@ function SettingsPage() {
               <div className="flex-1 min-w-0">
                 <h2 className="font-display text-lg font-bold mb-1">YouTube Sync</h2>
                 <p className="text-sm text-muted-foreground mb-5">
-                  Import videos from a YouTube channel or playlist. Each video is created as a{" "}
-                  <strong>draft</strong> content entry with title, description, thumbnail, and
-                  auto-assigned category. Duplicates are skipped automatically.
+                  <strong>Channel sync</strong> imports each video as an individual draft content
+                  entry. <strong>Playlist sync</strong> creates a full{" "}
+                  <strong>draft Course</strong> with one Module and a Lesson per video — ideal
+                  for structured learning programs. Categories are auto-assigned by AI.
                 </p>
 
                 {/* Shared options */}
@@ -222,9 +226,12 @@ function SettingsPage() {
                     <div className="flex-1 h-px bg-border" />
                   </div>
 
-                  {/* Playlist sync */}
+                  {/* Playlist sync → creates a Course */}
                   <div className="space-y-2">
-                    <Label>Playlist ID</Label>
+                    <div className="flex items-center gap-2">
+                      <Label>Playlist ID</Label>
+                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Creates a Course</span>
+                    </div>
                     <div className="flex gap-2">
                       <Input
                         placeholder="e.g. PLxxxxxxxxxxxxxxxxxxxxxx"
@@ -234,13 +241,25 @@ function SettingsPage() {
                         className="flex-1"
                       />
                       <Button
-                        onClick={() => { setYtResult(null); ytPlaylistMut.mutate(); }}
+                        onClick={() => { setYtCourseResult(null); ytPlaylistMut.mutate(); }}
                         disabled={!ytPlaylistId.trim() || ytBusy}
                         className="bg-red-600 hover:bg-red-700 text-white inline-flex items-center gap-2 shrink-0"
                       >
                         <RefreshCw className={`h-4 w-4 ${ytPlaylistMut.isPending ? "animate-spin" : ""}`} />
-                        {ytPlaylistMut.isPending ? "Syncing…" : "Sync Playlist"}
+                        {ytPlaylistMut.isPending ? "Creating Course…" : "Sync Playlist → Course"}
                       </Button>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="yt-course-title" className="text-xs text-muted-foreground">
+                        Course name override (optional — defaults to playlist title)
+                      </Label>
+                      <Input
+                        id="yt-course-title"
+                        placeholder="e.g. Advanced Chiropractic Techniques"
+                        value={ytCourseTitle}
+                        onChange={(e) => setYtCourseTitle(e.target.value)}
+                        disabled={ytBusy}
+                      />
                     </div>
                   </div>
 
@@ -251,7 +270,7 @@ function SettingsPage() {
                     </div>
                   )}
 
-                  {/* Success */}
+                  {/* Success — channel */}
                   {ytResult && !ytBusy && (
                     <div className="flex items-start gap-2 text-sm text-green-600 dark:text-green-400 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3">
                       <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
@@ -260,6 +279,17 @@ function SettingsPage() {
                         {ytResult.skipped > 0 && (
                           <>, <strong>{ytResult.skipped}</strong> skipped (already exist or failed)</>
                         )}.
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Success — playlist course */}
+                  {ytCourseResult && !ytBusy && (
+                    <div className="flex items-start gap-2 text-sm text-green-600 dark:text-green-400 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+                      <span>
+                        Course created as draft: <strong>"{ytCourseResult.courseTitle}"</strong>{" "}
+                        with <strong>{ytCourseResult.lessonsCreated}</strong> lesson{ytCourseResult.lessonsCreated !== 1 ? "s" : ""}.
                       </span>
                     </div>
                   )}
