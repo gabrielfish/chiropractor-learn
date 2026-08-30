@@ -9,7 +9,7 @@ import { z } from "zod";
 const lessonSchema = z.object({
   id: z.string().uuid().nullable(),
   title: z.string().trim().min(1).max(200),
-  description: z.string().trim().max(2000).nullable().optional(),
+  description: z.string().trim().max(5000).nullable().optional(),
   content_type: z.enum(["video", "pdf", "text"]),
   video_url: z.string().trim().max(2000).nullable().optional(),
   pdf_url: z.string().trim().max(2000).nullable().optional(),
@@ -20,7 +20,7 @@ const lessonSchema = z.object({
 const moduleSchema = z.object({
   id: z.string().uuid().nullable(),
   title: z.string().trim().min(1).max(200),
-  description: z.string().trim().max(2000).nullable().optional(),
+  description: z.string().trim().max(5000).nullable().optional(),
   order_index: z.number().int().min(0),
   lessons: z.array(lessonSchema),
 });
