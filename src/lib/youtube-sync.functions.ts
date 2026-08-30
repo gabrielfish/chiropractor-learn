@@ -199,7 +199,7 @@ async function insertVideos(
 
       const { error } = await supabaseAdmin.from("content").insert({
         title: v.title,
-        description: v.description || null,
+        description: v.description ? v.description.slice(0, 2000) : null,
         video_url: `https://www.youtube.com/watch?v=${v.videoId}`,
         youtube_video_id: v.videoId,
         thumbnail_url: v.thumbnailUrl || null,
@@ -337,7 +337,7 @@ async function createCourseFromPlaylist(
         module_id: moduleId,
         course_id: courseId,
         title: v.title,
-        description: v.description || null,
+        description: v.description ? v.description.slice(0, 2000) : null,
         content_type: "video",
         video_url: `https://www.youtube.com/watch?v=${v.videoId}`,
         pdf_url: null,
