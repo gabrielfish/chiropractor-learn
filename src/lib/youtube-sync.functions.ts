@@ -26,7 +26,7 @@ interface SyncResult {
 // ---------------------------------------------------------------------------
 
 async function fetchYouTubePage(url: string): Promise<any> {
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: { Referer: "https://learn.dcpracticegrowth.com" } });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`YouTube API error ${res.status}: ${text}`);
