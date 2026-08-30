@@ -8,6 +8,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Settings, RefreshCw, CheckCircle2, AlertCircle, Database, Youtube } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/admin/settings")({
   head: () => ({ meta: [{ title: "Settings — DCPG Admin" }] }),
@@ -31,6 +32,9 @@ function SettingsPage() {
 
   const [ytChannelId, setYtChannelId] = useState("");
   const [ytPlaylistId, setYtPlaylistId] = useState("");
+  const [ytMaxResults, setYtMaxResults] = useState(50);
+  const [ytPublishedAfter, setYtPublishedAfter] = useState("");
+  const [ytProgress, setYtProgress] = useState<string | null>(null);
   const [ytResult, setYtResult] = useState<{ imported: number; skipped: number } | null>(null);
 
   const syncMut = useMutation({
@@ -41,16 +45,50 @@ function SettingsPage() {
   });
 
   const ytChannelMut = useMutation({
-    mutationFn: () => syncChannelFn({ data: { channelId: ytChannelId.trim() } }),
-    onSuccess: (result) => setYtResult(result as { imported: number; skipped: number }),
-    onError: () => setYtResult(null),
+    mutationFn: () => {
+      setYtProgress("Fetching videos from YouTube channel…");
+      return syncChannelFn({
+        data: {
+          channelId: ytChannelId.trim(),
+          maxResults: ytMaxResults,
+          publishedAfter: ytPublishedAfter || undefined,
+        },
+      });
+    },
+    onSuccess: (result) => {
+      const r = result as { imported: number; skipped: number };
+      setYtResult(r);
+      setYtProgress(null);
+    },
+    onError: () => {
+      setYtProgress(null);
+      setYtResult(null);
+    },
   });
 
   const ytPlaylistMut = useMutation({
-    mutationFn: () => syncPlaylistFn({ data: { playlistId: ytPlaylistId.trim() } }),
-    onSuccess: (result) => setYtResult(result as { imported: number; skipped: number }),
-    onError: () => setYtResult(null),
+    mutationFn: () => {
+      setYtProgress("Fetching videos from YouTube playlist…");
+      return syncPlaylistFn({
+        data: {
+          playlistId: ytPlaylistId.trim(),
+          maxResults: ytMaxResults,
+          publishedAfter: ytPublishedAfter || undefined,
+        },
+      });
+    },
+    onSuccess: (result) => {
+      const r = result as { imported: number; skipped: number };
+      setYtResult(r);
+      setYtProgress(null);
+    },
+    onError: () => {
+      setYtProgress(null);
+      setYtResult(null);
+    },
   });
+
+  const ytBusy = ytChannelMut.isPending || ytPlaylistMut.isPending;
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
@@ -124,22 +162,52 @@ function SettingsPage() {
               <div className="flex-1 min-w-0">
                 <h2 className="font-display text-lg font-bold mb-1">YouTube Sync</h2>
                 <p className="text-sm text-muted-foreground mb-5">
-                  Import all videos from a YouTube channel or playlist. Each video is created as a <strong>draft</strong> content entry with title, description, thumbnail, and auto-assigned category. Duplicates are skipped.
+                  Import videos from a YouTube channel or playlist. Each video is created as a{" "}
+                  <strong>draft</strong> content entry with title, description, thumbnail, and
+                  auto-assigned category. Duplicates are skipped automatically.
                 </p>
 
+                {/* Shared options */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5 p-4 rounded-lg bg-muted/40 border border-border">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="yt-max">Max videos to import (newest first)</Label>
+                    <Input
+                      id="yt-max"
+                      type="number"
+                      min={1}
+                      max={200}
+                      value={ytMaxResults}
+                      onChange={(e) => setYtMaxResults(Math.max(1, Math.min(200, Number(e.target.value) || 50)))}
+                      disabled={ytBusy}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="yt-after">Published after (optional)</Label>
+                    <Input
+                      id="yt-after"
+                      type="date"
+                      value={ytPublishedAfter}
+                      onChange={(e) => setYtPublishedAfter(e.target.value)}
+                      disabled={ytBusy}
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-4">
+                  {/* Channel sync */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Channel ID</label>
+                    <Label>Channel ID</Label>
                     <div className="flex gap-2">
                       <Input
                         placeholder="e.g. UCxxxxxxxxxxxxxxxxxxxxxx"
                         value={ytChannelId}
                         onChange={(e) => setYtChannelId(e.target.value)}
+                        disabled={ytBusy}
                         className="flex-1"
                       />
                       <Button
                         onClick={() => { setYtResult(null); ytChannelMut.mutate(); }}
-                        disabled={!ytChannelId.trim() || ytChannelMut.isPending || ytPlaylistMut.isPending}
+                        disabled={!ytChannelId.trim() || ytBusy}
                         className="bg-red-600 hover:bg-red-700 text-white inline-flex items-center gap-2 shrink-0"
                       >
                         <RefreshCw className={`h-4 w-4 ${ytChannelMut.isPending ? "animate-spin" : ""}`} />
@@ -154,18 +222,20 @@ function SettingsPage() {
                     <div className="flex-1 h-px bg-border" />
                   </div>
 
+                  {/* Playlist sync */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Playlist ID</label>
+                    <Label>Playlist ID</Label>
                     <div className="flex gap-2">
                       <Input
                         placeholder="e.g. PLxxxxxxxxxxxxxxxxxxxxxx"
                         value={ytPlaylistId}
                         onChange={(e) => setYtPlaylistId(e.target.value)}
+                        disabled={ytBusy}
                         className="flex-1"
                       />
                       <Button
                         onClick={() => { setYtResult(null); ytPlaylistMut.mutate(); }}
-                        disabled={!ytPlaylistId.trim() || ytChannelMut.isPending || ytPlaylistMut.isPending}
+                        disabled={!ytPlaylistId.trim() || ytBusy}
                         className="bg-red-600 hover:bg-red-700 text-white inline-flex items-center gap-2 shrink-0"
                       >
                         <RefreshCw className={`h-4 w-4 ${ytPlaylistMut.isPending ? "animate-spin" : ""}`} />
@@ -174,25 +244,30 @@ function SettingsPage() {
                     </div>
                   </div>
 
-                  {(ytChannelMut.isPending || ytPlaylistMut.isPending) && (
-                    <p className="text-xs text-muted-foreground animate-pulse">
-                      Fetching videos from YouTube and importing to the portal. This may take a minute for large channels…
-                    </p>
+                  {/* Progress */}
+                  {ytBusy && (
+                    <div className="rounded-lg bg-muted/60 border border-border p-3 text-sm text-muted-foreground animate-pulse">
+                      {ytProgress ?? "Importing videos… this may take a minute for large batches."}
+                    </div>
                   )}
 
-                  {ytResult && !ytChannelMut.isPending && !ytPlaylistMut.isPending && (
-                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                      <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  {/* Success */}
+                  {ytResult && !ytBusy && (
+                    <div className="flex items-start gap-2 text-sm text-green-600 dark:text-green-400 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
                       <span>
-                        Imported <strong>{ytResult.imported}</strong> videos as drafts
-                        {ytResult.skipped > 0 && `, ${ytResult.skipped} already existed and were skipped`}.
+                        Done! <strong>{ytResult.imported}</strong> video{ytResult.imported !== 1 ? "s" : ""} imported as drafts
+                        {ytResult.skipped > 0 && (
+                          <>, <strong>{ytResult.skipped}</strong> skipped (already exist or failed)</>
+                        )}.
                       </span>
                     </div>
                   )}
 
-                  {(ytChannelMut.isError || ytPlaylistMut.isError) && !ytChannelMut.isPending && !ytPlaylistMut.isPending && (
-                    <div className="flex items-center gap-2 text-sm text-destructive">
-                      <AlertCircle className="h-4 w-4 shrink-0" />
+                  {/* Error */}
+                  {(ytChannelMut.isError || ytPlaylistMut.isError) && !ytBusy && (
+                    <div className="flex items-start gap-2 text-sm text-destructive rounded-lg bg-destructive/10 border border-destructive/20 p-3">
+                      <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                       <span>{((ytChannelMut.error || ytPlaylistMut.error) as Error)?.message ?? "Sync failed"}</span>
                     </div>
                   )}
