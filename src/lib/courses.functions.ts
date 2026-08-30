@@ -355,6 +355,41 @@ export const listAdminCourses = createServerFn({ method: "GET" })
 // deleteCourse
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// publishAllDraftCourses
+// ---------------------------------------------------------------------------
+
+export const publishAllDraftCourses = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    if (!(roles ?? []).some((r) => r.role === "super_admin")) {
+      throw new Error("Forbidden");
+    }
+
+    const { supabaseAdmin: _supabaseAdmin4 } = await import("@/integrations/supabase/client.server");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabaseAdmin = _supabaseAdmin4 as any;
+
+    const { data: updated, error } = await supabaseAdmin
+      .from("courses")
+      .update({ status: "published" })
+      .eq("status", "draft")
+      .select("id");
+    if (error) throw new Error(error.message);
+
+    return { published: (updated ?? []).length };
+  });
+
+// ---------------------------------------------------------------------------
+// deleteCourse
+// ---------------------------------------------------------------------------
+
 export const deleteCourse = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => deleteCourseSchema.parse(input))

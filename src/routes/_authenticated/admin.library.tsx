@@ -29,7 +29,12 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { AdminSidebar } from "@/components/AdminSidebar";
-import { listAdminCourses, deleteCourse as deleteCourseServerFn } from "@/lib/courses.functions";
+import { PublishNotificationModal } from "@/components/PublishNotificationModal";
+import {
+  listAdminCourses,
+  deleteCourse as deleteCourseServerFn,
+  publishAllDraftCourses,
+} from "@/lib/courses.functions";
 import { useServerFn } from "@tanstack/react-start";
 
 const LESSONS_PER_PAGE = 20;
@@ -67,10 +72,14 @@ function LibraryPage() {
 
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const [publishAllOpen, setPublishAllOpen] = useState(false);
+  const [publishAllCoursesOpen, setPublishAllCoursesOpen] = useState(false);
   const [deleteCourseTarget, setDeleteCourseTarget] = useState<{ id: string; title: string } | null>(null);
+  // Shown after a single lesson is manually published so admin can notify members
+  const [notifyLesson, setNotifyLesson] = useState<{ id: string; title: string } | null>(null);
 
   const listCoursesFn = useServerFn(listAdminCourses);
   const deleteCourseServer = useServerFn(deleteCourseServerFn);
+  const publishAllCoursesFn = useServerFn(publishAllDraftCourses);
 
   // ── Data queries ──────────────────────────────────────────────────────────
   const contentQ = useQuery({
@@ -157,15 +166,21 @@ function LibraryPage() {
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   const setStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: ContentStatus }) => {
+    mutationFn: async ({ id, status, title }: { id: string; status: ContentStatus; title: string }) => {
       const patch = status === "published"
         ? { status, published_at: new Date().toISOString() }
         : { status };
       const { error } = await supabase.from("content").update(patch).eq("id", id);
       if (error) throw error;
+      return { id, status, title };
     },
-    onSuccess: (_d, vars) => {
-      toast.success(vars.status === "archived" ? "Content archived" : "Content restored");
+    onSuccess: (result) => {
+      if (result.status === "published") {
+        // Show notification modal so admin can choose to email members
+        setNotifyLesson({ id: result.id, title: result.title });
+      } else {
+        toast.success("Content archived");
+      }
       qc.invalidateQueries({ queryKey: ["admin", "content"] });
       qc.invalidateQueries({ queryKey: ["content"] });
     },
@@ -200,6 +215,17 @@ function LibraryPage() {
       setPublishAllOpen(false);
       qc.invalidateQueries({ queryKey: ["admin", "content"] });
       qc.invalidateQueries({ queryKey: ["content"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const publishAllCoursesMut = useMutation({
+    mutationFn: () => publishAllCoursesFn({ data: undefined }),
+    onSuccess: (result) => {
+      const r = result as { published: number };
+      toast.success(`${r.published} draft course${r.published !== 1 ? "s" : ""} published`);
+      setPublishAllCoursesOpen(false);
+      qc.invalidateQueries({ queryKey: ["admin", "courses"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -303,6 +329,18 @@ function LibraryPage() {
               </Button>
             )}
 
+            {/* Publish All Draft Courses — courses tab only */}
+            {tab === "courses" && isSuperAdmin && courseCounts.draft > 0 && (
+              <Button
+                type="button"
+                onClick={() => setPublishAllCoursesOpen(true)}
+                className="bg-success hover:bg-success/90 text-success-foreground inline-flex items-center gap-2 shrink-0"
+              >
+                <BookCheck className="h-4 w-4" />
+                Publish all draft courses ({courseCounts.draft})
+              </Button>
+            )}
+
             <div className="inline-flex rounded-md border border-border bg-muted p-1 overflow-x-auto max-w-full shrink-0">
               {filterTabs.map((t) => (
                 <button
@@ -397,7 +435,7 @@ function LibraryPage() {
                                     {c.status === "archived" ? (
                                       <Button
                                         type="button" variant="ghost" size="sm"
-                                        onClick={() => setStatus.mutate({ id: c.id, status: "published" })}
+                                        onClick={() => setStatus.mutate({ id: c.id, status: "published", title: c.title })}
                                         disabled={setStatus.isPending}
                                         aria-label="Restore" title="Restore to published"
                                       >
@@ -408,7 +446,7 @@ function LibraryPage() {
                                     ) : (
                                       <Button
                                         type="button" variant="ghost" size="sm"
-                                        onClick={() => setStatus.mutate({ id: c.id, status: "archived" })}
+                                        onClick={() => setStatus.mutate({ id: c.id, status: "archived", title: c.title })}
                                         disabled={setStatus.isPending}
                                         aria-label="Archive" title="Archive"
                                       >
@@ -597,7 +635,7 @@ function LibraryPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Publish all drafts?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to publish all <strong>{lessonCounts.draft}</strong> draft{lessonCounts.draft !== 1 ? " videos" : " video"}? They will immediately become visible to all members.
+              Are you sure you want to publish all <strong>{lessonCounts.draft}</strong> draft{lessonCounts.draft !== 1 ? " lessons" : " lesson"}? They will immediately become visible to all members. No notifications will be sent — use the Notifications section to announce them.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -641,6 +679,40 @@ function LibraryPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Publish all draft courses confirmation */}
+      <AlertDialog open={publishAllCoursesOpen} onOpenChange={(o) => { if (!o) setPublishAllCoursesOpen(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Publish all draft courses?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to publish all <strong>{courseCounts.draft}</strong> draft course{courseCounts.draft !== 1 ? "s" : ""}? They will immediately become visible to all members. No notifications will be sent — use the Notifications section to announce them.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={publishAllCoursesMut.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={publishAllCoursesMut.isPending}
+              onClick={(e) => { e.preventDefault(); publishAllCoursesMut.mutate(); }}
+              className="bg-success text-success-foreground hover:bg-success/90"
+            >
+              {publishAllCoursesMut.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Publishing…</>
+              ) : (
+                `Publish ${courseCounts.draft} course${courseCounts.draft !== 1 ? "s" : ""}`
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Notification modal — shown after a single lesson is manually published */}
+      <PublishNotificationModal
+        contentId={notifyLesson?.id ?? null}
+        title={notifyLesson?.title ?? ""}
+        open={notifyLesson !== null}
+        onClose={() => setNotifyLesson(null)}
+      />
 
       {/* Delete course confirmation */}
       <AlertDialog open={deleteCourseTarget !== null} onOpenChange={o => { if (!o) setDeleteCourseTarget(null); }}>
