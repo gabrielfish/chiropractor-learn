@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Library, Pencil, Archive, Trash2, RotateCcw, Search, Loader2, GraduationCap } from "lucide-react";
+import { Library, Pencil, Archive, Trash2, RotateCcw, Search, Loader2, GraduationCap, BookCheck } from "lucide-react";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { listAdminCourses, deleteCourse as deleteCourseServerFn } from "@/lib/courses.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -36,6 +36,7 @@ function LibraryPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | ContentStatus>("all");
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  const [publishAllOpen, setPublishAllOpen] = useState(false);
 
   const listCoursesFn = useServerFn(listAdminCourses);
   const deleteCourseServer = useServerFn(deleteCourseServerFn);
@@ -121,6 +122,24 @@ function LibraryPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const publishAll = useMutation({
+    mutationFn: async () => {
+      const now = new Date().toISOString();
+      const { error } = await supabase
+        .from("content")
+        .update({ status: "published", published_at: now })
+        .eq("status", "draft");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(`${counts.draft} draft${counts.draft !== 1 ? "s" : ""} published`);
+      setPublishAllOpen(false);
+      qc.invalidateQueries({ queryKey: ["admin", "content"] });
+      qc.invalidateQueries({ queryKey: ["content"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const filterTabs: { key: "all" | ContentStatus; label: string; count: number }[] = [
     { key: "all",       label: "All",       count: counts.all },
     { key: "published", label: "Published", count: counts.published },
@@ -148,7 +167,7 @@ function LibraryPage() {
           </p>
 
           {/* Toolbar: search + filter tabs */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5 flex-wrap">
             {/* Search */}
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -159,6 +178,18 @@ function LibraryPage() {
                 className="pl-9"
               />
             </div>
+
+            {/* Publish All Drafts — super_admin only, only shown when drafts exist */}
+            {isSuperAdmin && counts.draft > 0 && (
+              <Button
+                type="button"
+                onClick={() => setPublishAllOpen(true)}
+                className="bg-success hover:bg-success/90 text-success-foreground inline-flex items-center gap-2 shrink-0"
+              >
+                <BookCheck className="h-4 w-4" />
+                Publish all drafts ({counts.draft})
+              </Button>
+            )}
 
             {/* Status filter tabs */}
             <div className="inline-flex rounded-md border border-border bg-muted p-1 overflow-x-auto max-w-full shrink-0">
@@ -374,6 +405,32 @@ function LibraryPage() {
           </div>
         </div>
       </main>
+
+      {/* Publish all drafts confirmation */}
+      <AlertDialog open={publishAllOpen} onOpenChange={(o) => { if (!o) setPublishAllOpen(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Publish all drafts?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to publish all <strong>{counts.draft}</strong> draft{counts.draft !== 1 ? " videos" : " video"}? They will immediately become visible to all members.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={publishAll.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={publishAll.isPending}
+              onClick={(e) => { e.preventDefault(); publishAll.mutate(); }}
+              className="bg-success text-success-foreground hover:bg-success/90"
+            >
+              {publishAll.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Publishing…</>
+              ) : (
+                `Publish ${counts.draft} draft${counts.draft !== 1 ? "s" : ""}`
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete lesson confirmation */}
       <AlertDialog open={deleteTarget !== null} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
