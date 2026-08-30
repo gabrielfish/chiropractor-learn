@@ -106,6 +106,28 @@ async function getUploadsPlaylistId(channelId: string, apiKey: string): Promise<
   return uploadsId;
 }
 
+/** Get or create a "Chiropractic Teaching" fallback category. Returns its id. */
+async function getOrCreateFallbackCategory(): Promise<string> {
+  const fallbackName = "Chiropractic Teaching";
+
+  const { data: existing } = await supabaseAdmin
+    .from("categories")
+    .select("id")
+    .eq("name", fallbackName)
+    .maybeSingle();
+
+  if (existing) return (existing as { id: string }).id;
+
+  const { data: created, error } = await supabaseAdmin
+    .from("categories")
+    .insert({ name: fallbackName, slug: "chiropractic-teaching", order: 999 })
+    .select("id")
+    .single();
+
+  if (error || !created) throw new Error(`Could not create fallback category: ${error?.message}`);
+  return (created as { id: string }).id;
+}
+
 /** Use Claude to pick the best matching category. Returns null on any error — never throws. */
 async function assignCategory(
   title: string,
@@ -171,8 +193,9 @@ async function insertVideos(
         continue;
       }
 
-      // Category assignment — gracefully returns null on failure
-      const categoryId = await assignCategory(v.title, v.description, categories);
+      // Category assignment — falls back to "Chiropractic Teaching" if AI returns null
+      const aiCategoryId = await assignCategory(v.title, v.description, categories);
+      const categoryId = aiCategoryId ?? await getOrCreateFallbackCategory();
 
       const { error } = await supabaseAdmin.from("content").insert({
         title: v.title,
@@ -261,8 +284,9 @@ async function createCourseFromPlaylist(
   const title = courseTitle?.trim() || playlistMeta.title;
   const thumbnail = videos[0]?.thumbnailUrl || null;
 
-  // Assign category based on playlist title/description
-  const categoryId = await assignCategory(title, playlistMeta.description, categories);
+  // Assign category — falls back to "Chiropractic Teaching" if AI returns null
+  const aiCategoryId = await assignCategory(title, playlistMeta.description, categories);
+  const categoryId = aiCategoryId ?? await getOrCreateFallbackCategory();
 
   // Create course
   const { data: courseRow, error: courseErr } = await supabaseAdmin
