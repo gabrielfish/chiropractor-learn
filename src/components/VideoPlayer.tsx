@@ -1,19 +1,11 @@
 /**
  * VideoPlayer — renders the right player based on what's available:
- * 1. Cloudflare Stream  (cloudflareVideoId is set)
- * 2. YouTube embed      (videoUrl matches youtube.com / youtu.be)
- * 3. Raw video file     (videoUrl is any other URL)
- * 4. Empty placeholder
+ * 1. YouTube embed  (videoUrl matches youtube.com / youtu.be)
+ * 2. Raw video file (videoUrl is any other URL)
+ * 3. Empty placeholder
  */
 
-const CF_CUSTOMER = "customer-3ojbg1863az";
-
-export function cfThumbnail(videoId: string): string {
-  return `https://${CF_CUSTOMER}.cloudflarestream.com/${videoId}/thumbnails/thumbnail.jpg`;
-}
-
 interface VideoPlayerProps {
-  cloudflareVideoId?: string | null;
   videoUrl?: string | null;
   title?: string;
   posterUrl?: string | null;
@@ -32,7 +24,6 @@ function isYoutube(url: string | null | undefined): boolean {
 }
 
 export function VideoPlayer({
-  cloudflareVideoId,
   videoUrl,
   title = "Video",
   posterUrl,
@@ -40,23 +31,7 @@ export function VideoPlayer({
 }: VideoPlayerProps) {
   const wrapClass = `aspect-video w-full rounded-xl overflow-hidden bg-black shadow-card ${className}`;
 
-  // 1. Cloudflare Stream
-  if (cloudflareVideoId) {
-    const cfPoster = posterUrl ?? cfThumbnail(cloudflareVideoId);
-    return (
-      <div className={wrapClass} style={cfPoster ? { backgroundImage: `url(${cfPoster})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}>
-        <iframe
-          src={`https://iframe.cloudflarestream.com/${cloudflareVideoId}`}
-          title={title}
-          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
-          allowFullScreen
-          className="w-full h-full border-0"
-        />
-      </div>
-    );
-  }
-
-  // 2. YouTube
+  // 1. YouTube
   const ytEmbed = youtubeEmbed(videoUrl);
   if (ytEmbed) {
     return (
@@ -72,7 +47,7 @@ export function VideoPlayer({
     );
   }
 
-  // 3. Raw video file (Supabase storage upload)
+  // 2. Raw video file
   if (videoUrl && !isYoutube(videoUrl)) {
     return (
       <div className={wrapClass}>
@@ -88,7 +63,7 @@ export function VideoPlayer({
     );
   }
 
-  // 4. No video
+  // 3. No video
   return (
     <div className={`${wrapClass} flex items-center justify-center`}>
       <p className="text-muted-foreground text-sm">No video for this lesson</p>

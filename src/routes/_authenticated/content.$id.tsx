@@ -36,7 +36,7 @@ function ContentDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content")
-        .select("*, cloudflare_video_id, category:categories(name,slug)")
+        .select("*, category:categories(name,slug)")
         .eq("id", id)
         .single();
       if (error) throw error;
@@ -177,7 +177,6 @@ function ContentDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <VideoPlayer
-              cloudflareVideoId={(item as any).cloudflare_video_id}
               videoUrl={item.video_url}
               title={item.title}
               posterUrl={item.thumbnail_url}
