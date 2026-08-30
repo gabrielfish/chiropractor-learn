@@ -355,6 +355,130 @@ async function createCourseFromPlaylist(
   return { courseId, courseTitle: title, lessonsCreated };
 }
 
+/** Fetch all playlists belonging to a channel (not the auto-generated uploads playlist). */
+async function fetchChannelPlaylists(
+  channelId: string,
+  apiKey: string
+): Promise<{ playlistId: string; title: string; description: string; itemCount: number }[]> {
+  const playlists: { playlistId: string; title: string; description: string; itemCount: number }[] = [];
+  let pageToken = "";
+
+  do {
+    const url =
+      `https://www.googleapis.com/youtube/v3/playlists` +
+      `?part=snippet,contentDetails&channelId=${encodeURIComponent(channelId)}&maxResults=50` +
+      `&key=${encodeURIComponent(apiKey)}` +
+      (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "");
+
+    const data = await fetchYouTubePage(url);
+
+    for (const item of data.items ?? []) {
+      const sn = item.snippet;
+      const count = item.contentDetails?.itemCount ?? 0;
+      if (!sn || count === 0) continue; // skip empty playlists
+      playlists.push({
+        playlistId: item.id,
+        title: sn.title ?? item.id,
+        description: sn.description ?? "",
+        itemCount: count,
+      });
+    }
+
+    pageToken = data.nextPageToken ?? "";
+  } while (pageToken);
+
+  return playlists;
+}
+
+export const syncAllYouTubeChannelPlaylists = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(
+    (d: { channelId: string; maxVideosPerPlaylist?: number }) => d
+  )
+  .handler(async ({ data, context }) => {
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (!apiKey) throw new Error("YOUTUBE_API_KEY environment variable is not set");
+
+    const userId = (context as { userId: string }).userId;
+
+    const { data: cats } = await supabaseAdmin
+      .from("categories")
+      .select("id, name")
+      .order("order");
+    const categories = (cats ?? []) as { id: string; name: string }[];
+
+    const maxVideosPerPlaylist = data.maxVideosPerPlaylist ?? 200;
+    const opts: SyncOptions = { maxResults: maxVideosPerPlaylist };
+
+    // Fetch all playlists for the channel
+    const playlists = await fetchChannelPlaylists(data.channelId, apiKey);
+    if (playlists.length === 0) {
+      return { coursesCreated: 0, lessonsImported: 0, skipped: 0, total: 0, results: [] };
+    }
+
+    // Fetch existing course titles to avoid duplicates
+    const existingCourses = (await (supabaseAdmin as any)
+      .from("courses")
+      .select("title")) as { data: { title: string }[] | null };
+    const existingTitles = new Set(
+      (existingCourses.data ?? []).map((c) => c.title.trim().toLowerCase())
+    );
+
+    const results: { playlistId: string; playlistTitle: string; action: "created" | "skipped"; courseTitle?: string; lessonsCreated?: number; reason?: string }[] = [];
+    let coursesCreated = 0;
+    let lessonsImported = 0;
+    let skipped = 0;
+
+    for (let i = 0; i < playlists.length; i++) {
+      const pl = playlists[i];
+      console.log(`[YT Sync All] Processing playlist ${i + 1}/${playlists.length}: ${pl.title}`);
+
+      // Skip if a course with this title already exists
+      if (existingTitles.has(pl.title.trim().toLowerCase())) {
+        console.log(`[YT Sync All] Skipping "${pl.title}" — course already exists`);
+        results.push({ playlistId: pl.playlistId, playlistTitle: pl.title, action: "skipped", reason: "course already exists" });
+        skipped++;
+        continue;
+      }
+
+      try {
+        const videos = await fetchPlaylistVideos(pl.playlistId, apiKey, opts);
+        if (videos.length === 0) {
+          results.push({ playlistId: pl.playlistId, playlistTitle: pl.title, action: "skipped", reason: "no accessible videos" });
+          skipped++;
+          continue;
+        }
+
+        const courseResult = await createCourseFromPlaylist(
+          videos,
+          categories,
+          { title: pl.title, description: pl.description },
+          undefined,
+          userId
+        );
+
+        // Add to known titles so we don't duplicate within this same run
+        existingTitles.add(courseResult.courseTitle.trim().toLowerCase());
+
+        results.push({
+          playlistId: pl.playlistId,
+          playlistTitle: pl.title,
+          action: "created",
+          courseTitle: courseResult.courseTitle,
+          lessonsCreated: courseResult.lessonsCreated,
+        });
+        coursesCreated++;
+        lessonsImported += courseResult.lessonsCreated;
+      } catch (err) {
+        console.error(`[YT Sync All] Failed for playlist "${pl.title}":`, (err as Error).message);
+        results.push({ playlistId: pl.playlistId, playlistTitle: pl.title, action: "skipped", reason: (err as Error).message });
+        skipped++;
+      }
+    }
+
+    return { coursesCreated, lessonsImported, skipped, total: playlists.length, results };
+  });
+
 export const syncYouTubePlaylist = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(

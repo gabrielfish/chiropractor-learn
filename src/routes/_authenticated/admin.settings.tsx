@@ -3,9 +3,13 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { syncAllToAlgolia } from "@/lib/algolia-sync.functions";
-import { syncYouTubeChannel, syncYouTubePlaylist } from "@/lib/youtube-sync.functions";
+import {
+  syncYouTubeChannel,
+  syncYouTubePlaylist,
+  syncAllYouTubeChannelPlaylists,
+} from "@/lib/youtube-sync.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { Settings, RefreshCw, CheckCircle2, AlertCircle, Database, Youtube } from "lucide-react";
+import { Settings, RefreshCw, CheckCircle2, AlertCircle, Database, Youtube, ListVideo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +27,7 @@ function SettingsPage() {
   const syncAllFn = useServerFn(syncAllToAlgolia);
   const syncChannelFn = useServerFn(syncYouTubeChannel);
   const syncPlaylistFn = useServerFn(syncYouTubePlaylist);
+  const syncAllPlaylistsFn = useServerFn(syncAllYouTubeChannelPlaylists);
 
   const [syncResult, setSyncResult] = useState<{
     contentCount: number;
@@ -34,10 +39,15 @@ function SettingsPage() {
   const [ytPlaylistId, setYtPlaylistId] = useState("");
   const [ytCourseTitle, setYtCourseTitle] = useState("");
   const [ytMaxResults, setYtMaxResults] = useState(50);
+  const [ytMaxPerPlaylist, setYtMaxPerPlaylist] = useState(200);
   const [ytPublishedAfter, setYtPublishedAfter] = useState("");
   const [ytProgress, setYtProgress] = useState<string | null>(null);
   const [ytResult, setYtResult] = useState<{ imported: number; skipped: number } | null>(null);
   const [ytCourseResult, setYtCourseResult] = useState<{ courseTitle: string; lessonsCreated: number } | null>(null);
+  const [ytAllResult, setYtAllResult] = useState<{
+    coursesCreated: number; lessonsImported: number; skipped: number; total: number;
+    results: { playlistTitle: string; action: "created" | "skipped"; courseTitle?: string; lessonsCreated?: number; reason?: string }[];
+  } | null>(null);
 
   const syncMut = useMutation({
     mutationFn: () => syncAllFn({ data: undefined }),
@@ -49,6 +59,7 @@ function SettingsPage() {
   const ytChannelMut = useMutation({
     mutationFn: () => {
       setYtProgress("Fetching videos from YouTube channel…");
+      setYtResult(null);
       return syncChannelFn({
         data: {
           channelId: ytChannelId.trim(),
@@ -62,15 +73,13 @@ function SettingsPage() {
       setYtResult(r);
       setYtProgress(null);
     },
-    onError: () => {
-      setYtProgress(null);
-      setYtResult(null);
-    },
+    onError: () => { setYtProgress(null); },
   });
 
   const ytPlaylistMut = useMutation({
     mutationFn: () => {
       setYtProgress("Fetching playlist and creating course…");
+      setYtCourseResult(null);
       return syncPlaylistFn({
         data: {
           playlistId: ytPlaylistId.trim(),
@@ -85,13 +94,36 @@ function SettingsPage() {
       setYtCourseResult(r);
       setYtProgress(null);
     },
-    onError: () => {
-      setYtProgress(null);
-      setYtCourseResult(null);
-    },
+    onError: () => { setYtProgress(null); },
   });
 
-  const ytBusy = ytChannelMut.isPending || ytPlaylistMut.isPending;
+  const ytAllPlaylistsMut = useMutation({
+    mutationFn: () => {
+      setYtProgress("Fetching all playlists from channel…");
+      setYtAllResult(null);
+      return syncAllPlaylistsFn({
+        data: {
+          channelId: ytChannelId.trim(),
+          maxVideosPerPlaylist: ytMaxPerPlaylist,
+        },
+      });
+    },
+    onSuccess: (result) => {
+      const r = result as {
+        coursesCreated: number; lessonsImported: number; skipped: number; total: number;
+        results: { playlistTitle: string; action: "created" | "skipped"; courseTitle?: string; lessonsCreated?: number; reason?: string }[];
+      };
+      setYtAllResult(r);
+      setYtProgress(null);
+    },
+    onError: () => { setYtProgress(null); },
+  });
+
+  const ytBusy = ytChannelMut.isPending || ytPlaylistMut.isPending || ytAllPlaylistsMut.isPending;
+
+  const progressLabel = ytAllPlaylistsMut.isPending
+    ? (ytProgress ?? "Syncing all playlists — this may take several minutes for large channels…")
+    : (ytProgress ?? "Importing… this may take a minute.");
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
@@ -171,66 +203,73 @@ function SettingsPage() {
                   for structured learning programs. Categories are auto-assigned by AI.
                 </p>
 
-                {/* Shared options */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5 p-4 rounded-lg bg-muted/40 border border-border">
+                {/* Shared options — Channel ID + max results/date for channel/single playlist */}
+                <div className="space-y-3 mb-5 p-4 rounded-lg bg-muted/40 border border-border">
                   <div className="space-y-1.5">
-                    <Label htmlFor="yt-max">Max videos to import (newest first)</Label>
+                    <Label htmlFor="yt-channel">Channel ID</Label>
                     <Input
-                      id="yt-max"
-                      type="number"
-                      min={1}
-                      max={200}
-                      value={ytMaxResults}
-                      onChange={(e) => setYtMaxResults(Math.max(1, Math.min(200, Number(e.target.value) || 50)))}
+                      id="yt-channel"
+                      placeholder="e.g. UCxxxxxxxxxxxxxxxxxxxxxx"
+                      value={ytChannelId}
+                      onChange={(e) => setYtChannelId(e.target.value)}
                       disabled={ytBusy}
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="yt-after">Published after (optional)</Label>
-                    <Input
-                      id="yt-after"
-                      type="date"
-                      value={ytPublishedAfter}
-                      onChange={(e) => setYtPublishedAfter(e.target.value)}
-                      disabled={ytBusy}
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="yt-max">Max videos (channel/playlist sync)</Label>
+                      <Input
+                        id="yt-max"
+                        type="number"
+                        min={1}
+                        max={200}
+                        value={ytMaxResults}
+                        onChange={(e) => setYtMaxResults(Math.max(1, Math.min(200, Number(e.target.value) || 50)))}
+                        disabled={ytBusy}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="yt-after">Published after (optional)</Label>
+                      <Input
+                        id="yt-after"
+                        type="date"
+                        value={ytPublishedAfter}
+                        onChange={(e) => setYtPublishedAfter(e.target.value)}
+                        disabled={ytBusy}
+                      />
+                    </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   {/* Channel sync */}
                   <div className="space-y-2">
-                    <Label>Channel ID</Label>
                     <div className="flex gap-2">
-                      <Input
-                        placeholder="e.g. UCxxxxxxxxxxxxxxxxxxxxxx"
-                        value={ytChannelId}
-                        onChange={(e) => setYtChannelId(e.target.value)}
-                        disabled={ytBusy}
-                        className="flex-1"
-                      />
                       <Button
                         onClick={() => { setYtResult(null); ytChannelMut.mutate(); }}
                         disabled={!ytChannelId.trim() || ytBusy}
-                        className="bg-red-600 hover:bg-red-700 text-white inline-flex items-center gap-2 shrink-0"
+                        className="bg-red-600 hover:bg-red-700 text-white inline-flex items-center gap-2"
                       >
                         <RefreshCw className={`h-4 w-4 ${ytChannelMut.isPending ? "animate-spin" : ""}`} />
-                        {ytChannelMut.isPending ? "Syncing…" : "Sync Channel"}
+                        {ytChannelMut.isPending ? "Syncing…" : "Sync Channel → Lessons"}
                       </Button>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Imports up to {ytMaxResults} recent videos from the channel's upload feed as individual draft lessons.
+                    </p>
                   </div>
 
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <div className="flex-1 h-px bg-border" />
-                    <span>or</span>
+                    <span>or sync a single playlist</span>
                     <div className="flex-1 h-px bg-border" />
                   </div>
 
-                  {/* Playlist sync → creates a Course */}
+                  {/* Single playlist sync → creates one Course */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Label>Playlist ID</Label>
-                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Creates a Course</span>
+                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Creates 1 Course</span>
                     </div>
                     <div className="flex gap-2">
                       <Input
@@ -263,14 +302,57 @@ function SettingsPage() {
                     </div>
                   </div>
 
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <div className="flex-1 h-px bg-border" />
+                    <span>or sync all playlists at once</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+
+                  {/* Sync All Playlists → All Courses */}
+                  <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <ListVideo className="h-4 w-4 text-red-500 shrink-0" />
+                      <span className="text-sm font-medium">Sync All Playlists → All Courses</span>
+                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Uses Channel ID above</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Fetches every playlist on the channel and creates one draft Course per playlist.
+                      Playlists whose title matches an existing course are skipped automatically.
+                      Each course gets up to the limit below in lessons.
+                    </p>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="yt-max-per-playlist" className="text-xs">
+                        Max lessons per course (default 200)
+                      </Label>
+                      <Input
+                        id="yt-max-per-playlist"
+                        type="number"
+                        min={1}
+                        max={500}
+                        value={ytMaxPerPlaylist}
+                        onChange={(e) => setYtMaxPerPlaylist(Math.max(1, Math.min(500, Number(e.target.value) || 200)))}
+                        disabled={ytBusy}
+                        className="max-w-[140px]"
+                      />
+                    </div>
+                    <Button
+                      onClick={() => { setYtAllResult(null); ytAllPlaylistsMut.mutate(); }}
+                      disabled={!ytChannelId.trim() || ytBusy}
+                      className="bg-red-700 hover:bg-red-800 text-white inline-flex items-center gap-2"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${ytAllPlaylistsMut.isPending ? "animate-spin" : ""}`} />
+                      {ytAllPlaylistsMut.isPending ? "Syncing all playlists…" : "Sync All Playlists → All Courses"}
+                    </Button>
+                  </div>
+
                   {/* Progress */}
                   {ytBusy && (
                     <div className="rounded-lg bg-muted/60 border border-border p-3 text-sm text-muted-foreground animate-pulse">
-                      {ytProgress ?? "Importing videos… this may take a minute for large batches."}
+                      {progressLabel}
                     </div>
                   )}
 
-                  {/* Success — channel */}
+                  {/* Success — channel lessons */}
                   {ytResult && !ytBusy && (
                     <div className="flex items-start gap-2 text-sm text-green-600 dark:text-green-400 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3">
                       <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
@@ -283,7 +365,7 @@ function SettingsPage() {
                     </div>
                   )}
 
-                  {/* Success — playlist course */}
+                  {/* Success — single playlist course */}
                   {ytCourseResult && !ytBusy && (
                     <div className="flex items-start gap-2 text-sm text-green-600 dark:text-green-400 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3">
                       <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
@@ -294,11 +376,52 @@ function SettingsPage() {
                     </div>
                   )}
 
+                  {/* Success — all playlists */}
+                  {ytAllResult && !ytBusy && (
+                    <div className="rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-4 space-y-3">
+                      <div className="flex items-start gap-2 text-sm text-green-600 dark:text-green-400">
+                        <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+                        <span>
+                          Done! <strong>{ytAllResult.coursesCreated}</strong> course{ytAllResult.coursesCreated !== 1 ? "s" : ""} created
+                          with <strong>{ytAllResult.lessonsImported}</strong> total lessons.
+                          {ytAllResult.skipped > 0 && (
+                            <> <strong>{ytAllResult.skipped}</strong> playlist{ytAllResult.skipped !== 1 ? "s" : ""} skipped.</>
+                          )}
+                          {" "}({ytAllResult.total} playlists found on channel.)
+                        </span>
+                      </div>
+                      {ytAllResult.results.length > 0 && (
+                        <div className="max-h-48 overflow-y-auto space-y-1">
+                          {ytAllResult.results.map((r, i) => (
+                            <div key={i} className="text-xs flex items-start gap-2">
+                              {r.action === "created" ? (
+                                <span className="text-green-600 dark:text-green-400 shrink-0">✓</span>
+                              ) : (
+                                <span className="text-muted-foreground shrink-0">—</span>
+                              )}
+                              <span className={r.action === "skipped" ? "text-muted-foreground" : "text-foreground"}>
+                                {r.playlistTitle}
+                                {r.action === "created" && r.lessonsCreated !== undefined && (
+                                  <span className="text-muted-foreground"> ({r.lessonsCreated} lessons)</span>
+                                )}
+                                {r.action === "skipped" && r.reason && (
+                                  <span className="text-muted-foreground"> — {r.reason}</span>
+                                )}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Error */}
-                  {(ytChannelMut.isError || ytPlaylistMut.isError) && !ytBusy && (
+                  {(ytChannelMut.isError || ytPlaylistMut.isError || ytAllPlaylistsMut.isError) && !ytBusy && (
                     <div className="flex items-start gap-2 text-sm text-destructive rounded-lg bg-destructive/10 border border-destructive/20 p-3">
                       <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                      <span>{((ytChannelMut.error || ytPlaylistMut.error) as Error)?.message ?? "Sync failed"}</span>
+                      <span>
+                        {((ytChannelMut.error || ytPlaylistMut.error || ytAllPlaylistsMut.error) as Error)?.message ?? "Sync failed"}
+                      </span>
                     </div>
                   )}
                 </div>
