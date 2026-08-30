@@ -16,6 +16,13 @@ export default defineConfig({
     // Use the Vercel preset so the build outputs to .vercel/output
     // (override the default Cloudflare target)
     preset: "vercel",
+    vercel: {
+      functions: {
+        // Pin to Node 22 LTS — Nitro auto-detects the local Node version (24)
+        // which outputs nodejs24.x, a beta runtime that may fail on Vercel.
+        runtime: "nodejs22.x",
+      },
+    },
   },
   vite: {
     build: {
