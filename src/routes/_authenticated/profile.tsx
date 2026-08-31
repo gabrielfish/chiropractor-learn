@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { MemberNav } from "@/components/MemberNav";
-import { Loader2, Copy, Check, BotMessageSquare } from "lucide-react";
+import { Loader2, Copy, Check, BotMessageSquare, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,6 +81,7 @@ function ProfilePage() {
   const [mcpToken, setMcpToken] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
+  const [tokenVisible, setTokenVisible] = useState(false);
   const MCP_MEMBER_URL = "https://mcp.dcpracticegrowth.com/member";
 
   const mcpTokenMut = useMutation({
@@ -350,12 +351,18 @@ function ProfilePage() {
                 <div className="flex items-center gap-2">
                   <Input
                     readOnly
-                    value={mcpToken}
-                    type="password"
+                    value={tokenVisible ? mcpToken : "••••••••••••••••••••••••••••••••"}
                     className="font-mono text-sm"
-                    onFocus={(e) => (e.target.type = "text")}
-                    onBlur={(e) => (e.target.type = "password")}
                   />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => setTokenVisible((v) => !v)}
+                    className="shrink-0"
+                    title={tokenVisible ? "Hide token" : "Show token"}
+                  >
+                    {tokenVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
                   <Button
                     size="icon"
                     variant="outline"
