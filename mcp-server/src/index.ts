@@ -421,6 +421,13 @@ async function parseBody(req: IncomingMessage): Promise<any> {
 // ---------------------------------------------------------------------------
 
 async function runMcp(server: McpServer, req: IncomingMessage, res: ServerResponse, body: any) {
+  // Ensure the Accept header satisfies the MCP SDK's requirement for SSE support.
+  // Claude.ai's discovery ping omits this header, causing a 406 — inject it server-side.
+  const accept = req.headers["accept"] ?? "";
+  if (!accept.includes("text/event-stream")) {
+    req.headers["accept"] = "application/json, text/event-stream";
+  }
+
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
   try {
     await server.connect(transport);
