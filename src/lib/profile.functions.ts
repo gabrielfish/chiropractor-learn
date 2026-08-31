@@ -82,3 +82,31 @@ export const sendPasswordReset = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const getOrCreateMcpToken = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Return existing token if present
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("mcp_token")
+      .eq("id", context.userId)
+      .single();
+
+    if ((profile as any)?.mcp_token) {
+      return { token: (profile as any).mcp_token as string };
+    }
+
+    // Generate a new UUID token and persist it
+    const { data: updated, error } = await supabaseAdmin
+      .from("profiles")
+      .update({ mcp_token: crypto.randomUUID() } as any)
+      .eq("id", context.userId)
+      .select("mcp_token")
+      .single();
+
+    if (error || !updated) throw new Error(error?.message ?? "Failed to generate token");
+    return { token: (updated as any).mcp_token as string };
+  });

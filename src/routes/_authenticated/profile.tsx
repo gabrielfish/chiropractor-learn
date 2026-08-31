@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { MemberNav } from "@/components/MemberNav";
-import { Loader2 } from "lucide-react";
+import { Loader2, Copy, Check, BotMessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,7 @@ import {
   updateNotifications,
   submitSupportRequest,
   sendPasswordReset,
+  getOrCreateMcpToken,
 } from "@/lib/profile.functions";
 import { getMyCertificates } from "@/lib/certificates.functions";
 import { Award, ExternalLink } from "lucide-react";
@@ -74,6 +75,25 @@ function ProfilePage() {
   const [submittingSupport, setSubmittingSupport] = useState(false);
 
   const [sendingReset, setSendingReset] = useState(false);
+
+  // Claude MCP token
+  const getMcpToken = useServerFn(getOrCreateMcpToken);
+  const [mcpToken, setMcpToken] = useState<string | null>(null);
+  const [copiedToken, setCopiedToken] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const MCP_MEMBER_URL = "https://dcpg-mcp-server.vercel.app/member";
+
+  const mcpTokenMut = useMutation({
+    mutationFn: () => getMcpToken(),
+    onSuccess: (res) => setMcpToken(res.token),
+    onError: () => toast.error("Failed to generate token"),
+  });
+
+  const copyToClipboard = async (text: string, which: "token" | "url") => {
+    await navigator.clipboard.writeText(text);
+    if (which === "token") { setCopiedToken(true); setTimeout(() => setCopiedToken(false), 2000); }
+    else { setCopiedUrl(true); setTimeout(() => setCopiedUrl(false), 2000); }
+  };
 
   useEffect(() => {
     const p = profileQ.data?.profile;
@@ -286,6 +306,80 @@ function ProfilePage() {
             </div>
           </Section>
         </form>
+
+        {/* Connect Claude */}
+        <Section
+          title="Connect Claude to Ryan's Library"
+          description="Use your personal MCP token to give Claude direct access to the full DCPG teaching library — search lessons, get transcripts, and get personalised recommendations."
+        >
+          <div className="flex items-start gap-3 rounded-lg bg-muted/50 border border-border p-4">
+            <BotMessageSquare className="h-5 w-5 shrink-0 text-primary mt-0.5" />
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p>In Claude, go to <strong className="text-foreground">Settings → Integrations → Add MCP Server</strong> and paste your token and URL below.</p>
+            </div>
+          </div>
+
+          {!mcpToken ? (
+            <Button
+              onClick={() => mcpTokenMut.mutate()}
+              disabled={mcpTokenMut.isPending}
+              className="inline-flex items-center gap-2"
+            >
+              {mcpTokenMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {mcpTokenMut.isPending ? "Generating…" : "Generate My MCP Token"}
+            </Button>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>MCP Server URL</Label>
+                <div className="flex items-center gap-2">
+                  <Input readOnly value={MCP_MEMBER_URL} className="font-mono text-sm" />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => copyToClipboard(MCP_MEMBER_URL, "url")}
+                    className="shrink-0"
+                    title="Copy URL"
+                  >
+                    {copiedUrl ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Your Personal API Token</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    readOnly
+                    value={mcpToken}
+                    type="password"
+                    className="font-mono text-sm"
+                    onFocus={(e) => (e.target.type = "text")}
+                    onBlur={(e) => (e.target.type = "password")}
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => copyToClipboard(mcpToken, "token")}
+                    className="shrink-0"
+                    title="Copy token"
+                  >
+                    {copiedToken ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Keep this token private — it grants access to your member library.</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => mcpTokenMut.mutate()}
+                disabled={mcpTokenMut.isPending}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Regenerate token
+              </Button>
+            </div>
+          )}
+        </Section>
 
         {/* My Certificates */}
         <div className="mt-8">
