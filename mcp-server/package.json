@@ -1,6 +1,7 @@
 {
   "name": "dcpg-mcp-server",
   "version": "1.0.0",
+  "description": "DCPG MCP server — deployed 2026-08-31",
   "private": true,
   "type": "module",
   "engines": { "node": "22.x" },
