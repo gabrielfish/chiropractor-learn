@@ -421,12 +421,15 @@ async function parseBody(req: IncomingMessage): Promise<any> {
 // ---------------------------------------------------------------------------
 
 async function runMcp(server: McpServer, req: IncomingMessage, res: ServerResponse, body: any) {
-  // Ensure the Accept header satisfies the MCP SDK's requirement for SSE support.
-  // Claude.ai's discovery ping omits this header, causing a 406 — inject it server-side.
+  // Ensure the Accept header satisfies the MCP SDK's SSE requirement.
+  // Claude.ai's discovery ping may omit it — inject server-side so the transport accepts it.
   const accept = req.headers["accept"] ?? "";
   if (!accept.includes("text/event-stream")) {
     req.headers["accept"] = "application/json, text/event-stream";
   }
+
+  // Disable buffering so SSE frames reach Claude.ai immediately (Vercel/nginx may buffer by default)
+  (res as any).setHeader?.("X-Accel-Buffering", "no");
 
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
   try {
@@ -447,6 +450,16 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const ip = getClientIp(req);
   const url = (req as any).url as string ?? "/";
   const cors = corsHeaders(origin);
+
+  // Prevent Vercel/nginx from buffering SSE streams — Claude.ai needs them flushed immediately
+  (res as any).setHeader("X-Accel-Buffering", "no");
+
+  // ── GET — return 405 with JSON-RPC error so clients don't fall back to legacy SSE transport
+  if (req.method === "GET" && url !== "/health" && !url.startsWith("/health?")) {
+    res.writeHead(405, { "Content-Type": "application/json", Allow: "POST, OPTIONS", ...cors });
+    res.end(JSON.stringify({ jsonrpc: "2.0", error: { code: -32000, message: "Use HTTP POST for MCP requests" }, id: null }));
+    return;
+  }
 
   // ── /health — unauthenticated monitoring ───────────────────────────────────
   if (url === "/health" || url.startsWith("/health?")) {
