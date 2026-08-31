@@ -62,6 +62,9 @@ export const submitSupportRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => supportSchema.parse(d))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Save to DB
     const { error } = await context.supabase.from("support_requests").insert({
       member_id: context.userId,
       category: data.category,
@@ -69,6 +72,51 @@ export const submitSupportRequest = createServerFn({ method: "POST" })
       message: data.message,
     });
     if (error) throw new Error(error.message);
+
+    // Fetch member name + email for the notification
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", context.userId)
+      .maybeSingle();
+
+    const memberName = (profile as any)?.full_name ?? "A member";
+    const memberEmail = (profile as any)?.email ?? "unknown";
+    const submitted = new Date().toLocaleString("en-AU", {
+      timeZone: "Australia/Sydney",
+      dateStyle: "full",
+      timeStyle: "short",
+    });
+
+    // Send email notification (best-effort — never fail the user's request)
+    try {
+      const apiKey = process.env.RESEND_API_KEY;
+      if (apiKey) {
+        const { Resend } = await import("resend");
+        const resend = new Resend(apiKey);
+        const FROM = "Ryan Rieder - DCPG Teaching Library <noreply@dcpracticegrowth.com>";
+        const TO = ["gabriel@dcpracticegrowth.com", "ryan@dcpracticegrowth.com"];
+        await resend.emails.send({
+          from: FROM,
+          to: TO,
+          subject: `New Support Request from ${memberName}`,
+          html: `
+<p><strong>Member:</strong> ${memberName}</p>
+<p><strong>Email:</strong> ${memberEmail}</p>
+<p><strong>Category:</strong> ${data.category}</p>
+<p><strong>Subject:</strong> ${data.subject}</p>
+<p><strong>Message:</strong></p>
+<blockquote style="border-left:3px solid #ccc;margin:0;padding:0 1em;color:#555">
+  ${data.message.replace(/\n/g, "<br>")}
+</blockquote>
+<p><strong>Submitted:</strong> ${submitted}</p>
+          `.trim(),
+        });
+      }
+    } catch (emailErr) {
+      console.error("[support] email notification failed:", emailErr);
+    }
+
     return { ok: true };
   });
 
