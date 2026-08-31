@@ -514,32 +514,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
-  // ── /member — member token auth, 200 req/hour ─────────────────────────────
+  // ── /member — open access, 200 req/hour, full member tools ───────────────
   if (url.startsWith("/member")) {
     if (isRateLimited(`mem:${ip}`, 200, 60 * 60 * 1000)) {
       res.writeHead(429, { "Content-Type": "application/json", ...cors });
-      res.end(JSON.stringify({ error: "Rate limit exceeded — 200 requests per hour for members" }));
+      res.end(JSON.stringify({ error: "Rate limit exceeded — 200 requests per hour" }));
       return;
     }
-
-    const key =
-      (req.headers["x-api-key"] as string) ??
-      (req.headers["authorization"] as string)?.replace(/^Bearer\s+/i, "") ??
-      "";
-
-    if (!key) {
-      res.writeHead(401, { "Content-Type": "application/json", ...cors });
-      res.end(JSON.stringify({ error: "Provide x-api-key with your member MCP token" }));
-      return;
-    }
-
-    const memberId = await getMemberFromToken(key);
-    if (!memberId) {
-      res.writeHead(401, { "Content-Type": "application/json", ...cors });
-      res.end(JSON.stringify({ error: "Invalid member token" }));
-      return;
-    }
-
     const body = req.method === "POST" ? await parseBody(req) : {};
     await runMcp(createMemberServer(), req, res, body);
     return;
