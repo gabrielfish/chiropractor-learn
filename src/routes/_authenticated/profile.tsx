@@ -81,7 +81,7 @@ function ProfilePage() {
   const [mcpToken, setMcpToken] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
-  const MCP_MEMBER_URL = "https://dcpg-mcp-server.vercel.app/member";
+  const MCP_MEMBER_URL = "https://mcp.dcpracticegrowth.com/member";
 
   const mcpTokenMut = useMutation({
     mutationFn: () => getMcpToken(),
