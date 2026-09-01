@@ -152,7 +152,7 @@ async function toolSearchContent(
       const pattern = `%${query}%`;
       const { data: rows } = await db
         .from("content")
-        .select("id, title, description, category:categories(name), display_author_name")
+        .select("id, title, description, youtube_video_id, category:categories(name), display_author_name")
         .eq("status", "published")
         .or(`title.ilike.${pattern},description.ilike.${pattern}`)
         .limit(cap);
@@ -164,6 +164,7 @@ async function toolSearchContent(
           title: r.title,
           description: (r.description ?? "").slice(0, isPublic ? 200 : 300),
           category: r.category?.name ?? null,
+          youtube_video_id: r.youtube_video_id ?? null,
           url: `https://learn.dcpracticegrowth.com/content/${r.id}`,
           source: "supabase_fallback",
         };
@@ -184,16 +185,39 @@ async function toolSearchContent(
     }
   }
 
-  // ── 3. Return Algolia results ─────────────────────────────────────────────
+  // ── 3. Return Algolia results, enriched with youtube_video_id from Supabase ─
+  // Algolia index does not store youtube_video_id, so fetch it in one batch query
+  const contentIds = algoliaResults
+    .filter((h) => (h.type ?? "content") !== "course")
+    .map((h) => (h.objectID as string).replace(/^content_/, ""));
+
+  let videoIdMap: Record<string, string | null> = {};
+  if (contentIds.length > 0) {
+    try {
+      const db = supabase();
+      const { data: vidRows } = await db
+        .from("content")
+        .select("id, youtube_video_id")
+        .in("id", contentIds);
+      for (const row of vidRows ?? []) {
+        videoIdMap[(row as any).id] = (row as any).youtube_video_id ?? null;
+      }
+    } catch {
+      // non-fatal — results still useful without youtube_video_id
+    }
+  }
+
   const results = algoliaResults.map((h) => {
     const rawId = (h.objectID as string).replace(/^(content_|course_)/, "");
+    const isCourse = h.type === "course";
     const base = {
       id: rawId,
       type: h.type ?? "lesson",
       title: h.title,
       description: (h.description ?? "").slice(0, isPublic ? 200 : 300),
       category: h.category_name ?? null,
-      url: `https://learn.dcpracticegrowth.com/${h.type === "course" ? "courses" : "content"}/${rawId}`,
+      youtube_video_id: isCourse ? null : (videoIdMap[rawId] ?? null),
+      url: `https://learn.dcpracticegrowth.com/${isCourse ? "courses" : "content"}/${rawId}`,
     };
     return isPublic ? { ...base, cta: CTA } : base;
   });
