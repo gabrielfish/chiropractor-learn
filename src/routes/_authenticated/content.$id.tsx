@@ -34,30 +34,44 @@ function ContentDetail() {
   const contentQ = useQuery({
     queryKey: ["content", id],
     queryFn: async () => {
+      // Fetch content without any join to avoid FK-hint ambiguity across projects
       const { data, error } = await supabase
         .from("content")
-        .select("*, category:categories!content_category_id_fkey(name,slug)")
+        .select("*")
         .eq("id", id)
         .maybeSingle();
       if (error) {
-        console.error("[content detail] Supabase error:", error);
-        throw new Error(error.message);
+        console.error("[content detail] Supabase error:", error.code, error.message, error.details);
+        throw new Error(error.message || JSON.stringify(error));
       }
-      if (!data) throw new Error("Lesson not found (id=" + id + ")");
+      if (!data) throw new Error("Lesson not found — id=" + id + " (row missing or RLS blocked)");
+
+      // Fetch category separately so a missing/broken FK never blocks the page
+      let category: { name: string; slug: string } | null = null;
+      if ((data as any).category_id) {
+        const { data: cat } = await supabase
+          .from("categories")
+          .select("name,slug")
+          .eq("id", (data as any).category_id)
+          .maybeSingle();
+        category = cat ?? null;
+      }
+
       let author: { full_name: string | null; avatar_url: string | null; job_title: string | null } | null = null;
-      if (data.author_id) {
+      if ((data as any).author_id) {
         try {
           const { data: a } = await supabase
             .from("author_profiles_public")
             .select("full_name,avatar_url,job_title")
-            .eq("id", data.author_id)
+            .eq("id", (data as any).author_id)
             .maybeSingle();
           author = a ?? null;
         } catch {
           // view may not exist yet — fall back to display_author_name
         }
       }
-      return { ...data, author };
+
+      return { ...data, category, author };
     },
   });
 
