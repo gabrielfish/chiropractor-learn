@@ -231,7 +231,7 @@ async function toolGetCourses(
       moduleIds.length > 0
         ? await (db as any)
             .from("course_lessons")
-            .select("id, module_id, course_id, title, content_type, order_index")
+            .select("id, module_id, course_id, title, content_type, order_index, video_url, youtube_video_id, description")
             .in("module_id", moduleIds)
             .order("order_index")
         : { data: [] };
@@ -321,20 +321,34 @@ function createMemberServer(): McpServer {
 
   server.tool(
     "get_lesson",
-    "Get full details for a single published lesson including video URL.",
-    { lesson_id: z.string().uuid().describe("Lesson UUID") },
+    "Get full details for a lesson by its ID. Works for both standalone lessons (content table) and course lessons (course_lessons table).",
+    { lesson_id: z.string().uuid().describe("Lesson UUID — from get_courses or search_content results") },
     async ({ lesson_id }) => {
       try {
         const db = supabase();
-        const { data, error } = await db
+
+        // 1. Check content table first (standalone lessons)
+        const { data: contentRow } = await db
           .from("content")
           .select("id, title, description, video_url, pdf_url, category:categories(name), display_author_name, published_at, views")
           .eq("id", lesson_id)
           .eq("status", "published")
-          .single();
-        if (error || !data)
-          return { content: [{ type: "text", text: `Lesson not found: ${lesson_id}` }], isError: true };
-        return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+          .maybeSingle();
+        if (contentRow) {
+          return { content: [{ type: "text", text: JSON.stringify({ source: "content", ...contentRow }, null, 2) }] };
+        }
+
+        // 2. Fall back to course_lessons table
+        const { data: courseLesson } = await (db as any)
+          .from("course_lessons")
+          .select("id, course_id, module_id, title, description, video_url, youtube_video_id, content_type, order_index")
+          .eq("id", lesson_id)
+          .maybeSingle();
+        if (courseLesson) {
+          return { content: [{ type: "text", text: JSON.stringify({ source: "course_lesson", ...courseLesson }, null, 2) }] };
+        }
+
+        return { content: [{ type: "text", text: `Lesson not found: ${lesson_id}` }], isError: true };
       } catch (err) {
         return { content: [{ type: "text", text: (err as Error).message }], isError: true };
       }
@@ -364,14 +378,57 @@ function createMemberServer(): McpServer {
 
   server.tool(
     "get_transcript",
-    "Fetch the YouTube transcript/captions for a video by URL or video ID.",
-    { video: z.string().describe("YouTube URL or video ID") },
+    "Fetch the YouTube transcript for a video. Accepts a YouTube URL, YouTube video ID (11 chars), or a lesson UUID from get_courses/get_lesson.",
+    { video: z.string().describe("YouTube URL, YouTube video ID, or lesson UUID") },
     async ({ video }) => {
       try {
-        const idMatch = video.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
-        const videoId = idMatch ? idMatch[1] : video.trim();
-        if (!/^[A-Za-z0-9_-]{11}$/.test(videoId))
-          return { content: [{ type: "text", text: "Invalid YouTube video ID" }], isError: true };
+        let videoId: string | null = null;
+
+        // 1. Try YouTube URL
+        const urlMatch = video.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+        if (urlMatch) {
+          videoId = urlMatch[1];
+        }
+        // 2. Try bare 11-char YouTube video ID
+        else if (/^[A-Za-z0-9_-]{11}$/.test(video.trim())) {
+          videoId = video.trim();
+        }
+        // 3. Try resolving as a lesson UUID → youtube_video_id
+        else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(video.trim())) {
+          const db = supabase();
+          // Check course_lessons first (most common for get_courses results)
+          const { data: cl } = await (db as any)
+            .from("course_lessons")
+            .select("youtube_video_id, video_url")
+            .eq("id", video.trim())
+            .maybeSingle();
+          if (cl?.youtube_video_id) {
+            videoId = cl.youtube_video_id;
+          } else if (cl?.video_url) {
+            const m = cl.video_url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+            if (m) videoId = m[1];
+          }
+          // Also check content table
+          if (!videoId) {
+            const { data: ct } = await db
+              .from("content")
+              .select("video_url")
+              .eq("id", video.trim())
+              .maybeSingle();
+            if (ct?.video_url) {
+              const m = ct.video_url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+              if (m) videoId = m[1];
+            }
+          }
+        }
+
+        if (!videoId) {
+          return {
+            content: [{ type: "text", text: "Could not resolve a YouTube video ID from the input. Pass a YouTube URL, video ID, or lesson UUID." }],
+            isError: true,
+          };
+        }
+
         const items = await YoutubeTranscript.fetchTranscript(videoId, { lang: "en" });
         const text = items.map((t: any) => t.text).join(" ").replace(/\s+/g, " ").trim();
         return {
