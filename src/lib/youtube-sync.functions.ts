@@ -17,8 +17,9 @@ interface YouTubeVideo {
 
 interface SyncResult {
   imported: number;
+  updated: number;
   skipped: number;
-  videos: { videoId: string; title: string; action: "imported" | "skipped"; reason?: string }[];
+  videos: { videoId: string; title: string; action: "imported" | "updated" | "skipped"; reason?: string }[];
 }
 
 interface SyncOptions {
@@ -168,28 +169,72 @@ async function assignCategory(
   }
 }
 
-/** Insert videos one by one, skipping duplicates and individual failures. Never throws. */
+/**
+ * Insert videos one by one, skipping duplicates and individual failures.
+ * When forceUpdate=true, existing records matched by youtube_video_id OR title
+ * (where youtube_video_id is null) are updated with video_url, youtube_video_id,
+ * and thumbnail_url instead of being skipped.
+ * Never throws.
+ */
 async function insertVideos(
   videos: YouTubeVideo[],
-  categories: { id: string; name: string }[]
+  categories: { id: string; name: string }[],
+  forceUpdate = false
 ): Promise<SyncResult> {
-  const result: SyncResult = { imported: 0, skipped: 0, videos: [] };
+  const result: SyncResult = { imported: 0, updated: 0, skipped: 0, videos: [] };
 
   for (let i = 0; i < videos.length; i++) {
     const v = videos[i];
     console.log(`[YT Sync] Processing ${i + 1}/${videos.length}: ${v.title}`);
 
     try {
-      // Check duplicate
-      const { data: existing } = await supabaseAdmin
+      // Check for existing record by youtube_video_id first, then fall back to title match
+      let existingId: string | null = null;
+
+      const { data: byVideoId } = await supabaseAdmin
         .from("content")
         .select("id")
         .eq("youtube_video_id", v.videoId)
         .maybeSingle();
 
-      if (existing) {
-        result.skipped++;
-        result.videos.push({ videoId: v.videoId, title: v.title, action: "skipped", reason: "duplicate" });
+      if (byVideoId) {
+        existingId = (byVideoId as { id: string }).id;
+      } else {
+        // Look for a title match where youtube_video_id is null (previously imported without URL)
+        const { data: byTitle } = await (supabaseAdmin as any)
+          .from("content")
+          .select("id")
+          .eq("title", v.title)
+          .is("youtube_video_id", null)
+          .maybeSingle();
+        if (byTitle) existingId = (byTitle as { id: string }).id;
+      }
+
+      if (existingId) {
+        if (!forceUpdate) {
+          result.skipped++;
+          result.videos.push({ videoId: v.videoId, title: v.title, action: "skipped", reason: "duplicate" });
+          continue;
+        }
+
+        // Force update: patch video_url, youtube_video_id, thumbnail_url
+        const { error: updateErr } = await supabaseAdmin
+          .from("content")
+          .update({
+            video_url: `https://www.youtube.com/watch?v=${v.videoId}`,
+            youtube_video_id: v.videoId,
+            thumbnail_url: v.thumbnailUrl || null,
+          } as any)
+          .eq("id", existingId);
+
+        if (updateErr) {
+          console.error(`[YT Sync] Update failed for ${v.videoId}:`, updateErr.message);
+          result.skipped++;
+          result.videos.push({ videoId: v.videoId, title: v.title, action: "skipped", reason: updateErr.message });
+        } else {
+          result.updated++;
+          result.videos.push({ videoId: v.videoId, title: v.title, action: "updated" });
+        }
         continue;
       }
 
@@ -234,7 +279,7 @@ async function insertVideos(
 
 export const syncYouTubeChannel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: { channelId: string; maxResults?: number; publishedAfter?: string }) => d)
+  .validator((d: { channelId: string; maxResults?: number; publishedAfter?: string; forceUpdate?: boolean }) => d)
   .handler(async ({ data }) => {
     const apiKey = process.env.YOUTUBE_API_KEY;
     if (!apiKey) throw new Error("YOUTUBE_API_KEY environment variable is not set");
@@ -252,7 +297,7 @@ export const syncYouTubeChannel = createServerFn({ method: "POST" })
 
     const uploadsPlaylistId = await getUploadsPlaylistId(data.channelId, apiKey);
     const videos = await fetchPlaylistVideos(uploadsPlaylistId, apiKey, opts);
-    return insertVideos(videos, categories);
+    return insertVideos(videos, categories, data.forceUpdate ?? false);
   });
 
 interface CourseResult {

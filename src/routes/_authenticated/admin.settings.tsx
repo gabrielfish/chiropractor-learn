@@ -41,8 +41,9 @@ function SettingsPage() {
   const [ytMaxResults, setYtMaxResults] = useState(50);
   const [ytMaxPerPlaylist, setYtMaxPerPlaylist] = useState(200);
   const [ytPublishedAfter, setYtPublishedAfter] = useState("");
+  const [ytForceUpdate, setYtForceUpdate] = useState(false);
   const [ytProgress, setYtProgress] = useState<string | null>(null);
-  const [ytResult, setYtResult] = useState<{ imported: number; skipped: number } | null>(null);
+  const [ytResult, setYtResult] = useState<{ imported: number; updated: number; skipped: number } | null>(null);
   const [ytCourseResult, setYtCourseResult] = useState<{ courseTitle: string; lessonsCreated: number } | null>(null);
   const [ytAllResult, setYtAllResult] = useState<{
     coursesCreated: number; lessonsImported: number; skipped: number; total: number;
@@ -58,18 +59,19 @@ function SettingsPage() {
 
   const ytChannelMut = useMutation({
     mutationFn: () => {
-      setYtProgress("Fetching videos from YouTube channel…");
+      setYtProgress(ytForceUpdate ? "Fetching videos and updating existing records…" : "Fetching videos from YouTube channel…");
       setYtResult(null);
       return syncChannelFn({
         data: {
           channelId: ytChannelId.trim(),
           maxResults: ytMaxResults,
           publishedAfter: ytPublishedAfter || undefined,
+          forceUpdate: ytForceUpdate,
         },
       });
     },
     onSuccess: (result) => {
-      const r = result as { imported: number; skipped: number };
+      const r = result as { imported: number; updated: number; skipped: number };
       setYtResult(r);
       setYtProgress(null);
     },
@@ -244,7 +246,7 @@ function SettingsPage() {
                 <div className="space-y-4">
                   {/* Channel sync */}
                   <div className="space-y-2">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center gap-3">
                       <Button
                         onClick={() => { setYtResult(null); ytChannelMut.mutate(); }}
                         disabled={!ytChannelId.trim() || ytBusy}
@@ -253,9 +255,20 @@ function SettingsPage() {
                         <RefreshCw className={`h-4 w-4 ${ytChannelMut.isPending ? "animate-spin" : ""}`} />
                         {ytChannelMut.isPending ? "Syncing…" : "Sync Channel → Lessons"}
                       </Button>
+                      <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={ytForceUpdate}
+                          onChange={(e) => setYtForceUpdate(e.target.checked)}
+                          disabled={ytBusy}
+                          className="h-4 w-4 accent-red-600"
+                        />
+                        Force update existing records
+                      </label>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Imports up to {ytMaxResults} recent videos from the channel's upload feed as individual draft lessons.
+                      {ytForceUpdate && " Force update will patch video_url and youtube_video_id on existing records matched by title."}
                     </p>
                   </div>
 
@@ -357,10 +370,13 @@ function SettingsPage() {
                     <div className="flex items-start gap-2 text-sm text-green-600 dark:text-green-400 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3">
                       <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
                       <span>
-                        Done! <strong>{ytResult.imported}</strong> video{ytResult.imported !== 1 ? "s" : ""} imported as drafts
-                        {ytResult.skipped > 0 && (
-                          <>, <strong>{ytResult.skipped}</strong> skipped (already exist or failed)</>
-                        )}.
+                        Done!{" "}
+                        {ytResult.imported > 0 && <><strong>{ytResult.imported}</strong> imported as drafts</>}
+                        {ytResult.imported > 0 && (ytResult.updated > 0 || ytResult.skipped > 0) && ", "}
+                        {ytResult.updated > 0 && <><strong>{ytResult.updated}</strong> updated (video_url + youtube_video_id)</>}
+                        {ytResult.updated > 0 && ytResult.skipped > 0 && ", "}
+                        {ytResult.skipped > 0 && <><strong>{ytResult.skipped}</strong> skipped</>}
+                        {ytResult.imported === 0 && ytResult.updated === 0 && ytResult.skipped === 0 && "Nothing to process"}.
                       </span>
                     </div>
                   )}
