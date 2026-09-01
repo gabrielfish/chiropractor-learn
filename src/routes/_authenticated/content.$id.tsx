@@ -36,11 +36,14 @@ function ContentDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content")
-        .select("*, category:category_id(name,slug)")
+        .select("*, category:categories!content_category_id_fkey(name,slug)")
         .eq("id", id)
         .maybeSingle();
-      if (error) throw error;
-      if (!data) throw notFound();
+      if (error) {
+        console.error("[content detail] Supabase error:", error);
+        throw new Error(error.message);
+      }
+      if (!data) throw new Error("Lesson not found (id=" + id + ")");
       let author: { full_name: string | null; avatar_url: string | null; job_title: string | null } | null = null;
       if (data.author_id) {
         try {
@@ -129,11 +132,14 @@ function ContentDetail() {
 
   const item = contentQ.data;
   if (contentQ.isError) {
+    const errMsg = (contentQ.error as Error)?.message ?? "Could not load lesson.";
+    console.error("[content detail] render error:", errMsg);
     return (
       <div className="min-h-screen bg-background">
         <MemberNav />
         <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-          <p className="text-muted-foreground">{(contentQ.error as Error)?.message ?? "Could not load lesson."}</p>
+          <p className="text-destructive font-medium mb-2">Could not load lesson</p>
+          <p className="text-sm text-muted-foreground font-mono bg-muted px-3 py-2 rounded mb-4 text-left break-all">{errMsg}</p>
           <Link to="/dashboard" className="mt-4 inline-flex items-center text-sm text-primary hover:underline">
             <ArrowLeft className="h-4 w-4 mr-1" /> Back to library
           </Link>
