@@ -63,6 +63,7 @@ export const syncContentToAlgolia = createServerFn({ method: "POST" })
         display_author_name: row.display_author_name ?? null,
         category_name: category?.name ?? null,
         category_slug: category?.slug ?? null,
+        status: "published",
         url: `${BASE_URL}/content/${row.id}`,
       },
     });
@@ -115,6 +116,7 @@ export const syncCourseToAlgolia = createServerFn({ method: "POST" })
         display_author_name: row.display_author_name ?? null,
         category_name: category?.name ?? null,
         category_slug: category?.slug ?? null,
+        status: "published",
         url: `${BASE_URL}/course/${row.id}`,
       },
     });
@@ -180,6 +182,7 @@ export const syncAllToAlgolia = createServerFn({ method: "POST" })
           display_author_name: (row.display_author_name as string | null) ?? null,
           category_name: category?.name ?? null,
           category_slug: category?.slug ?? null,
+          status: "published",
           url: `${BASE_URL}/content/${row.id}`,
         };
       }),
@@ -195,6 +198,7 @@ export const syncAllToAlgolia = createServerFn({ method: "POST" })
           display_author_name: (row.display_author_name as string | null) ?? null,
           category_name: category?.name ?? null,
           category_slug: category?.slug ?? null,
+          status: "published",
           url: `${BASE_URL}/course/${row.id}`,
         };
       }),

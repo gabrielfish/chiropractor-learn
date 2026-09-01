@@ -125,43 +125,80 @@ async function toolSearchContent(
   limit: number,
   isPublic: boolean
 ): Promise<{ content: { type: "text"; text: string }[]; isError?: boolean }> {
+  const CTA =
+    "Watch the full training at learn.dcpracticegrowth.com — join Ryan Rieder's Inner Circle for unlimited access.";
+  const cap = isPublic ? Math.min(limit, 5) : limit;
+
+  // ── 1. Try Algolia ────────────────────────────────────────────────────────
+  let algoliaResults: any[] = [];
   try {
     const client = algolia();
-    const cap = isPublic ? Math.min(limit, 5) : limit;
+    console.log(`[search_content] Algolia query: "${query}", index: ${ALGOLIA_INDEX}, limit: ${cap}`);
     const { hits } = await client.searchSingleIndex({
       indexName: ALGOLIA_INDEX,
-      searchParams: {
-        query,
-        hitsPerPage: cap,
-        filters: "status:published",
-      },
+      searchParams: { query, hitsPerPage: cap },
     });
-
-    const CTA =
-      "Watch the full training at learn.dcpracticegrowth.com — join Ryan Rieder's Inner Circle for unlimited access.";
-
-    const results = (hits as any[]).map((h) => {
-      const base = {
-        id: h.objectID,
-        type: h.type ?? "lesson",
-        title: h.title,
-        description: (h.description ?? "").slice(0, isPublic ? 200 : 300),
-        category: h.category_name ?? null,
-        url: `https://learn.dcpracticegrowth.com/${h.type === "course" ? "courses" : "content"}/${h.objectID}`,
-      };
-      if (isPublic) {
-        return { ...base, cta: CTA };
-      }
-      return base;
-    });
-
-    return { content: [{ type: "text", text: JSON.stringify({ query, results }, null, 2) }] };
+    console.log(`[search_content] Algolia returned ${hits.length} hits`);
+    algoliaResults = hits as any[];
   } catch (err) {
-    return {
-      content: [{ type: "text", text: `Search failed: ${(err as Error).message}` }],
-      isError: true,
-    };
+    console.error(`[search_content] Algolia error: ${(err as Error).message}`);
   }
+
+  // ── 2. Supabase fallback if Algolia returned nothing ──────────────────────
+  if (algoliaResults.length === 0) {
+    console.log(`[search_content] Falling back to Supabase ilike search`);
+    try {
+      const db = supabase();
+      const pattern = `%${query}%`;
+      const { data: rows } = await db
+        .from("content")
+        .select("id, title, description, category:categories(name), display_author_name")
+        .eq("status", "published")
+        .or(`title.ilike.${pattern},description.ilike.${pattern}`)
+        .limit(cap);
+
+      const results = (rows ?? []).map((r: any) => {
+        const base = {
+          id: r.id,
+          type: "lesson",
+          title: r.title,
+          description: (r.description ?? "").slice(0, isPublic ? 200 : 300),
+          category: r.category?.name ?? null,
+          url: `https://learn.dcpracticegrowth.com/content/${r.id}`,
+          source: "supabase_fallback",
+        };
+        return isPublic ? { ...base, cta: CTA } : base;
+      });
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({ query, results, note: "Results from database (Algolia index may need re-syncing)" }, null, 2),
+        }],
+      };
+    } catch (err) {
+      return {
+        content: [{ type: "text", text: `Search failed: ${(err as Error).message}` }],
+        isError: true,
+      };
+    }
+  }
+
+  // ── 3. Return Algolia results ─────────────────────────────────────────────
+  const results = algoliaResults.map((h) => {
+    const rawId = (h.objectID as string).replace(/^(content_|course_)/, "");
+    const base = {
+      id: rawId,
+      type: h.type ?? "lesson",
+      title: h.title,
+      description: (h.description ?? "").slice(0, isPublic ? 200 : 300),
+      category: h.category_name ?? null,
+      url: `https://learn.dcpracticegrowth.com/${h.type === "course" ? "courses" : "content"}/${rawId}`,
+    };
+    return isPublic ? { ...base, cta: CTA } : base;
+  });
+
+  return { content: [{ type: "text", text: JSON.stringify({ query, results }, null, 2) }] };
 }
 
 async function toolGetCourses(
@@ -367,7 +404,7 @@ function createAdminServer(): McpServer {
         const client = algolia();
         const { hits } = await client.searchSingleIndex({
           indexName: ALGOLIA_INDEX,
-          searchParams: { query: goal, hitsPerPage: 15, filters: "status:published" },
+          searchParams: { query: goal, hitsPerPage: 15 },
         });
         const candidates = (hits as any[])
           .map((h) => `[${h.type ?? "lesson"}] ${h.title} (id: ${h.objectID}) — ${(h.description ?? "").slice(0, 150)}`)
