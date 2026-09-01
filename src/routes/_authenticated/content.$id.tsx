@@ -36,9 +36,9 @@ function ContentDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content")
-        .select("*, category:categories(name,slug)")
+        .select("*, category:category_id(name,slug)")
         .eq("id", id)
-        .single();
+        .maybeSingle();
       if (error) throw error;
       if (!data) throw notFound();
       let author: { full_name: string | null; avatar_url: string | null; job_title: string | null } | null = null;
