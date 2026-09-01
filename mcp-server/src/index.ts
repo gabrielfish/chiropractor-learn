@@ -6,13 +6,10 @@ import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { YoutubeTranscript } from "youtube-transcript";
 import { z } from "zod";
-import { execFile } from "child_process";
-import { promisify } from "util";
-import { createReadStream, unlinkSync, existsSync } from "fs";
+import { createWriteStream, createReadStream, unlinkSync, existsSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-
-const execFileAsync = promisify(execFile);
+import { pipeline } from "stream/promises";
 import type { IncomingMessage, ServerResponse } from "http";
 
 // ---------------------------------------------------------------------------
@@ -478,24 +475,24 @@ function createMemberServer(): McpServer {
           // Captions unavailable — fall through to Whisper
         }
 
-        // ── Attempt 2: Whisper transcription via yt-dlp ───────────────────
+        // ── Attempt 2: Whisper transcription via ytdl-core (Node.js only) ─
         if (!OPENAI_API_KEY) {
           return { content: [{ type: "text", text: "Transcript unavailable: YouTube captions not found and OPENAI_API_KEY is not set for Whisper fallback." }], isError: true };
         }
 
-        const audioPath = join(tmpdir(), `dcpg_whisper_${videoId}.mp3`);
+        const audioPath = join(tmpdir(), `dcpg_whisper_${videoId}.mp4`);
         try {
-          // Download audio with yt-dlp
-          await execFileAsync("yt-dlp", [
-            "--extract-audio",
-            "--audio-format", "mp3",
-            "--audio-quality", "5",
-            "--output", audioPath,
-            "--no-playlist",
-            `https://www.youtube.com/watch?v=${videoId}`,
-          ], { timeout: 120_000 });
+          // Dynamically import ytdl-core (CJS module in ESM context)
+          const ytdl = (await import("ytdl-core")).default;
 
-          // Upload to Whisper
+          // Download the audio-only stream to a temp file
+          const audioStream = ytdl(`https://www.youtube.com/watch?v=${videoId}`, {
+            quality: "highestaudio",
+            filter: "audioonly",
+          });
+          await pipeline(audioStream, createWriteStream(audioPath));
+
+          // Send to OpenAI Whisper
           const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
           const transcription = await openai.audio.transcriptions.create({
             model: "whisper-1",
