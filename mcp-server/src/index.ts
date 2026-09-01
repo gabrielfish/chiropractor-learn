@@ -3,8 +3,16 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { createClient } from "@supabase/supabase-js";
 import { algoliasearch } from "algoliasearch";
 import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { YoutubeTranscript } from "youtube-transcript";
 import { z } from "zod";
+import { execFile } from "child_process";
+import { promisify } from "util";
+import { createReadStream, unlinkSync, existsSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+
+const execFileAsync = promisify(execFile);
 import type { IncomingMessage, ServerResponse } from "http";
 
 // ---------------------------------------------------------------------------
@@ -18,6 +26,7 @@ const ALGOLIA_APP_ID = process.env.ALGOLIA_APP_ID ?? "";
 const ALGOLIA_SEARCH_KEY = process.env.ALGOLIA_SEARCH_KEY ?? "";
 const ALGOLIA_INDEX = process.env.ALGOLIA_INDEX_NAME ?? "dcpg_content";
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY ?? "";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY ?? "";
 const MCP_PUBLIC_URL = process.env.MCP_PUBLIC_URL ?? "https://dcpg-mcp-server.vercel.app";
 
 const ALLOWED_ORIGINS = new Set([
@@ -455,14 +464,57 @@ function createMemberServer(): McpServer {
           };
         }
 
-        const items = await YoutubeTranscript.fetchTranscript(videoId, { lang: "en" });
-        const text = items.map((t: any) => t.text).join(" ").replace(/\s+/g, " ").trim();
-        return {
-          content: [{
-            type: "text",
-            text: JSON.stringify({ videoId, wordCount: text.split(" ").length, transcript: text.slice(0, 20000) }, null, 2),
-          }],
-        };
+        // ── Attempt 1: YouTube captions ──────────────────────────────────
+        try {
+          const items = await YoutubeTranscript.fetchTranscript(videoId, { lang: "en" });
+          const text = items.map((t: any) => t.text).join(" ").replace(/\s+/g, " ").trim();
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({ videoId, source: "captions", wordCount: text.split(" ").length, transcript: text.slice(0, 20000) }, null, 2),
+            }],
+          };
+        } catch (_captionErr) {
+          // Captions unavailable — fall through to Whisper
+        }
+
+        // ── Attempt 2: Whisper transcription via yt-dlp ───────────────────
+        if (!OPENAI_API_KEY) {
+          return { content: [{ type: "text", text: "Transcript unavailable: YouTube captions not found and OPENAI_API_KEY is not set for Whisper fallback." }], isError: true };
+        }
+
+        const audioPath = join(tmpdir(), `dcpg_whisper_${videoId}.mp3`);
+        try {
+          // Download audio with yt-dlp
+          await execFileAsync("yt-dlp", [
+            "--extract-audio",
+            "--audio-format", "mp3",
+            "--audio-quality", "5",
+            "--output", audioPath,
+            "--no-playlist",
+            `https://www.youtube.com/watch?v=${videoId}`,
+          ], { timeout: 120_000 });
+
+          // Upload to Whisper
+          const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+          const transcription = await openai.audio.transcriptions.create({
+            model: "whisper-1",
+            file: createReadStream(audioPath),
+            response_format: "text",
+          });
+
+          const text = (typeof transcription === "string" ? transcription : (transcription as any).text ?? "").trim();
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({ videoId, source: "whisper", wordCount: text.split(" ").length, transcript: text.slice(0, 20000) }, null, 2),
+            }],
+          };
+        } catch (whisperErr) {
+          return { content: [{ type: "text", text: `Transcript unavailable: ${(whisperErr as Error).message}` }], isError: true };
+        } finally {
+          if (existsSync(audioPath)) unlinkSync(audioPath);
+        }
       } catch (err) {
         return { content: [{ type: "text", text: `Transcript unavailable: ${(err as Error).message}` }], isError: true };
       }

@@ -4,7 +4,9 @@
   "description": "DCPG MCP server — deployed 2026-08-31",
   "private": true,
   "type": "module",
-  "engines": { "node": "22.x" },
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
@@ -15,6 +17,7 @@
     "@modelcontextprotocol/sdk": "^1.12.0",
     "@supabase/supabase-js": "^2.107.0",
     "algoliasearch": "^5.55.1",
+    "openai": "^4.104.0",
     "youtube-transcript": "^1.2.1",
     "zod": "^3.24.2"
   },
