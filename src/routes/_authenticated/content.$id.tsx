@@ -43,12 +43,16 @@ function ContentDetail() {
       if (!data) throw notFound();
       let author: { full_name: string | null; avatar_url: string | null; job_title: string | null } | null = null;
       if (data.author_id) {
-        const { data: a } = await supabase
-          .from("author_profiles_public")
-          .select("full_name,avatar_url,job_title")
-          .eq("id", data.author_id)
-          .maybeSingle();
-        author = a ?? null;
+        try {
+          const { data: a } = await supabase
+            .from("author_profiles_public")
+            .select("full_name,avatar_url,job_title")
+            .eq("id", data.author_id)
+            .maybeSingle();
+          author = a ?? null;
+        } catch {
+          // view may not exist yet — fall back to display_author_name
+        }
       }
       return { ...data, author };
     },
@@ -124,6 +128,19 @@ function ContentDetail() {
 
 
   const item = contentQ.data;
+  if (contentQ.isError) {
+    return (
+      <div className="min-h-screen bg-background">
+        <MemberNav />
+        <div className="max-w-3xl mx-auto px-4 py-20 text-center">
+          <p className="text-muted-foreground">{(contentQ.error as Error)?.message ?? "Could not load lesson."}</p>
+          <Link to="/dashboard" className="mt-4 inline-flex items-center text-sm text-primary hover:underline">
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back to library
+          </Link>
+        </div>
+      </div>
+    );
+  }
   if (contentQ.isLoading) {
     return (
       <div className="min-h-screen bg-background">
