@@ -10,6 +10,7 @@ import {
   UserCheck,
   Bell,
   Settings,
+  BookOpen,
   Menu,
   X,
 } from "lucide-react";
@@ -22,6 +23,7 @@ export type AdminSection =
   | "members"
   | "analytics"
   | "notifications"
+  | "books"
   | "settings";
 
 export function AdminSidebar({ active }: { active: AdminSection }) {
@@ -51,6 +53,7 @@ export function AdminSidebar({ active }: { active: AdminSection }) {
     { to: "/admin/members",       icon: UserCheck, label: "Members",       section: "members" },
     { to: "/admin/analytics",     icon: BarChart3, label: "Analytics",     section: "analytics" },
     { to: "/admin/notifications", icon: Bell,      label: "Notifications", section: "notifications" },
+    { to: "/admin/books",         icon: BookOpen,  label: "Book Content",  section: "books" },
     { to: "/admin/settings",      icon: Settings,  label: "Settings",      section: "settings" },
   ];
 

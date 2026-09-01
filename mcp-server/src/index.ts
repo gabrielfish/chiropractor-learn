@@ -469,6 +469,77 @@ function createMemberServer(): McpServer {
     }
   );
 
+  server.tool(
+    "get_book_content",
+    "Search the full text of Ryan Rieder's written books and teaching materials. Use this to find written explanations, frameworks, and strategies from Ryan's books.",
+    {
+      query: z.string().min(1).max(300).describe("Search query — topic, concept, or question"),
+      book_title: z.string().optional().describe("Optional: filter to a specific book title"),
+      limit: z.number().int().min(1).max(10).optional().describe("Max chapters to return (default 5)"),
+    },
+    async ({ query, book_title, limit = 5 }) => {
+      try {
+        const db = supabase();
+        // Use Postgres full-text search via Supabase text search
+        let req = (db as any)
+          .from("books_content")
+          .select("id, book_title, chapter_title, content_text, order_index")
+          .textSearch("content_text", query.replace(/'/g, " "), { config: "english", type: "websearch" })
+          .limit(limit);
+
+        if (book_title) {
+          req = req.ilike("book_title", `%${book_title}%`);
+        }
+
+        const { data, error } = await req;
+
+        if (error) {
+          // Fall back to ilike if FTS fails (e.g. table not yet populated)
+          const pattern = `%${query}%`;
+          let fallback = (db as any)
+            .from("books_content")
+            .select("id, book_title, chapter_title, content_text, order_index")
+            .or(`content_text.ilike.${pattern},chapter_title.ilike.${pattern},book_title.ilike.${pattern}`)
+            .limit(limit);
+          if (book_title) fallback = fallback.ilike("book_title", `%${book_title}%`);
+          const { data: fbData, error: fbErr } = await fallback;
+          if (fbErr) throw new Error(fbErr.message);
+
+          const results = (fbData ?? []).map((r: any) => ({
+            book_title: r.book_title,
+            chapter_title: r.chapter_title ?? null,
+            order_index: r.order_index,
+            excerpt: (r.content_text as string).slice(0, 3000),
+            full_length: (r.content_text as string).length,
+          }));
+          return {
+            content: [{ type: "text", text: JSON.stringify({ query, results, note: "Full-text search unavailable — showing keyword matches" }, null, 2) }],
+          };
+        }
+
+        if (!data || data.length === 0) {
+          return {
+            content: [{ type: "text", text: JSON.stringify({ query, results: [], note: "No matching chapters found. Try a broader search term." }, null, 2) }],
+          };
+        }
+
+        const results = (data as any[]).map((r) => ({
+          book_title: r.book_title,
+          chapter_title: r.chapter_title ?? null,
+          order_index: r.order_index,
+          excerpt: (r.content_text as string).slice(0, 3000),
+          full_length: (r.content_text as string).length,
+        }));
+
+        return {
+          content: [{ type: "text", text: JSON.stringify({ query, results }, null, 2) }],
+        };
+      } catch (err) {
+        return { content: [{ type: "text", text: (err as Error).message }], isError: true };
+      }
+    }
+  );
+
   return server;
 }
 
