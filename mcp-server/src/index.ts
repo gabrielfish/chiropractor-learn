@@ -330,7 +330,7 @@ function createMemberServer(): McpServer {
         // 1. Check content table first (standalone lessons)
         const { data: contentRow } = await db
           .from("content")
-          .select("id, title, description, video_url, pdf_url, category:categories(name), display_author_name, published_at, views")
+          .select("id, title, description, video_url, youtube_video_id, pdf_url, category:categories(name), display_author_name, published_at, views")
           .eq("id", lesson_id)
           .eq("status", "published")
           .maybeSingle();
@@ -412,10 +412,12 @@ function createMemberServer(): McpServer {
           if (!videoId) {
             const { data: ct } = await db
               .from("content")
-              .select("video_url")
+              .select("video_url, youtube_video_id")
               .eq("id", video.trim())
               .maybeSingle();
-            if (ct?.video_url) {
+            if ((ct as any)?.youtube_video_id) {
+              videoId = (ct as any).youtube_video_id;
+            } else if (ct?.video_url) {
               const m = ct.video_url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
               if (m) videoId = m[1];
             }
