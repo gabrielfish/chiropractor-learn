@@ -606,23 +606,114 @@ function createAdminServer(): McpServer {
 
   server.tool(
     "recommend",
-    "Use Claude AI to recommend the best DCPG content for a given goal or question.",
+    "Use Claude AI to recommend the best DCPG content for a member's goal. Searches lessons AND book chapters, then returns a ranked, curated list with portal links.",
     {
-      goal: z.string().min(1).max(500).describe("Learning goal or question"),
+      goal: z.string().min(1).max(500).describe("The member's learning goal, challenge, or question"),
     },
     async ({ goal }) => {
       try {
-        const client = algolia();
-        const { hits } = await client.searchSingleIndex({
-          indexName: ALGOLIA_INDEX,
-          searchParams: { query: goal, hitsPerPage: 15 },
-        });
-        const candidates = (hits as any[])
-          .map((h) => `[${h.type ?? "lesson"}] ${h.title} (id: ${h.objectID}) — ${(h.description ?? "").slice(0, 150)}`)
-          .join("\n");
+        const db = supabase();
 
-        if (!ANTHROPIC_API_KEY)
-          return { content: [{ type: "text", text: `No ANTHROPIC_API_KEY. Results:\n\n${candidates}` }] };
+        // ── 1. Search Algolia for video/PDF lessons ───────────────────────────
+        let lessonHits: any[] = [];
+        try {
+          const client = algolia();
+          const { hits } = await client.searchSingleIndex({
+            indexName: ALGOLIA_INDEX,
+            searchParams: { query: goal, hitsPerPage: 10 },
+          });
+          lessonHits = hits as any[];
+        } catch {
+          // Algolia down — fall back to Supabase
+          const pattern = `%${goal}%`;
+          const { data: rows } = await db
+            .from("content")
+            .select("id, title, description, content_type")
+            .eq("status", "published")
+            .or(`title.ilike.${pattern},description.ilike.${pattern}`)
+            .limit(10);
+          lessonHits = (rows ?? []).map((r: any) => ({
+            objectID: r.id,
+            title: r.title,
+            description: r.description ?? "",
+            type: r.content_type ?? "lesson",
+          }));
+        }
+
+        // Build lesson candidates with portal URLs
+        const lessonCandidates = lessonHits.map((h: any) => {
+          const rawId = (h.objectID as string).replace(/^(content_|course_)/, "");
+          const isCourse = h.type === "course";
+          return {
+            source: isCourse ? "course" : "lesson",
+            id: rawId,
+            title: h.title ?? "",
+            description: (h.description ?? "").slice(0, 200),
+            portal_url: `https://learn.dcpracticegrowth.com/${isCourse ? "courses" : "content"}/${rawId}`,
+          };
+        });
+
+        // ── 2. Search books_content for relevant book sections ────────────────
+        let bookCandidates: any[] = [];
+        try {
+          const pattern = `%${goal}%`;
+          // Try FTS first, fall back to ilike
+          let { data: bookRows, error: ftsErr } = await (db as any)
+            .from("books_content")
+            .select("id, book_title, chapter_title, content_text")
+            .textSearch("content_text", goal.replace(/'/g, " "), { config: "english", type: "websearch" })
+            .limit(5);
+
+          if (ftsErr || !bookRows || bookRows.length === 0) {
+            const { data: fbRows } = await (db as any)
+              .from("books_content")
+              .select("id, book_title, chapter_title, content_text")
+              .or(`content_text.ilike.${pattern},chapter_title.ilike.${pattern},book_title.ilike.${pattern}`)
+              .limit(5);
+            bookRows = fbRows ?? [];
+          }
+
+          bookCandidates = (bookRows as any[]).map((r: any) => ({
+            source: "book",
+            book_title: r.book_title,
+            chapter_title: r.chapter_title ?? null,
+            excerpt: (r.content_text as string).slice(0, 300),
+          }));
+        } catch {
+          // non-fatal — recommend continues with just lesson results
+        }
+
+        const totalCandidates = lessonCandidates.length + bookCandidates.length;
+
+        if (totalCandidates === 0) {
+          return {
+            content: [{ type: "text", text: `No content found for goal: "${goal}". Try a broader description of what you want to achieve.` }],
+            isError: true,
+          };
+        }
+
+        // ── 3. Ask Claude to rank and curate ─────────────────────────────────
+        if (!ANTHROPIC_API_KEY) {
+          // No API key — return raw candidates so Claude (the MCP caller) can curate itself
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({ goal, lessons: lessonCandidates, books: bookCandidates, note: "ANTHROPIC_API_KEY not set — raw candidates returned" }, null, 2),
+            }],
+          };
+        }
+
+        const lessonBlock = lessonCandidates.length > 0
+          ? "VIDEO/PDF LESSONS:\n" + lessonCandidates.map((c, i) =>
+              `${i + 1}. [${c.source.toUpperCase()}] "${c.title}"\n   Description: ${c.description}\n   Portal link: ${c.portal_url}`
+            ).join("\n\n")
+          : "";
+
+        const bookBlock = bookCandidates.length > 0
+          ? "BOOK CHAPTERS:\n" + bookCandidates.map((c, i) =>
+              `${i + 1}. From "${c.book_title}"${c.chapter_title ? ` — ${c.chapter_title}` : ""}\n   Excerpt: ${c.excerpt}`
+            ).join("\n\n")
+          : "";
 
         const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
         const msg = await anthropic.messages.create({
@@ -631,14 +722,25 @@ function createAdminServer(): McpServer {
           messages: [{
             role: "user",
             content:
-              `You are an expert advisor for DC Practice Growth (DCPG), a chiropractic education platform by Dr Ryan Rieder.\n\n` +
-              `Goal: "${goal}"\n\nAvailable content:\n${candidates}\n\n` +
-              `Recommend 3-5 of the most relevant items with title, ID, why it helps, and what they'll learn. Plain text.`,
+              `You are an expert advisor for DC Practice Growth (DCPG), Dr Ryan Rieder's chiropractic education platform.\n\n` +
+              `A member's goal: "${goal}"\n\n` +
+              `Based on these teaching resources from Dr Ryan Rieder, recommend the top 5 most relevant pieces of content for this goal. ` +
+              `Return a ranked list. For each item include: title, why it's relevant to the goal, and the portal URL (for lessons/courses). ` +
+              `For book chapters, name the book and chapter. Be specific and practical.\n\n` +
+              `${lessonBlock}\n\n${bookBlock}`,
           }],
         });
+
         const recommendation = msg.content[0]?.type === "text" ? msg.content[0].text : "";
         return {
-          content: [{ type: "text", text: JSON.stringify({ goal, recommendation, candidates_searched: hits.length }, null, 2) }],
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              goal,
+              recommendation,
+              sources_searched: { lessons: lessonCandidates.length, book_sections: bookCandidates.length },
+            }, null, 2),
+          }],
         };
       } catch (err) {
         return { content: [{ type: "text", text: (err as Error).message }], isError: true };
