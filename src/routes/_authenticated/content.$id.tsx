@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MemberNav } from "@/components/MemberNav";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Download, FileText, Book, ArrowLeft, Loader2 } from "lucide-react";
+import { CheckCircle2, Download, FileText, Book, ArrowLeft, Loader2, ExternalLink } from "lucide-react";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -201,6 +201,8 @@ function ContentDetail() {
   if (!item) return null;
 
   const completed = !!progressQ.data?.completed;
+  const isBook = (item as any).content_type === "book";
+  const pdfUrl = (item as any).pdf_url as string | null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -213,17 +215,33 @@ function ContentDetail() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <VideoPlayer
-              videoUrl={item.video_url}
-              title={item.title}
-              posterUrl={item.thumbnail_url}
-            />
+            {/* Book view: large cover image instead of video player */}
+            {isBook ? (
+              <div className="flex justify-center py-4">
+                {item.thumbnail_url ? (
+                  <img
+                    src={item.thumbnail_url}
+                    alt={item.title}
+                    className="max-h-[480px] rounded-xl object-contain shadow-2xl border border-border"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center w-full aspect-[3/4] max-w-xs rounded-xl bg-primary/10 border border-border">
+                    <Book className="h-24 w-24 text-primary/30" />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <VideoPlayer
+                videoUrl={item.video_url}
+                title={item.title}
+                posterUrl={item.thumbnail_url}
+              />
+            )}
 
             <div className="mt-6">
               {item.category && <Badge className="bg-gold/15 text-gold hover:bg-gold/15 border-0 mb-3">{item.category.name}</Badge>}
               <h1 className="font-display text-3xl md:text-4xl font-extrabold text-foreground mb-3">{item.title}</h1>
               {(item.display_author_name || item.author?.full_name) && (() => {
-                // display_author_name overrides the profile name when set by the uploader
                 const displayName = item.display_author_name ?? item.author!.full_name!;
                 const avatarUrl = item.display_author_name ? null : item.author?.avatar_url;
                 const jobTitle = item.display_author_name ? null : item.author?.job_title;
@@ -237,7 +255,7 @@ function ContentDetail() {
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="text-xs uppercase tracking-wider text-gold font-semibold">Taught by</p>
+                      <p className="text-xs uppercase tracking-wider text-gold font-semibold">{isBook ? "Written by" : "Taught by"}</p>
                       <p className="text-foreground font-medium truncate">{displayName}</p>
                       {jobTitle && <p className="text-xs text-muted-foreground truncate">{jobTitle}</p>}
                     </div>
@@ -249,31 +267,60 @@ function ContentDetail() {
               )}
 
               <div className="flex flex-wrap gap-3 mt-6">
-                <Button
-                  onClick={() => markComplete.mutate()}
-                  disabled={completed || markComplete.isPending}
-                  className={completed ? "bg-success text-success-foreground hover:bg-success" : "bg-gold text-gold-foreground hover:bg-gold/90"}
-                >
-                  {markComplete.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                  )}
-                  {markComplete.isPending ? "Saving…" : completed ? "Completed" : "Mark as complete"}
-                </Button>
-                {item.pdf_url && (
-                  <Button asChild variant="outline">
-                    <a href={item.pdf_url} target="_blank" rel="noopener noreferrer" download>
-                      <FileText className="h-4 w-4 mr-2" /> Download PDF
-                    </a>
-                  </Button>
-                )}
-                {item.book_url && (
-                  <Button asChild variant="outline">
-                    <a href={item.book_url} target="_blank" rel="noopener noreferrer" download>
-                      <Book className="h-4 w-4 mr-2" /> Download workbook
-                    </a>
-                  </Button>
+                {/* Books: Back to Library + Read Online + Download PDF */}
+                {isBook ? (
+                  <>
+                    <Button asChild variant="outline">
+                      <Link to="/dashboard">
+                        <ArrowLeft className="h-4 w-4 mr-2" /> Back to Library
+                      </Link>
+                    </Button>
+                    {pdfUrl && (
+                      <>
+                        <Button
+                          variant="outline"
+                          onClick={() => window.open(pdfUrl, "_blank")}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" /> Read Online
+                        </Button>
+                        <Button className="bg-gold text-gold-foreground hover:bg-gold/90" asChild>
+                          <a href={pdfUrl} download>
+                            <Download className="h-4 w-4 mr-2" /> Download PDF
+                          </a>
+                        </Button>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  /* Non-book: Mark as complete + PDF/workbook buttons */
+                  <>
+                    <Button
+                      onClick={() => markComplete.mutate()}
+                      disabled={completed || markComplete.isPending}
+                      className={completed ? "bg-success text-success-foreground hover:bg-success" : "bg-gold text-gold-foreground hover:bg-gold/90"}
+                    >
+                      {markComplete.isPending ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                      )}
+                      {markComplete.isPending ? "Saving…" : completed ? "Completed" : "Mark as complete"}
+                    </Button>
+                    {pdfUrl && (
+                      <Button asChild variant="outline">
+                        <a href={pdfUrl} target="_blank" rel="noopener noreferrer" download>
+                          <FileText className="h-4 w-4 mr-2" /> Download PDF
+                        </a>
+                      </Button>
+                    )}
+                    {item.book_url && (
+                      <Button asChild variant="outline">
+                        <a href={item.book_url} target="_blank" rel="noopener noreferrer" download>
+                          <Book className="h-4 w-4 mr-2" /> Download workbook
+                        </a>
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
               {(item as any).text_content && (
@@ -325,16 +372,30 @@ function ContentDetail() {
           {/* Sidebar */}
           <aside className="space-y-6">
             <div className="rounded-xl bg-card border border-border p-5">
-              <h3 className="font-display font-bold mb-3">Resources</h3>
-              <ul className="space-y-2 text-sm">
-                {item.video_url && <li className="flex items-center gap-2 text-foreground/80"><CheckCircle2 className="h-4 w-4 text-success" /> Video lesson</li>}
-                {item.pdf_url && <li className="flex items-center gap-2 text-foreground/80"><Download className="h-4 w-4 text-gold" /> {item.pdf_name ?? "PDF"}</li>}
-                {item.book_url && <li className="flex items-center gap-2 text-foreground/80"><Download className="h-4 w-4 text-gold" /> {item.book_name ?? "Workbook"}</li>}
-              </ul>
+              <h3 className="font-display font-bold mb-3">{isBook ? "About this book" : "Resources"}</h3>
+              {isBook ? (
+                <div className="space-y-3">
+                  {item.description && (
+                    <p className="text-sm text-foreground/80 leading-relaxed">{item.description}</p>
+                  )}
+                  {pdfUrl && (
+                    <div className="flex items-center gap-2 text-sm text-foreground/70 pt-1 border-t border-border">
+                      <Book className="h-4 w-4 text-gold shrink-0" />
+                      <span>PDF available for download</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <ul className="space-y-2 text-sm">
+                  {item.video_url && <li className="flex items-center gap-2 text-foreground/80"><CheckCircle2 className="h-4 w-4 text-success" /> Video lesson</li>}
+                  {pdfUrl && <li className="flex items-center gap-2 text-foreground/80"><Download className="h-4 w-4 text-gold" /> {(item as any).pdf_name ?? "PDF"}</li>}
+                  {item.book_url && <li className="flex items-center gap-2 text-foreground/80"><Download className="h-4 w-4 text-gold" /> {(item as any).book_name ?? "Workbook"}</li>}
+                </ul>
+              )}
             </div>
             <div className="rounded-xl bg-primary text-primary-foreground p-5">
               <h3 className="font-display font-bold mb-2">Keep growing</h3>
-              <p className="text-sm text-primary-foreground/80 mb-3">Mark lessons complete to earn category certificates.</p>
+              <p className="text-sm text-primary-foreground/80 mb-3">{isBook ? "Explore more resources in the library." : "Mark lessons complete to earn category certificates."}</p>
               <Link to="/dashboard" className="text-gold text-sm font-medium hover:underline">Browse more lessons →</Link>
             </div>
           </aside>
