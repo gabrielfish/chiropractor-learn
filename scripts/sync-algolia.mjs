@@ -140,7 +140,12 @@ if (objects.length === 0) {
   process.exit(0);
 }
 
-console.log(`\nPushing ${objects.length} records to Algolia index "${INDEX_NAME}"…`);
+// Clear ALL existing records first so stale IDs from old databases are removed
+console.log(`\nClearing all existing records from index "${INDEX_NAME}"…`);
+await client.clearObjects({ indexName: INDEX_NAME });
+console.log("  → Index cleared");
+
+console.log(`Pushing ${objects.length} records (all IDs verified live in Supabase)…`);
 await client.saveObjects({ indexName: INDEX_NAME, objects });
 
 console.log(`\n✓ Done! Synced ${contentRows.length} lessons + ${courseRows.length} courses = ${objects.length} total records.`);

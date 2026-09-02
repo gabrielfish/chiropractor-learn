@@ -206,6 +206,9 @@ export const syncAllToAlgolia = createServerFn({ method: "POST" })
 
     if (objects.length === 0) return { contentCount: 0, courseCount: 0, total: 0 };
 
+    // Clear stale records first — all objects below come directly from Supabase
+    // so every ID in the index will be verified-live after this sync
+    await client.clearObjects({ indexName: INDEX_NAME });
     await client.saveObjects({ indexName: INDEX_NAME, objects });
 
     const contentCount = (contentRows ?? []).length;
