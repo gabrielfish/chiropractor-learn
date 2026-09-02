@@ -387,19 +387,27 @@ function createMemberServer(): McpServer {
 
   server.tool(
     "get_books",
-    "Get all published books and resources by Dr Ryan Rieder.",
+    "Get all published books by Dr Ryan Rieder. Each result includes a portal_link the member can open to view and download the book.",
     {},
     async () => {
       try {
         const db = supabase();
         const { data, error } = await db
           .from("content")
-          .select("id, title, description, book_url, book_name, thumbnail_url, published_at")
+          .select("id, title, description, thumbnail_url, book_url, pdf_url, published_at")
           .eq("content_type" as any, "book")
           .eq("status", "published")
           .order("published_at", { ascending: false });
         if (error) throw new Error(error.message);
-        return { content: [{ type: "text", text: JSON.stringify({ books: data ?? [] }, null, 2) }] };
+        const books = (data ?? []).map((b: any) => ({
+          id: b.id,
+          title: b.title,
+          description: b.description ?? null,
+          thumbnail_url: b.thumbnail_url ?? null,
+          book_url: b.book_url ?? b.pdf_url ?? null,
+          portal_link: `https://learn.dcpracticegrowth.com/content/${b.id}`,
+        }));
+        return { content: [{ type: "text", text: JSON.stringify({ books }, null, 2) }] };
       } catch (err) {
         return { content: [{ type: "text", text: (err as Error).message }], isError: true };
       }
