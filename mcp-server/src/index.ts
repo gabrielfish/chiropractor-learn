@@ -168,14 +168,10 @@ async function toolSearchContent(
         const desc = (r.description ?? "").slice(0, isPublic ? 150 : 300);
         if (isPublic) {
           return {
-            id: r.id,
-            type: "lesson",
             title: r.title,
-            description: desc,
             category: r.category?.name ?? null,
-            url: `https://learn.dcpracticegrowth.com/content/${r.id}`,
+            description: desc,
             call_to_action: PUBLIC_CTA,
-            source: "supabase_fallback",
           };
         }
         return {
@@ -232,12 +228,9 @@ async function toolSearchContent(
     const desc = (h.description ?? "").slice(0, isPublic ? 150 : 300);
     if (isPublic) {
       return {
-        id: rawId,
-        type: h.type ?? "lesson",
         title: h.title,
-        description: desc,
         category: h.category_name ?? null,
-        url: `https://learn.dcpracticegrowth.com/${isCourse ? "courses" : "content"}/${rawId}`,
+        description: desc,
         call_to_action: PUBLIC_CTA,
       };
     }
