@@ -126,14 +126,15 @@ async function resolveAccess(req: IncomingMessage): Promise<AccessLevel> {
 // Shared tool implementations
 // ---------------------------------------------------------------------------
 
+const PUBLIC_CTA = "Get full access at learn.dcpracticegrowth.com/signup?invite=INNERCIRCLE";
+const PUBLIC_FOOTER = "Want unlimited access to Ryan Rieder's complete teaching library? Join the Inner Circle at learn.dcpracticegrowth.com";
+
 async function toolSearchContent(
   query: string,
   limit: number,
   isPublic: boolean
 ): Promise<{ content: { type: "text"; text: string }[]; isError?: boolean }> {
-  const CTA =
-    "Watch the full training at learn.dcpracticegrowth.com — join Ryan Rieder's Inner Circle for unlimited access.";
-  const cap = isPublic ? Math.min(limit, 5) : limit;
+  const cap = isPublic ? 5 : limit;
 
   // ── 1. Try Algolia ────────────────────────────────────────────────────────
   let algoliaResults: any[] = [];
@@ -164,24 +165,35 @@ async function toolSearchContent(
         .limit(cap);
 
       const results = (rows ?? []).map((r: any) => {
-        const base = {
+        const desc = (r.description ?? "").slice(0, isPublic ? 150 : 300);
+        if (isPublic) {
+          return {
+            id: r.id,
+            type: "lesson",
+            title: r.title,
+            description: desc,
+            category: r.category?.name ?? null,
+            url: `https://learn.dcpracticegrowth.com/content/${r.id}`,
+            call_to_action: PUBLIC_CTA,
+            source: "supabase_fallback",
+          };
+        }
+        return {
           id: r.id,
           type: "lesson",
           title: r.title,
-          description: (r.description ?? "").slice(0, isPublic ? 200 : 300),
+          description: desc,
           category: r.category?.name ?? null,
           youtube_video_id: r.youtube_video_id ?? null,
           url: `https://learn.dcpracticegrowth.com/content/${r.id}`,
           source: "supabase_fallback",
         };
-        return isPublic ? { ...base, cta: CTA } : base;
       });
 
+      const payload: any = { query, results, note: "Results from database (Algolia index may need re-syncing)" };
+      if (isPublic) payload.footer = PUBLIC_FOOTER;
       return {
-        content: [{
-          type: "text",
-          text: JSON.stringify({ query, results, note: "Results from database (Algolia index may need re-syncing)" }, null, 2),
-        }],
+        content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
       };
     } catch (err) {
       return {
@@ -191,44 +203,58 @@ async function toolSearchContent(
     }
   }
 
-  // ── 3. Return Algolia results, enriched with youtube_video_id from Supabase ─
-  // Algolia index does not store youtube_video_id, so fetch it in one batch query
-  const contentIds = algoliaResults
-    .filter((h) => (h.type ?? "content") !== "course")
-    .map((h) => (h.objectID as string).replace(/^content_/, ""));
-
+  // ── 3. Return Algolia results ─────────────────────────────────────────────
+  // For member results, enrich with youtube_video_id from Supabase (not stored in Algolia)
   let videoIdMap: Record<string, string | null> = {};
-  if (contentIds.length > 0) {
-    try {
-      const db = supabase();
-      const { data: vidRows } = await db
-        .from("content")
-        .select("id, youtube_video_id")
-        .in("id", contentIds);
-      for (const row of vidRows ?? []) {
-        videoIdMap[(row as any).id] = (row as any).youtube_video_id ?? null;
+  if (!isPublic) {
+    const contentIds = algoliaResults
+      .filter((h) => (h.type ?? "content") !== "course")
+      .map((h) => (h.objectID as string).replace(/^content_/, ""));
+    if (contentIds.length > 0) {
+      try {
+        const db = supabase();
+        const { data: vidRows } = await db
+          .from("content")
+          .select("id, youtube_video_id")
+          .in("id", contentIds);
+        for (const row of vidRows ?? []) {
+          videoIdMap[(row as any).id] = (row as any).youtube_video_id ?? null;
+        }
+      } catch {
+        // non-fatal
       }
-    } catch {
-      // non-fatal — results still useful without youtube_video_id
     }
   }
 
   const results = algoliaResults.map((h) => {
     const rawId = (h.objectID as string).replace(/^(content_|course_)/, "");
     const isCourse = h.type === "course";
-    const base = {
+    const desc = (h.description ?? "").slice(0, isPublic ? 150 : 300);
+    if (isPublic) {
+      return {
+        id: rawId,
+        type: h.type ?? "lesson",
+        title: h.title,
+        description: desc,
+        category: h.category_name ?? null,
+        url: `https://learn.dcpracticegrowth.com/${isCourse ? "courses" : "content"}/${rawId}`,
+        call_to_action: PUBLIC_CTA,
+      };
+    }
+    return {
       id: rawId,
       type: h.type ?? "lesson",
       title: h.title,
-      description: (h.description ?? "").slice(0, isPublic ? 200 : 300),
+      description: desc,
       category: h.category_name ?? null,
       youtube_video_id: isCourse ? null : (videoIdMap[rawId] ?? null),
       url: `https://learn.dcpracticegrowth.com/${isCourse ? "courses" : "content"}/${rawId}`,
     };
-    return isPublic ? { ...base, cta: CTA } : base;
   });
 
-  return { content: [{ type: "text", text: JSON.stringify({ query, results }, null, 2) }] };
+  const payload: any = { query, results };
+  if (isPublic) payload.footer = PUBLIC_FOOTER;
+  return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }] };
 }
 
 async function toolGetCourses(
