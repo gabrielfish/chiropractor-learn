@@ -487,90 +487,119 @@ function AdminPage() {
                     <option value="book">Book</option>
                   </select>
                 </div>
-                <div className="md:col-span-2 space-y-2">
-                  <Label>Video source</Label>
-                  <div className="inline-flex rounded-md border border-border bg-muted p-1">
-                    <button
-                      type="button"
-                      onClick={() => { setVideoSource("youtube"); setForm((f) => ({ ...f, video_url: "" })); }}
-                      className={`px-3 py-1.5 text-sm rounded ${videoSource === "youtube" ? "bg-card text-foreground shadow-sm font-medium" : "text-muted-foreground"}`}
-                    >
-                      YouTube URL
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setVideoSource("upload"); setForm((f) => ({ ...f, video_url: "" })); }}
-                      className={`px-3 py-1.5 text-sm rounded ${videoSource === "upload" ? "bg-card text-foreground shadow-sm font-medium" : "text-muted-foreground"}`}
-                    >
-                      Upload Video File
-                    </button>
+                {/* Video source — hidden for book type */}
+                {form.content_type !== "book" && (
+                  <div className="md:col-span-2 space-y-2">
+                    <Label>Video source</Label>
+                    <div className="inline-flex rounded-md border border-border bg-muted p-1">
+                      <button
+                        type="button"
+                        onClick={() => { setVideoSource("youtube"); setForm((f) => ({ ...f, video_url: "" })); }}
+                        className={`px-3 py-1.5 text-sm rounded ${videoSource === "youtube" ? "bg-card text-foreground shadow-sm font-medium" : "text-muted-foreground"}`}
+                      >
+                        YouTube URL
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setVideoSource("upload"); setForm((f) => ({ ...f, video_url: "" })); }}
+                        className={`px-3 py-1.5 text-sm rounded ${videoSource === "upload" ? "bg-card text-foreground shadow-sm font-medium" : "text-muted-foreground"}`}
+                      >
+                        Upload Video File
+                      </button>
+                    </div>
+                    {videoSource === "youtube" ? (
+                      <Input placeholder="https://youtu.be/…" value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} />
+                    ) : (
+                      <div className="space-y-2">
+                        <FileDropzone
+                          label="Upload video file"
+                          accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
+                          uploaded={!!form.video_url}
+                          hint="Drag and drop or click to select an MP4, MOV, or WebM file"
+                          onFile={async (file) => {
+                            try {
+                              const url = await uploadContentFile("video", file);
+                              setForm((f) => ({ ...f, video_url: url }));
+                              toast.success("Video uploaded");
+                            } catch (e) {
+                              toast.error(e instanceof Error ? e.message : "Upload failed");
+                            }
+                          }}
+                        />
+                        {form.video_url && (
+                          <video src={form.video_url} controls className="w-full max-h-56 rounded-md border border-border bg-black" />
+                        )}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between pt-3">
+                      <div>
+                        <div className="text-sm font-medium text-foreground">Use custom thumbnail instead</div>
+                        <div className="text-xs text-muted-foreground">By default we use the YouTube thumbnail.</div>
+                      </div>
+                      <Switch checked={useCustomThumb} onCheckedChange={setUseCustomThumb} />
+                    </div>
+                    {!useCustomThumb && ytThumb && (
+                      <div className="pt-2">
+                        <img src={ytThumb} alt="YouTube thumbnail preview" className="h-24 rounded-md border border-border object-cover" />
+                      </div>
+                    )}
+                    {useCustomThumb && (
+                      <div className="pt-2 space-y-2">
+                        <FileDropzone
+                          label="Upload custom thumbnail"
+                          accept="image/*"
+                          uploaded={!!form.thumbnail_url}
+                          hint="JPG or PNG, 16:9 recommended"
+                          onFile={async (file) => {
+                            try {
+                              const url = await uploadContentFile("thumbnail", file);
+                              setForm((f) => ({ ...f, thumbnail_url: url }));
+                              toast.success("Thumbnail uploaded");
+                            } catch (e) {
+                              toast.error(e instanceof Error ? e.message : "Upload failed");
+                            }
+                          }}
+                        />
+                        {form.thumbnail_url && (
+                          <img src={form.thumbnail_url} alt="Custom thumbnail" className="h-24 rounded-md border border-border object-cover" />
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {videoSource === "youtube" ? (
-                    <Input placeholder="https://youtu.be/…" value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} />
-                  ) : (
-                    <div className="space-y-2">
-                      <FileDropzone
-                        label="Upload video file"
-                        accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
-                        uploaded={!!form.video_url}
-                        hint="Drag and drop or click to select an MP4, MOV, or WebM file"
-                        onFile={async (file) => {
-                          try {
-                            const url = await uploadContentFile("video", file);
-                            setForm((f) => ({ ...f, video_url: url }));
-                            toast.success("Video uploaded");
-                          } catch (e) {
-                            toast.error(e instanceof Error ? e.message : "Upload failed");
-                          }
-                        }}
-                      />
-                      {form.video_url && (
-                        <video src={form.video_url} controls className="w-full max-h-56 rounded-md border border-border bg-black" />
-                      )}
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between pt-3">
-                    <div>
-                      <div className="text-sm font-medium text-foreground">Use custom thumbnail instead</div>
-                      <div className="text-xs text-muted-foreground">By default we use the YouTube thumbnail.</div>
-                    </div>
-                    <Switch checked={useCustomThumb} onCheckedChange={setUseCustomThumb} />
+                )}
+
+                {/* Book thumbnail — shown only for book type */}
+                {form.content_type === "book" && (
+                  <div className="md:col-span-2 space-y-2">
+                    <Label>Book Cover Image</Label>
+                    <FileDropzone
+                      label="Upload book cover"
+                      accept="image/*"
+                      uploaded={!!form.thumbnail_url}
+                      hint="JPG, PNG, or WebP — portrait orientation recommended"
+                      onFile={async (file) => {
+                        try {
+                          const url = await uploadContentFile("thumbnail", file);
+                          setForm((f) => ({ ...f, thumbnail_url: url }));
+                          toast.success("Cover image uploaded");
+                        } catch (e) {
+                          toast.error(e instanceof Error ? e.message : "Upload failed");
+                        }
+                      }}
+                    />
+                    {form.thumbnail_url && (
+                      <img src={form.thumbnail_url} alt="Book cover preview" className="h-32 rounded-md border border-border object-cover" />
+                    )}
                   </div>
-                  {!useCustomThumb && ytThumb && (
-                    <div className="pt-2">
-                      <img src={ytThumb} alt="YouTube thumbnail preview" className="h-24 rounded-md border border-border object-cover" />
-                    </div>
-                  )}
-                  {useCustomThumb && (
-                    <div className="pt-2 space-y-2">
-                      <FileDropzone
-                        label="Upload custom thumbnail"
-                        accept="image/*"
-                        uploaded={!!form.thumbnail_url}
-                        hint="JPG or PNG, 16:9 recommended"
-                        onFile={async (file) => {
-                          try {
-                            const url = await uploadContentFile("thumbnail", file);
-                            setForm((f) => ({ ...f, thumbnail_url: url }));
-                            toast.success("Thumbnail uploaded");
-                          } catch (e) {
-                            toast.error(e instanceof Error ? e.message : "Upload failed");
-                          }
-                        }}
-                      />
-                      {form.thumbnail_url && (
-                        <img src={form.thumbnail_url} alt="Custom thumbnail" className="h-24 rounded-md border border-border object-cover" />
-                      )}
-                    </div>
-                  )}
-                </div>
+                )}
+
                 <div className="md:col-span-2 space-y-1.5">
-                  <Label>PDF</Label>
+                  <Label>PDF{form.content_type === "book" ? " (Book file)" : ""}</Label>
                   <FileDropzone
-                    label="Upload PDF"
+                    label={form.content_type === "book" ? "Upload book PDF" : "Upload PDF"}
                     accept="application/pdf"
                     uploaded={!!form.pdf_url}
-                    hint="Drag and drop or click to select a PDF"
+                    hint={form.content_type === "book" ? "The downloadable book PDF members will receive" : "Drag and drop or click to select a PDF"}
                     onFile={async (file) => {
                       try {
                         const url = await uploadContentFile("pdf", file);

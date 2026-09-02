@@ -111,7 +111,7 @@ function Dashboard() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("content")
-        .select("id, title, book_url, book_name")
+        .select("id, title, book_url, book_name, thumbnail_url, pdf_url")
         .eq("status", "published")
         .eq("content_type", "book");
       if (error) throw error;
@@ -417,37 +417,38 @@ function Dashboard() {
                 {
                   title: "Conversion Alchemy System",
                   desc: "Step-by-step what to say to patients so they pay without friction or hard sales tactics.",
-                  cover: "/ca.webp",
+                  fallbackCover: "/ca.webp",
                 },
                 {
                   title: "New Patient Avalanche System",
                   desc: "How to grow a seven figure chiropractic practice from six figures or less.",
-                  cover: "/npa.webp",
+                  fallbackCover: "/npa.webp",
                 },
                 {
                   title: "New Patient Retention System",
                   desc: "Your system to attract, retain and grow a loyal patient base that stays for life.",
-                  cover: "/prs.png",
+                  fallbackCover: "/prs.png",
                 },
                 {
                   title: "Practice Growth Speaking Secrets",
                   desc: "How Ryan used live events and workshops to generate consistent high quality new patients.",
-                  cover: "/ss.webp",
+                  fallbackCover: "/ss.webp",
                 },
               ].map((book) => {
                 const match = booksQ.data?.find((b) => b.title === book.title);
                 const content = match?.content as any;
                 const contentId = content?.id ?? null;
-                const bookUrl = content?.book_url ?? null;
+                const bookUrl = content?.book_url ?? content?.pdf_url ?? null;
+                const coverSrc = content?.thumbnail_url ?? book.fallbackCover;
                 return (
                   <div
                     key={book.title}
                     className="group relative rounded-xl bg-primary border border-primary/80 overflow-hidden hover:border-gold/60 transition-all shadow-card flex"
                   >
-                    {/* Book cover image */}
+                    {/* Book cover image — uses uploaded thumbnail if available, falls back to static asset */}
                     <div className="w-28 sm:w-32 shrink-0 relative overflow-hidden">
                       <img
-                        src={book.cover}
+                        src={coverSrc}
                         alt={book.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
