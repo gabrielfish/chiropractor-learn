@@ -97,11 +97,13 @@ function isAdmin(req: IncomingMessage): boolean {
 }
 
 async function getMemberFromToken(token: string): Promise<string | null> {
-  const db = supabase();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase() as any;
+  // @ts-ignore TS2589 — Supabase client type depth exceeds TS limit with this query chain
   const { data } = await db
     .from("profiles")
     .select("id")
-    .eq("mcp_token" as any, token)
+    .eq("mcp_token", token)
     .maybeSingle();
   return (data as any)?.id ?? null;
 }
@@ -410,11 +412,12 @@ function createMemberServer(): McpServer {
     {},
     async () => {
       try {
-        const db = supabase();
+        // @ts-ignore TS2589 — Supabase type depth
+        const db = supabase() as any;
         const { data, error } = await db
           .from("content")
           .select("id, title, description, thumbnail_url, book_url, pdf_url, published_at")
-          .eq("content_type" as any, "book")
+          .eq("content_type", "book")
           .eq("status", "published")
           .order("published_at", { ascending: false });
         if (error) throw new Error(error.message);
