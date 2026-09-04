@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Lock, X, Play } from "lucide-react";
+import { Search, Lock, X, Play, CalendarDays } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { searchPublishedContent } from "@/lib/public-search.functions";
+
+const BOOKING_URL =
+  "https://api.leadconnectorhq.com/widget/booking/se3iS4vBOzoiBEaeoSdC";
 
 export function LandingSearchModal({
   open,
@@ -19,7 +22,7 @@ export function LandingSearchModal({
   const search = useServerFn(searchPublishedContent);
 
   useEffect(() => {
-    const id = setTimeout(() => setDebounced(q.trim()), 200);
+    const id = setTimeout(() => setDebounced(q.trim()), 250);
     return () => clearTimeout(id);
   }, [q]);
 
@@ -29,51 +32,79 @@ export function LandingSearchModal({
 
   const { data, isFetching } = useQuery({
     queryKey: ["landing-search", debounced],
-    queryFn: () => search({ data: { q: debounced } }),
-    enabled: open && debounced.length > 0,
+    queryFn: () =>
+      search({ data: { q: debounced.length > 0 ? debounced : "a", featured: debounced.length === 0 } }),
+    enabled: open,
     staleTime: 30_000,
   });
 
   const results = data?.results ?? [];
-  const showEmpty = open && debounced.length > 0 && !isFetching && results.length === 0;
+  const isFeatured = data?.isFeatured ?? false;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl p-0 gap-0 overflow-hidden bg-background border-border">
-        {/* Header / search input */}
-        <div className="border-b border-border bg-primary text-primary-foreground p-5 flex items-center gap-3">
-          <Search className="h-5 w-5 text-gold shrink-0" />
+        {/* Search input row */}
+        <div className="border-b border-border bg-primary text-primary-foreground px-5 flex items-center gap-3 h-[60px]">
+          <Search className="h-6 w-6 text-gold shrink-0" />
           <input
             autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search Ryan's unlimited free resources and the full DCPG teaching library"
+            onKeyDown={(e) => e.key === "Escape" && onOpenChange(false)}
+            placeholder="Search Ryan's teaching library..."
             className="flex-1 bg-transparent border-0 outline-none text-base placeholder:text-primary-foreground/50 text-primary-foreground"
           />
+          {/* Gold Search button — desktop only */}
+          <Button
+            size="sm"
+            className="hidden sm:flex bg-gold text-gold-foreground hover:bg-gold/90 font-semibold shrink-0"
+            onClick={() => setDebounced(q.trim())}
+          >
+            Search
+          </Button>
           <button
             onClick={() => onOpenChange(false)}
-            className="text-primary-foreground/70 hover:text-gold transition-colors"
+            className="text-primary-foreground/70 hover:text-gold transition-colors ml-1"
             aria-label="Close search"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Results */}
+        {/* Results area */}
         <div className="max-h-[60vh] overflow-y-auto p-5 bg-background">
-          {debounced.length === 0 && (
+          {/* Loading */}
+          {isFetching && (
+            <div className="text-center text-sm text-muted-foreground py-10">
+              Searching…
+            </div>
+          )}
+
+          {/* Empty state — prompt */}
+          {!isFetching && debounced.length === 0 && results.length === 0 && (
             <div className="text-center text-sm text-muted-foreground py-12">
               Start typing to search Ryan's full teaching library.
             </div>
           )}
 
-          {showEmpty && (
-            <div className="text-center text-sm text-muted-foreground py-12">
-              No courses found — try another search term.
+          {/* Featured / fallback heading */}
+          {!isFetching && results.length > 0 && isFeatured && (
+            <div className="mb-4">
+              {debounced.length > 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No exact matches for <span className="font-semibold text-foreground">"{debounced}"</span> — here are some of Ryan's most popular teachings:
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground font-medium">
+                  Here are some of Ryan's most popular teachings:
+                </p>
+              )}
             </div>
           )}
 
-          {results.length > 0 && (
+          {/* Result grid */}
+          {!isFetching && results.length > 0 && (
             <div className="grid sm:grid-cols-2 gap-4">
               {results.map((item) => (
                 <div
@@ -122,6 +153,21 @@ export function LandingSearchModal({
               ))}
             </div>
           )}
+
+          {/* "Want to learn more?" CTA — shown when featured fallback is displayed */}
+          {!isFetching && isFeatured && results.length > 0 && (
+            <div className="mt-6 rounded-xl border border-gold/30 bg-gold/5 p-5 text-center">
+              <p className="text-sm font-semibold text-foreground mb-3">
+                Want to learn more? Talk to the DCPG team.
+              </p>
+              <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer">
+                <Button className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold gap-2">
+                  <CalendarDays className="h-4 w-4" />
+                  Book a free strategy call
+                </Button>
+              </a>
+            </div>
+          )}
         </div>
 
         {/* Footer CTA */}
@@ -137,10 +183,7 @@ export function LandingSearchModal({
             >
               Sign In
             </Link>
-            <Link
-              to="/signup"
-              onClick={() => onOpenChange(false)}
-            >
+            <Link to="/signup" onClick={() => onOpenChange(false)}>
               <Button className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold">
                 Sign Up for Access
               </Button>

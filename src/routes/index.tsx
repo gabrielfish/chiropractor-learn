@@ -155,12 +155,20 @@ function LandingPage() {
             <Link to="/signup">
               <Button className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold">Sign Up</Button>
             </Link>
+            {/* Inline search bar — desktop only */}
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="hidden lg:flex items-center gap-2 h-10 px-4 rounded-lg border border-border bg-muted/50 text-muted-foreground hover:border-gold hover:text-gold transition-colors text-sm w-56"
+            >
+              <Search className="h-4 w-4 shrink-0" />
+              <span className="flex-1 text-left truncate">Search Ryan's library...</span>
+            </button>
             <Button
               variant="ghost"
               size="icon"
               aria-label="Search courses"
               onClick={() => setSearchOpen(true)}
-              className="text-foreground hover:text-gold"
+              className="lg:hidden text-foreground hover:text-gold"
             >
               <Search className="h-5 w-5" />
             </Button>
@@ -255,6 +263,22 @@ function LandingPage() {
                 Sign In
               </Button>
             </Link>
+          </div>
+
+          {/* Hero search bar */}
+          <div className="mt-8 max-w-xl mx-auto w-full px-2">
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="w-full h-[60px] flex items-center gap-3 px-5 rounded-xl bg-white/10 border border-white/20 hover:border-gold/60 hover:bg-white/15 transition-all text-left group"
+            >
+              <Search className="h-6 w-6 text-gold shrink-0 group-hover:scale-110 transition-transform" />
+              <span className="flex-1 text-primary-foreground/60 text-base">
+                Search Ryan's teaching library...
+              </span>
+              <span className="hidden sm:block text-xs font-semibold bg-gold/20 text-gold px-3 py-1 rounded-full">
+                Search
+              </span>
+            </button>
           </div>
         </div>
       </section>
