@@ -292,8 +292,32 @@ function LandingPage() {
         </div>
       </section>
 
+      {/* Features */}
+      <section className="max-w-6xl mx-auto px-6 py-20">
+        <div className="text-center mb-14">
+          <h2 className="font-display text-3xl md:text-4xl font-extrabold text-foreground mb-3">
+            Everything you need to grow your practice
+          </h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            One portal. Every lesson, resource, and book Ryan has ever taught — searchable and ready when you are.
+          </p>
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {features.map((f) => (
+            <div
+              key={f.title}
+              className="rounded-xl border border-border p-6 bg-card hover:border-gold/50 transition-colors"
+            >
+              <div className="rounded-lg bg-gold/15 text-gold p-3 inline-flex mb-4">{f.icon}</div>
+              <div className="font-display text-lg font-bold text-foreground mb-1">{f.title}</div>
+              <div className="text-sm text-muted-foreground">{f.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Free Tools & Resources */}
-      <section className="max-w-6xl mx-auto px-6 py-16">
+      <section className="max-w-6xl mx-auto px-6 pb-16">
         <div className="text-center mb-10">
           <div className="inline-block mb-3 px-3 py-1 rounded-full bg-gold/15 text-gold text-xs font-semibold tracking-wide uppercase">
             Free for practice owners
@@ -340,7 +364,7 @@ function LandingPage() {
             <a
               key={tool.title}
               href={tool.href}
-              target={tool.href.startsWith("https://learn.") ? undefined : "_blank"}
+              target="_blank"
               rel="noopener noreferrer"
               className="group flex flex-col justify-between rounded-2xl bg-primary p-7 hover:bg-primary/90 transition-colors"
             >
@@ -403,30 +427,6 @@ function LandingPage() {
               <li>Paste the URL above and save</li>
             </ol>
           </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="max-w-6xl mx-auto px-6 py-20">
-        <div className="text-center mb-14">
-          <h2 className="font-display text-3xl md:text-4xl font-extrabold text-foreground mb-3">
-            Everything you need to grow your practice
-          </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            One portal. Every lesson, resource, and book Ryan has ever taught — searchable and ready when you are.
-          </p>
-        </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((f) => (
-            <div
-              key={f.title}
-              className="rounded-xl border border-border p-6 bg-card hover:border-gold/50 transition-colors"
-            >
-              <div className="rounded-lg bg-gold/15 text-gold p-3 inline-flex mb-4">{f.icon}</div>
-              <div className="font-display text-lg font-bold text-foreground mb-1">{f.title}</div>
-              <div className="text-sm text-muted-foreground">{f.desc}</div>
-            </div>
-          ))}
         </div>
       </section>
 
