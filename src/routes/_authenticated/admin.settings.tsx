@@ -284,13 +284,13 @@ function SettingsPage() {
                       <Label>Playlist ID</Label>
                       <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Creates 1 Course</span>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Input
                         placeholder="e.g. PLxxxxxxxxxxxxxxxxxxxxxx"
                         value={ytPlaylistId}
                         onChange={(e) => setYtPlaylistId(e.target.value)}
                         disabled={ytBusy}
-                        className="flex-1"
+                        className="flex-1 min-w-[200px]"
                       />
                       <Button
                         onClick={() => { setYtCourseResult(null); ytPlaylistMut.mutate(); }}

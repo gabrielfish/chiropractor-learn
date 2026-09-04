@@ -310,8 +310,8 @@ function ProfilePage() {
           </div>
           <div className="space-y-2">
             <Label>MCP Server URL</Label>
-            <div className="flex items-center gap-2">
-              <Input readOnly value={MCP_MEMBER_URL} className="font-mono text-sm" />
+            <div className="flex items-center gap-2 min-w-0">
+              <Input readOnly value={MCP_MEMBER_URL} className="font-mono text-sm min-w-0" />
               <Button
                 size="icon"
                 variant="outline"

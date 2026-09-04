@@ -166,7 +166,7 @@ function MembersPage() {
           </div>
           <Button
             onClick={() => setInviteOpen(true)}
-            className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold gap-2 self-start sm:self-auto"
+            className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold gap-2 w-full sm:w-auto h-12 sm:h-10"
           >
             <Link2 className="h-4 w-4" /> Invite Member
           </Button>

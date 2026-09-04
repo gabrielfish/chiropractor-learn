@@ -266,7 +266,7 @@ function ContentDetail() {
                 <p className="text-foreground/80 leading-relaxed whitespace-pre-line">{item.description}</p>
               )}
 
-              <div className="flex flex-wrap gap-3 mt-6">
+              <div className="flex flex-wrap gap-3 mt-6 [&>*]:min-h-[44px] sm:[&>*]:min-h-0">
                 {/* Books: Back to Library + Read Online + Download PDF */}
                 {isBook ? (
                   <>

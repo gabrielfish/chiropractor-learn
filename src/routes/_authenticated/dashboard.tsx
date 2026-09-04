@@ -53,7 +53,7 @@ function McpBanner() {
         <span className="text-lg shrink-0">🤖</span>
         <p className="flex-1 min-w-0 text-sm text-foreground">
           <span className="font-semibold">Pro tip:</span> Connect Claude AI to Ryan's full teaching library! Add{" "}
-          <span className="font-mono text-xs bg-background border border-border rounded px-1.5 py-0.5">{MEMBER_MCP_URL}</span>{" "}
+          <span className="font-mono text-xs bg-background border border-border rounded px-1.5 py-0.5 break-all">{MEMBER_MCP_URL}</span>{" "}
           to Claude → <span className="font-medium">Settings → Customize → Connectors</span> for instant AI-powered access to all teachings.
         </p>
         <div className="flex items-center gap-2 shrink-0">

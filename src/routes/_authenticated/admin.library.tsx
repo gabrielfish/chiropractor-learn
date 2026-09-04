@@ -276,7 +276,7 @@ function LibraryPage() {
           </p>
 
           {/* Top-level tab switcher */}
-          <div className="inline-flex rounded-lg border border-border bg-muted p-1 mb-6">
+          <div className="inline-flex flex-wrap rounded-lg border border-border bg-muted p-1 mb-6 max-w-full">
             <button
               type="button"
               onClick={() => setTab("lessons")}
