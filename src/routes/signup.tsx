@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { notifyNewMember } from "@/lib/notify.functions";
@@ -28,6 +28,76 @@ export const Route = createFileRoute("/signup")({
   }),
   component: SignupPage,
 });
+
+const TESTIMONIALS = [
+  {
+    quote: "New patients increased from 25 to 77 per month — without burnout or gimmicks.",
+    name: "Dr. Wendy McCloud",
+    clinic: "WDC Physiotherapy UK",
+  },
+  {
+    quote: "80 leads at £1.63 each, 32 new patients booked in just 6 days. Paid for the whole year from one campaign!",
+    name: "Dr. Alex Eatly",
+    clinic: "Liverpool Chiropractic UK",
+  },
+  {
+    quote: "Since coaching with Ryan my clinic has exploded. We are generating an EXTRA $7,600 per week.",
+    name: "Dr. Mike Paull",
+    clinic: "",
+  },
+];
+
+function TestimonialCarousel() {
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setActive((i) => (i + 1) % TESTIMONIALS.length), 5000);
+    return () => clearInterval(id);
+  }, []);
+
+  const t = TESTIMONIALS[active];
+
+  return (
+    <div className="w-full bg-primary rounded-2xl px-8 py-10 text-center relative overflow-hidden">
+      {/* Large decorative quote mark */}
+      <div className="absolute top-4 left-6 text-gold/20 font-serif text-9xl leading-none select-none pointer-events-none">
+        "
+      </div>
+
+      {/* Stars */}
+      <div className="flex justify-center gap-1 mb-5 relative z-10">
+        {[...Array(5)].map((_, i) => (
+          <span key={i} className="text-gold text-xl">★</span>
+        ))}
+      </div>
+
+      {/* Quote */}
+      <blockquote className="relative z-10 text-primary-foreground text-lg sm:text-xl italic font-medium leading-relaxed max-w-2xl mx-auto mb-6">
+        "{t.quote}"
+      </blockquote>
+
+      {/* Attribution */}
+      <div className="relative z-10">
+        <div className="text-gold font-semibold text-base">{t.name}</div>
+        {t.clinic && (
+          <div className="text-primary-foreground/60 text-sm mt-0.5">{t.clinic}</div>
+        )}
+      </div>
+
+      {/* Dot indicators */}
+      <div className="flex justify-center gap-2 mt-7 relative z-10">
+        {TESTIMONIALS.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setActive(i)}
+            className={`w-2 h-2 rounded-full transition-all ${i === active ? "bg-gold w-5" : "bg-primary-foreground/30"}`}
+            aria-label={`Testimonial ${i + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function NoInvitePage() {
   return (
@@ -73,19 +143,19 @@ function NoInvitePage() {
       <p className="text-xs text-muted-foreground mb-8">Free — no commitment required</p>
 
       {/* Sign in link */}
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground mb-12">
         Already a member?{" "}
         <Link to="/login" className="text-foreground font-semibold hover:text-gold transition-colors">
           Sign In
         </Link>
       </p>
 
-      {/* Social proof strip */}
-      <div className="mt-16 max-w-lg border-t border-border pt-10 text-center">
-        <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-4">Trusted by chiropractors worldwide</p>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          "New patients increased from 25 to 77 per month — without burnout or gimmicks." — <span className="font-medium text-foreground">Wendy McCloud, WDC Physiotherapy UK</span>
+      {/* Social proof carousel */}
+      <div className="w-full max-w-2xl">
+        <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-6">
+          Trusted by chiropractors worldwide
         </p>
+        <TestimonialCarousel />
       </div>
     </div>
   );
