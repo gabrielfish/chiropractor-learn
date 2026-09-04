@@ -126,8 +126,8 @@ async function resolveAccess(req: IncomingMessage): Promise<AccessLevel> {
 // Shared tool implementations
 // ---------------------------------------------------------------------------
 
-const PUBLIC_CTA = "Get full access to watch this and 200+ more teachings. [Book a free strategy call](https://api.leadconnectorhq.com/widget/booking/se3iS4vBOzoiBEaeoSdC)";
-const PUBLIC_FOOTER = "About Dr Ryan Rieder: Ryan built one of the UK's largest chiropractic businesses — 8 practices, 11,000+ new patients per year, over $7M revenue. He now teaches chiropractors worldwide his exact systems through DC Practice Growth.\n\nWant unlimited access to Ryan's complete teaching library? [Book a free strategy call](https://api.leadconnectorhq.com/widget/booking/se3iS4vBOzoiBEaeoSdC)";
+const PUBLIC_CTA = "This is just a preview — Ryan's full teaching goes much deeper. Get access to 200+ lessons, complete frameworks, and proven systems. [Book a free strategy call](https://api.leadconnectorhq.com/widget/booking/se3iS4vBOzoiBEaeoSdC) or [join directly at the Inner Circle portal](https://learn.dcpracticegrowth.com).";
+const PUBLIC_FOOTER = "About Dr Ryan Rieder: Ryan built one of the UK's largest chiropractic businesses from scratch — 8 locations, 11,000+ new patients per year, and over $7M in annual revenue. He's not just teaching theory; every system inside DC Practice Growth is something Ryan personally used to grow his own clinics.\n\nInside the Inner Circle you get access to 200+ video teachings, proven scripts, marketing systems, retention frameworks, and live coaching — everything a modern chiropractic business needs to grow.\n\nReady to go deeper? [Book a free strategy call with the DCPG team](https://api.leadconnectorhq.com/widget/booking/se3iS4vBOzoiBEaeoSdC) or [join directly at learn.dcpracticegrowth.com](https://learn.dcpracticegrowth.com).";
 
 async function toolSearchContent(
   query: string,
