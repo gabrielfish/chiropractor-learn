@@ -499,27 +499,37 @@ function createMemberServer(): McpServer {
             }],
           };
         } catch (_captionErr) {
-          // Captions unavailable — fall through to Whisper
+          console.log(`[get_transcript] Captions unavailable for ${videoId}: ${(_captionErr as Error).message}`);
         }
 
-        // ── Attempt 2: Whisper transcription via ytdl-core (Node.js only) ─
+        // ── Attempt 2: Whisper transcription via ytdl-core ───────────────
+        console.log(`[get_transcript] OPENAI_API_KEY set: ${!!OPENAI_API_KEY}, length: ${OPENAI_API_KEY.length}`);
         if (!OPENAI_API_KEY) {
-          return { content: [{ type: "text", text: "Transcript unavailable: YouTube captions not found and OPENAI_API_KEY is not set for Whisper fallback." }], isError: true };
+          return {
+            content: [{ type: "text", text: "Transcript unavailable: YouTube captions not found and OPENAI_API_KEY is not configured on the server." }],
+            isError: true,
+          };
         }
 
         const audioPath = join(tmpdir(), `dcpg_whisper_${videoId}.mp4`);
+        console.log(`[get_transcript] Attempting ytdl-core download to ${audioPath}`);
         try {
-          // Dynamically import ytdl-core (CJS module in ESM context)
           const ytdl = (await import("ytdl-core")).default;
 
-          // Download the audio-only stream to a temp file
+          console.log(`[get_transcript] Fetching ytdl-core video info…`);
+          const info = await ytdl.getBasicInfo(`https://www.youtube.com/watch?v=${videoId}`);
+          console.log(`[get_transcript] Video: "${info.videoDetails.title}"`);
+
           const audioStream = ytdl(`https://www.youtube.com/watch?v=${videoId}`, {
             quality: "highestaudio",
             filter: "audioonly",
           });
-          await pipeline(audioStream, createWriteStream(audioPath));
+          audioStream.on("error", (e: Error) => console.error(`[get_transcript] ytdl stream error: ${e.message}`));
 
-          // Send to OpenAI Whisper
+          console.log(`[get_transcript] Piping audio to disk…`);
+          await pipeline(audioStream, createWriteStream(audioPath));
+          console.log(`[get_transcript] Audio downloaded. Sending to Whisper…`);
+
           const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
           const transcription = await openai.audio.transcriptions.create({
             model: "whisper-1",
@@ -528,6 +538,7 @@ function createMemberServer(): McpServer {
           });
 
           const text = (typeof transcription === "string" ? transcription : (transcription as any).text ?? "").trim();
+          console.log(`[get_transcript] Whisper success — ${text.split(" ").length} words`);
           return {
             content: [{
               type: "text",
@@ -535,7 +546,43 @@ function createMemberServer(): McpServer {
             }],
           };
         } catch (whisperErr) {
-          return { content: [{ type: "text", text: `Transcript unavailable: ${(whisperErr as Error).message}` }], isError: true };
+          const msg = (whisperErr as Error).message;
+          console.error(`[get_transcript] Whisper/ytdl failed: ${msg}`);
+
+          // ── Attempt 3: YouTube oEmbed — returns title + author without auth ─
+          // ytdl-core is frequently blocked by YouTube on cloud IP ranges.
+          // oEmbed is a public API that works from any server.
+          console.log(`[get_transcript] Falling back to YouTube oEmbed metadata…`);
+          try {
+            const oembedRes = await fetch(
+              `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+            );
+            if (oembedRes.ok) {
+              const oembed = await oembedRes.json() as any;
+              console.log(`[get_transcript] oEmbed success: "${oembed.title}"`);
+              return {
+                content: [{
+                  type: "text",
+                  text: JSON.stringify({
+                    videoId,
+                    source: "oembed_metadata_only",
+                    title: oembed.title,
+                    author: oembed.author_name,
+                    url: `https://www.youtube.com/watch?v=${videoId}`,
+                    note: `Full transcript unavailable — YouTube captions are off and audio download failed (${msg}). Video metadata returned instead.`,
+                  }, null, 2),
+                }],
+                isError: false,
+              };
+            }
+          } catch (oembedErr) {
+            console.error(`[get_transcript] oEmbed also failed: ${(oembedErr as Error).message}`);
+          }
+
+          return {
+            content: [{ type: "text", text: `Transcript unavailable: ${msg}` }],
+            isError: true,
+          };
         } finally {
           if (existsSync(audioPath)) unlinkSync(audioPath);
         }
