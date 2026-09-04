@@ -16,6 +16,7 @@
     "@anthropic-ai/sdk": "^0.122.0",
     "@modelcontextprotocol/sdk": "^1.12.0",
     "@supabase/supabase-js": "^2.107.0",
+    "@supadata/js": "^1.4.0",
     "algoliasearch": "^5.55.1",
     "openai": "^4.104.0",
     "youtube-transcript": "^1.2.1",

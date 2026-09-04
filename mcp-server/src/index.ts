@@ -502,7 +502,31 @@ function createMemberServer(): McpServer {
           console.log(`[get_transcript] Captions unavailable for ${videoId}: ${(_captionErr as Error).message}`);
         }
 
-        // ── Attempt 2: Whisper transcription via ytdl-core ───────────────
+        // ── Attempt 2: Supadata API ───────────────────────────────────────
+        const SUPADATA_API_KEY = process.env.SUPADATA_API_KEY ?? "";
+        if (SUPADATA_API_KEY) {
+          console.log(`[get_transcript] Trying Supadata API for ${videoId}…`);
+          try {
+            const { Supadata } = await import("@supadata/js");
+            const supadata = new Supadata({ apiKey: SUPADATA_API_KEY });
+            const result = await supadata.youtube.transcript({ videoId });
+            const chunks = Array.isArray(result.content) ? result.content : [];
+            const text = chunks.map((c: { text: string }) => c.text).join(" ").trim();
+            if (text) {
+              console.log(`[get_transcript] Supadata success — ${text.split(" ").length} words`);
+              return {
+                content: [{
+                  type: "text",
+                  text: JSON.stringify({ videoId, source: "supadata", lang: result.lang, wordCount: text.split(" ").length, transcript: text.slice(0, 20000) }, null, 2),
+                }],
+              };
+            }
+          } catch (supadataErr) {
+            console.error(`[get_transcript] Supadata failed: ${(supadataErr as Error).message}`);
+          }
+        }
+
+        // ── Attempt 3: Whisper transcription via ytdl-core ───────────────
         console.log(`[get_transcript] OPENAI_API_KEY set: ${!!OPENAI_API_KEY}, length: ${OPENAI_API_KEY.length}`);
         if (!OPENAI_API_KEY) {
           return {
@@ -549,7 +573,7 @@ function createMemberServer(): McpServer {
           const msg = (whisperErr as Error).message;
           console.error(`[get_transcript] Whisper/ytdl failed: ${msg}`);
 
-          // ── Attempt 3: YouTube oEmbed — returns title + author without auth ─
+          // ── Attempt 4: YouTube oEmbed — returns title + author without auth ─
           // ytdl-core is frequently blocked by YouTube on cloud IP ranges.
           // oEmbed is a public API that works from any server.
           console.log(`[get_transcript] Falling back to YouTube oEmbed metadata…`);
