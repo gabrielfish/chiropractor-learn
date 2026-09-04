@@ -126,8 +126,8 @@ async function resolveAccess(req: IncomingMessage): Promise<AccessLevel> {
 // Shared tool implementations
 // ---------------------------------------------------------------------------
 
-const PUBLIC_CTA = "Get full access to watch this and 200+ more teachings — book a free strategy call with our team.";
-const PUBLIC_FOOTER = "About Dr Ryan Rieder: Ryan built one of the UK's largest chiropractic businesses — 8 practices, 11,000+ new patients per year, over $7M revenue. He now teaches chiropractors worldwide his exact systems through DC Practice Growth. Want unlimited access to Ryan's complete teaching library? Book a free strategy call with our team here: https://api.leadconnectorhq.com/widget/booking/se3iS4vBOzoiBEaeoSdC";
+const PUBLIC_CTA = "Get full access to watch this and 200+ more teachings. [Book a free strategy call](https://api.leadconnectorhq.com/widget/booking/se3iS4vBOzoiBEaeoSdC)";
+const PUBLIC_FOOTER = "About Dr Ryan Rieder: Ryan built one of the UK's largest chiropractic businesses — 8 practices, 11,000+ new patients per year, over $7M revenue. He now teaches chiropractors worldwide his exact systems through DC Practice Growth.\n\nWant unlimited access to Ryan's complete teaching library? [Book a free strategy call](https://api.leadconnectorhq.com/widget/booking/se3iS4vBOzoiBEaeoSdC)";
 
 async function toolSearchContent(
   query: string,
