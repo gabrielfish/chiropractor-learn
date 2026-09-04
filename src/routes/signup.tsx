@@ -102,8 +102,18 @@ function TestimonialCarousel() {
 function NoInvitePage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6 py-16 text-center">
+      {/* Back link */}
+      <div className="absolute top-6 left-6">
+        <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          Back to home
+        </Link>
+      </div>
+
       {/* Logo */}
-      <img src="/dcpg-logo.png" alt="DCPG" style={{ height: 48 }} className="mb-10" />
+      <Link to="/">
+        <img src="/dcpg-logo.png" alt="DCPG" style={{ height: 48 }} className="mb-10 hover:opacity-80 transition-opacity" />
+      </Link>
 
       {/* Heading */}
       <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold text-foreground leading-tight mb-4 max-w-xl">
