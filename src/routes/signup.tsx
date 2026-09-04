@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
@@ -7,13 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, CalendarDays, BookOpen, Play, Award } from "lucide-react";
 import { PasswordInput } from "@/components/PasswordInput";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 
+const VALID_INVITE = "INNERCIRCLE";
+const BOOKING_URL = "https://api.leadconnectorhq.com/widget/booking/se3iS4vBOzoiBEaeoSdC";
+
 export const Route = createFileRoute("/signup")({
   ssr: false,
+  validateSearch: (search: Record<string, unknown>) => ({
+    invite: typeof search.invite === "string" ? search.invite : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Sign up - DCPG Membership Portal" },
@@ -23,7 +29,78 @@ export const Route = createFileRoute("/signup")({
   component: SignupPage,
 });
 
+function NoInvitePage() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6 py-16 text-center">
+      {/* Logo */}
+      <img src="/dcpg-logo.png" alt="DCPG" style={{ height: 48 }} className="mb-10" />
+
+      {/* Heading */}
+      <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold text-foreground leading-tight mb-4 max-w-xl">
+        Ryan Rieder's Inner Circle Teaching Library
+      </h1>
+      <p className="text-muted-foreground text-lg max-w-md mb-10">
+        Get access to 200+ chiropractic growth teachings, courses, and books — built for chiropractors who want to scale.
+      </p>
+
+      {/* Feature pills */}
+      <div className="flex flex-wrap justify-center gap-3 mb-10">
+        {[
+          { icon: <Play className="h-4 w-4" />, label: "200+ video teachings" },
+          { icon: <BookOpen className="h-4 w-4" />, label: "Complete books & PDFs" },
+          { icon: <Award className="h-4 w-4" />, label: "Proven growth systems" },
+        ].map((f) => (
+          <div
+            key={f.label}
+            className="flex items-center gap-2 px-4 py-2 rounded-full border border-gold/30 bg-gold/5 text-sm font-medium text-foreground"
+          >
+            <span className="text-gold">{f.icon}</span>
+            {f.label}
+          </div>
+        ))}
+      </div>
+
+      {/* Primary CTA */}
+      <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer">
+        <Button
+          size="lg"
+          className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold h-14 px-10 text-base gap-2 mb-5 shadow-lg"
+        >
+          <CalendarDays className="h-5 w-5" />
+          Book a Strategy Call
+        </Button>
+      </a>
+      <p className="text-xs text-muted-foreground mb-8">Free — no commitment required</p>
+
+      {/* Sign in link */}
+      <p className="text-sm text-muted-foreground">
+        Already a member?{" "}
+        <Link to="/login" className="text-foreground font-semibold hover:text-gold transition-colors">
+          Sign In
+        </Link>
+      </p>
+
+      {/* Social proof strip */}
+      <div className="mt-16 max-w-lg border-t border-border pt-10 text-center">
+        <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-4">Trusted by chiropractors worldwide</p>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          "New patients increased from 25 to 77 per month — without burnout or gimmicks." — <span className="font-medium text-foreground">Wendy McCloud, WDC Physiotherapy UK</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function SignupPage() {
+  const { invite } = useSearch({ from: "/signup" });
+  if (!invite || invite.toUpperCase() !== VALID_INVITE) {
+    return <NoInvitePage />;
+  }
+
+  return <SignupForm />;
+}
+
+function SignupForm() {
   const notifyAdmins = useServerFn(notifyNewMember);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
