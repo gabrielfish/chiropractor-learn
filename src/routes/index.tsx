@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Play, FileText, Award, Search, Users, BookOpen, Quote, Menu, X } from "lucide-react";
+import { Play, FileText, Award, Search, Users, BookOpen, Quote, Menu, X, Globe, Sparkles, RefreshCw, ArrowRight } from "lucide-react";
 import { LandingSearchModal } from "@/components/LandingSearchModal";
 
 export const Route = createFileRoute("/")({
@@ -280,6 +280,78 @@ function LandingPage() {
               </span>
             </button>
           </div>
+        </div>
+      </section>
+
+      {/* Free Tools & Resources */}
+      <section className="max-w-6xl mx-auto px-6 py-16">
+        <div className="text-center mb-10">
+          <div className="inline-block mb-3 px-3 py-1 rounded-full bg-gold/15 text-gold text-xs font-semibold tracking-wide uppercase">
+            Free for chiropractors
+          </div>
+          <h2 className="font-display text-3xl md:text-4xl font-extrabold text-foreground mb-3">
+            Free tools &amp; resources
+          </h2>
+          <p className="text-muted-foreground max-w-xl mx-auto">
+            Practical tools built by DCPG to help you grow your practice — no credit card, no catch.
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-5">
+          {[
+            {
+              icon: <Globe className="h-6 w-6" />,
+              title: "Website Audit",
+              desc: "Get a free audit of your chiropractic website",
+              href: "https://audit.dcpracticegrowth.com",
+              cta: "Get free audit",
+            },
+            {
+              icon: <Sparkles className="h-6 w-6" />,
+              title: "Content Builder",
+              desc: "Generate social media content for your practice in seconds",
+              href: "https://contentgen.dcpracticegrowth.com",
+              cta: "Build content",
+            },
+            {
+              icon: <RefreshCw className="h-6 w-6" />,
+              title: "Patient Reactivation",
+              desc: "Win back inactive patients automatically",
+              href: "https://reactivation.dcpracticegrowth.com",
+              cta: "Reactivate patients",
+            },
+            {
+              icon: <BookOpen className="h-6 w-6" />,
+              title: "Free Books",
+              desc: "Download Ryan's 4 bestselling chiropractic growth books",
+              href: "https://learn.dcpracticegrowth.com/signup?invite=INNERCIRCLE",
+              cta: "Download books",
+            },
+          ].map((tool) => (
+            <a
+              key={tool.title}
+              href={tool.href}
+              target={tool.href.startsWith("https://learn.") ? undefined : "_blank"}
+              rel="noopener noreferrer"
+              className="group flex flex-col justify-between rounded-2xl bg-primary p-7 hover:bg-primary/90 transition-colors"
+            >
+              <div>
+                <div className="inline-flex items-center justify-center rounded-xl bg-gold/20 text-gold p-3 mb-5 group-hover:bg-gold/30 transition-colors">
+                  {tool.icon}
+                </div>
+                <h3 className="font-display text-xl font-bold text-primary-foreground mb-2">
+                  {tool.title}
+                </h3>
+                <p className="text-primary-foreground/70 text-sm leading-relaxed">
+                  {tool.desc}
+                </p>
+              </div>
+              <div className="mt-6 flex items-center gap-1.5 text-gold text-sm font-semibold group-hover:gap-2.5 transition-all">
+                {tool.cta}
+                <ArrowRight className="h-4 w-4" />
+              </div>
+            </a>
+          ))}
         </div>
       </section>
 
