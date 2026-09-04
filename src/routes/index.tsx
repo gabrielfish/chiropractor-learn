@@ -104,7 +104,7 @@ const features = [
   },
   {
     icon: <Users className="h-6 w-6" />,
-    title: "Built for chiropractors",
+    title: "Built for practice owners",
     desc: "Every lesson is purpose-built for growing a chiropractic practice.",
   },
   {
@@ -243,10 +243,10 @@ function LandingPage() {
             With Ryan Rieder
           </div>
           <h1 className="font-display text-3xl sm:text-4xl md:text-6xl font-extrabold leading-tight mb-5 sm:mb-6">
-            Ryan Rieder's complete teaching library, built for chiropractors who want to grow.
+            Ryan Rieder's complete teaching library, built for practice owners ready to scale to 7 figures.
           </h1>
           <p className="text-base sm:text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-8 sm:mb-10">
-            Search and watch Ryan Rieder's complete teaching library — unlimited access, built exclusively for chiropractors.
+            Search and watch Ryan Rieder's complete teaching library — unlimited access, built exclusively for practice owners.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link to="/signup">
@@ -287,7 +287,7 @@ function LandingPage() {
       <section className="max-w-6xl mx-auto px-6 py-16">
         <div className="text-center mb-10">
           <div className="inline-block mb-3 px-3 py-1 rounded-full bg-gold/15 text-gold text-xs font-semibold tracking-wide uppercase">
-            Free for chiropractors
+            Free for practice owners
           </div>
           <h2 className="font-display text-3xl md:text-4xl font-extrabold text-foreground mb-3">
             Free tools &amp; resources
@@ -385,7 +385,7 @@ function LandingPage() {
           <div className="text-center mb-12">
             <Quote className="h-10 w-10 text-gold mx-auto mb-4" />
             <h2 className="font-display text-3xl md:text-4xl font-extrabold text-foreground mb-3">
-              Real results from real chiropractors
+              Real results from real practice owners
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
               Practitioners across the UK and beyond who've grown their practices with Ryan Rieder's teaching.
@@ -422,7 +422,7 @@ function LandingPage() {
           Ready to grow your practice?
         </h2>
         <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-          Join the chiropractors using DCPG to build stronger, more profitable practices.
+          Join the practice owners using DCPG to build stronger, more profitable practices.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link to="/signup">
