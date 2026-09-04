@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
-import { Search, Loader2, GraduationCap } from "lucide-react";
+import { Search, Loader2, GraduationCap, Copy, Check, X as XIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getSearchClient, ALGOLIA_INDEX, type AlgoliaHit } from "@/lib/algolia";
 import { MemberNav } from "@/components/MemberNav";
@@ -27,6 +27,55 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — DCPG Membership Portal" }] }),
   component: Dashboard,
 });
+
+const MEMBER_MCP_URL = "https://mcp.dcpracticegrowth.com/member";
+
+function McpBanner() {
+  const [dismissed, setDismissed] = useState(() => sessionStorage.getItem("mcp-banner-dismissed") === "1");
+  const [copied, setCopied] = useState(false);
+
+  if (dismissed) return null;
+
+  function dismiss() {
+    sessionStorage.setItem("mcp-banner-dismissed", "1");
+    setDismissed(true);
+  }
+
+  function copy() {
+    navigator.clipboard.writeText(MEMBER_MCP_URL);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="bg-gold/10 border-b border-gold/30 px-4 py-3">
+      <div className="max-w-7xl mx-auto flex flex-wrap items-center gap-3">
+        <span className="text-lg shrink-0">🤖</span>
+        <p className="flex-1 min-w-0 text-sm text-foreground">
+          <span className="font-semibold">Pro tip:</span> Connect Claude AI to Ryan's full teaching library! Add{" "}
+          <span className="font-mono text-xs bg-background border border-border rounded px-1.5 py-0.5">{MEMBER_MCP_URL}</span>{" "}
+          to Claude → <span className="font-medium">Settings → Customize → Connectors</span> for instant AI-powered access to all teachings.
+        </p>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={copy}
+            className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-gold text-gold-foreground hover:bg-gold/90 font-semibold text-xs transition-colors"
+          >
+            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? "Copied!" : "Copy URL"}
+          </button>
+          <button
+            onClick={dismiss}
+            className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            aria-label="Dismiss"
+          >
+            <XIcon className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Dashboard() {
   const { q } = Route.useSearch();
@@ -245,6 +294,7 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <MemberNav />
+      <McpBanner />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12 flex gap-8">
         {/* Left filter panel — desktop only */}

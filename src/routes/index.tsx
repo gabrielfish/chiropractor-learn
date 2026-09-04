@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Play, FileText, Award, Search, Users, BookOpen, Quote, Menu, X, Globe, Sparkles, RefreshCw, ArrowRight } from "lucide-react";
+import { Play, FileText, Award, Search, Users, BookOpen, Quote, Menu, X, Globe, Sparkles, RefreshCw, ArrowRight, Copy, Check, Bot } from "lucide-react";
 import { LandingSearchModal } from "@/components/LandingSearchModal";
 
 export const Route = createFileRoute("/")({
@@ -133,10 +133,19 @@ function TestimonialCard({ t }: { t: typeof testimonials[number] }) {
   );
 }
 
+const PUBLIC_MCP_URL = "mcp.dcpracticegrowth.com/public";
+
 function LandingPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showAllTestimonials, setShowAllTestimonials] = useState(false);
+  const [mcpCopied, setMcpCopied] = useState(false);
+
+  function copyMcpUrl() {
+    navigator.clipboard.writeText(`https://${PUBLIC_MCP_URL}`);
+    setMcpCopied(true);
+    setTimeout(() => setMcpCopied(false), 2000);
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -322,10 +331,10 @@ function LandingPage() {
             },
             {
               icon: <BookOpen className="h-6 w-6" />,
-              title: "Free Books",
-              desc: "Download Ryan's 4 bestselling chiropractic growth books",
-              href: "https://learn.dcpracticegrowth.com/signup?invite=INNERCIRCLE",
-              cta: "Download books",
+              title: "Free Resources",
+              desc: "Access Ryan's free books, guides and resources",
+              href: "https://dcpracticegrowth.com/resources/",
+              cta: "Access resources",
             },
           ].map((tool) => (
             <a
@@ -352,6 +361,48 @@ function LandingPage() {
               </div>
             </a>
           ))}
+        </div>
+      </section>
+
+      {/* MCP / Claude AI section */}
+      <section className="max-w-6xl mx-auto px-6 pb-16">
+        <div className="rounded-2xl border border-gold/30 bg-gold/5 p-8 sm:p-10 flex flex-col sm:flex-row gap-8 items-start">
+          <div className="shrink-0 rounded-xl bg-gold/20 p-4 text-gold">
+            <Bot className="h-8 w-8" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="inline-block mb-3 px-3 py-1 rounded-full bg-gold/20 text-gold text-xs font-semibold tracking-wide uppercase">
+              Claude AI Integration
+            </div>
+            <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-foreground mb-3">
+              Ask Claude About Practice Growth
+            </h2>
+            <p className="text-muted-foreground mb-6 max-w-xl">
+              Connect Ryan's free teaching library to Claude AI and get instant answers to any practice growth question.
+            </p>
+
+            {/* URL copy row */}
+            <div className="flex items-center gap-2 mb-6">
+              <div className="flex-1 min-w-0 rounded-lg border border-border bg-background px-4 py-2.5 font-mono text-sm text-foreground truncate">
+                {PUBLIC_MCP_URL}
+              </div>
+              <button
+                onClick={copyMcpUrl}
+                className="shrink-0 flex items-center gap-1.5 h-10 px-4 rounded-lg bg-gold text-gold-foreground hover:bg-gold/90 font-semibold text-sm transition-colors"
+              >
+                {mcpCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {mcpCopied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+
+            {/* Instructions */}
+            <p className="text-sm font-semibold text-foreground mb-2">How to connect:</p>
+            <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+              <li>Open Claude → <span className="text-foreground font-medium">Settings → Customize → Connectors</span></li>
+              <li>Click <span className="text-foreground font-medium">Add</span></li>
+              <li>Paste the URL above and save</li>
+            </ol>
+          </div>
         </div>
       </section>
 
