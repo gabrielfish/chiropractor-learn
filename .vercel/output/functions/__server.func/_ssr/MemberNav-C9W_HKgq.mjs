@@ -4,7 +4,7 @@ import { s as supabase } from "./client-IF66mSk9.mjs";
 import { B as Button, c as cn } from "./button-BXrfXN_b.mjs";
 import { R as Root2, T as Trigger, P as Portal2, C as Content2, I as Item2, S as Separator2, a as SubTrigger2, b as SubContent2, c as CheckboxItem2, d as ItemIndicator2, e as RadioItem2, L as Label2 } from "../_libs/radix-ui__react-dropdown-menu.mjs";
 import { R as Root, I as Image, F as Fallback } from "../_libs/radix-ui__react-avatar.mjs";
-import { C as ChevronDown, q as User, r as LogOut, m as ChevronRight, h as Check, s as Circle } from "../_libs/lucide-react.mjs";
+import { n as ChevronDown, p as User, q as LogOut, r as ChevronRight, g as Check, s as Circle } from "../_libs/lucide-react.mjs";
 const DropdownMenu = Root2;
 const DropdownMenuTrigger = Trigger;
 const DropdownMenuSubTrigger = reactExports.forwardRef(({ className, inset, children, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
