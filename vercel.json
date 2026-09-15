@@ -1,8 +1,7 @@
 {
   "framework": null,
   "buildCommand": "npm run build",
-  "outputDirectory": ".vercel/output",
-  "installCommand": "npm install",
+"installCommand": "npm install",
   "headers": [
     {
       "source": "/(.*\\.html)",
