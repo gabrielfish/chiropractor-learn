@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { listMembers, setMemberActive, setUserRole, createMember } from "@/lib/members.functions";
+import { listMembers, setMemberActive, setUserRole, createMember, sendWelcomeEmail, TEMP_PASSWORD } from "@/lib/members.functions";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Search, UserCheck, UserX, Link2, Check, Users, Loader2, Copy, ShieldCheck, UserPlus } from "lucide-react";
+import { Search, UserCheck, UserX, Link2, Check, Users, Loader2, Copy, ShieldCheck, UserPlus, CheckCircle2, Mail } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/admin/members")({
@@ -89,27 +89,39 @@ function MembersPage() {
   const toggleFn = useServerFn(setMemberActive);
   const roleFn = useServerFn(setUserRole);
   const createFn = useServerFn(createMember);
+  const emailFn = useServerFn(sendWelcomeEmail);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [createName, setCreateName] = useState("");
   const [createEmail, setCreateEmail] = useState("");
+  const [createSuccess, setCreateSuccess] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   // Track which user's role select is pending
   const [pendingRole, setPendingRole] = useState<string | null>(null);
   const [pendingToggle, setPendingToggle] = useState<string | null>(null);
 
+  function resetCreateModal() {
+    setCreateOpen(false);
+    setCreateName("");
+    setCreateEmail("");
+    setCreateSuccess(false);
+  }
+
   const createMut = useMutation({
     mutationFn: () => createFn({ data: { fullName: createName.trim(), email: createEmail.trim() } }),
     onSuccess: () => {
-      toast.success(`Account created for ${createName}! Welcome email sent with login details.`);
-      setCreateOpen(false);
-      setCreateName("");
-      setCreateEmail("");
+      setCreateSuccess(true);
       qc.invalidateQueries({ queryKey: ["admin", "members"] });
     },
     onError: (err: Error) => toast.error(err.message),
+  });
+
+  const emailMut = useMutation({
+    mutationFn: () => emailFn({ data: { fullName: createName, email: createEmail } }),
+    onSuccess: () => toast.success(`Welcome email sent to ${createEmail}`),
+    onError: (err: Error) => toast.error(`Email failed: ${err.message}`),
   });
 
   const membersQ = useQuery({
@@ -355,74 +367,135 @@ function MembersPage() {
       </main>
 
       {/* ── Create Account Modal ─────────────────────────────────────── */}
-      <Dialog open={createOpen} onOpenChange={(open) => { if (!createMut.isPending) setCreateOpen(open); }}>
+      <Dialog open={createOpen} onOpenChange={(open) => { if (!createMut.isPending) { if (!open) resetCreateModal(); else setCreateOpen(true); } }}>
         <DialogContent className="max-w-[calc(100%-32px)] sm:max-w-[480px] p-0 overflow-hidden border-border bg-card">
-          <div className="bg-primary text-primary-foreground px-6 pt-6 pb-5">
-            <DialogHeader>
-              <DialogTitle className="font-display text-xl font-extrabold flex items-center gap-2">
-                <UserPlus className="h-5 w-5 text-gold" /> Create Member Account
-              </DialogTitle>
-              <p className="text-sm text-primary-foreground/70 mt-1">
-                Creates the account instantly and emails login details to the member.
-              </p>
-            </DialogHeader>
-          </div>
 
-          <div className="p-5 sm:p-6 space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="create-name" className="text-sm font-semibold">Full Name</Label>
-              <Input
-                id="create-name"
-                placeholder="e.g. Dr. Sarah Johnson"
-                value={createName}
-                onChange={(e) => setCreateName(e.target.value)}
-                disabled={createMut.isPending}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="create-email" className="text-sm font-semibold">Email Address</Label>
-              <Input
-                id="create-email"
-                type="email"
-                placeholder="e.g. sarah@example.com"
-                value={createEmail}
-                onChange={(e) => setCreateEmail(e.target.value)}
-                disabled={createMut.isPending}
-              />
-            </div>
+          {/* ── STEP 1: Entry form ── */}
+          {!createSuccess && (
+            <>
+              <div className="bg-primary text-primary-foreground px-6 pt-6 pb-5">
+                <DialogHeader>
+                  <DialogTitle className="font-display text-xl font-extrabold flex items-center gap-2">
+                    <UserPlus className="h-5 w-5 text-gold" /> Create Member Account
+                  </DialogTitle>
+                  <p className="text-sm text-primary-foreground/70 mt-1">
+                    Creates the account instantly — read credentials on the call, then optionally send the welcome email.
+                  </p>
+                </DialogHeader>
+              </div>
+              <div className="p-5 sm:p-6 space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="create-name" className="text-sm font-semibold">Full Name</Label>
+                  <Input
+                    id="create-name"
+                    placeholder="e.g. Dr. Sarah Johnson"
+                    value={createName}
+                    onChange={(e) => setCreateName(e.target.value)}
+                    disabled={createMut.isPending}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="create-email" className="text-sm font-semibold">Email Address</Label>
+                  <Input
+                    id="create-email"
+                    type="email"
+                    placeholder="e.g. sarah@example.com"
+                    value={createEmail}
+                    onChange={(e) => setCreateEmail(e.target.value)}
+                    disabled={createMut.isPending}
+                  />
+                </div>
+                <div className="flex gap-3 pt-1">
+                  <Button variant="outline" className="flex-1" onClick={resetCreateModal} disabled={createMut.isPending}>
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold gap-2"
+                    onClick={() => createMut.mutate()}
+                    disabled={createMut.isPending || !createName.trim() || !createEmail.trim()}
+                  >
+                    {createMut.isPending ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" /> Creating…</>
+                    ) : (
+                      <><UserPlus className="h-4 w-4" /> Create Account</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
 
-            <div className="rounded-lg bg-gold/10 border border-gold/30 p-3 text-sm text-foreground/80">
-              <p className="font-semibold text-foreground mb-1">What happens next:</p>
-              <ul className="space-y-0.5 list-disc list-inside text-xs">
-                <li>Account created immediately with temporary password <span className="font-mono font-bold">DCPG2026!</span></li>
-                <li>Welcome email sent with login link and password</li>
-                <li>Member appears instantly in this list as Active</li>
-                <li>They can log in right now and change their password</li>
-              </ul>
-            </div>
+          {/* ── STEP 2: Success screen with credentials ── */}
+          {createSuccess && (
+            <div className="p-5 sm:p-6 space-y-5">
+              {/* Heading */}
+              <div className="flex flex-col items-center text-center gap-2 pt-2">
+                <div className="rounded-full bg-green-500/15 p-3">
+                  <CheckCircle2 className="h-8 w-8 text-green-600" />
+                </div>
+                <h2 className="font-display text-xl font-extrabold text-foreground">Account Created!</h2>
+                <p className="text-sm text-muted-foreground">
+                  {createName} can log in right now. Read these details on the call.
+                </p>
+              </div>
 
-            <div className="flex gap-3 pt-1">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setCreateOpen(false)}
-                disabled={createMut.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold gap-2"
-                onClick={() => createMut.mutate()}
-                disabled={createMut.isPending || !createName.trim() || !createEmail.trim()}
-              >
-                {createMut.isPending ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" /> Creating…</>
-                ) : (
-                  <><UserPlus className="h-4 w-4" /> Create &amp; Send Email</>
-                )}
-              </Button>
+              {/* Credentials receipt */}
+              <div className="rounded-xl border-2 border-primary/30 bg-primary/5 overflow-hidden">
+                <div className="bg-primary px-4 py-2.5 text-center">
+                  <p className="text-xs font-bold text-primary-foreground/70 uppercase tracking-widest">Login Details</p>
+                </div>
+                <div className="divide-y divide-border">
+                  <div className="px-4 py-3">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Login URL</p>
+                    <p className="text-sm font-semibold text-foreground font-mono">learn.dcpracticegrowth.com/login</p>
+                  </div>
+                  <div className="px-4 py-3">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Email</p>
+                    <p className="text-sm font-semibold text-foreground break-all">{createEmail}</p>
+                  </div>
+                  <div className="px-4 py-3">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Temporary Password</p>
+                    <p className="text-xl font-extrabold text-primary tracking-widest font-mono">{TEMP_PASSWORD}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex flex-col gap-2">
+                <Button
+                  className="w-full gap-2 font-semibold"
+                  variant="outline"
+                  onClick={() => copyToClipboard(
+                    `Here are your login details for Ryan Rieder's Teaching Portal:\n\nURL: learn.dcpracticegrowth.com/login\nEmail: ${createEmail}\nPassword: ${TEMP_PASSWORD}\n\nYou will be asked to change your password after first login.`,
+                    "creds"
+                  )}
+                >
+                  {copiedKey === "creds" ? (
+                    <><Check className="h-4 w-4 text-green-600" /> Copied!</>
+                  ) : (
+                    <><Copy className="h-4 w-4" /> Copy All Details</>
+                  )}
+                </Button>
+                <Button
+                  className="w-full gap-2 bg-gold text-gold-foreground hover:bg-gold/90 font-semibold"
+                  onClick={() => emailMut.mutate()}
+                  disabled={emailMut.isPending || emailMut.isSuccess}
+                >
+                  {emailMut.isPending ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</>
+                  ) : emailMut.isSuccess ? (
+                    <><Check className="h-4 w-4" /> Email Sent!</>
+                  ) : (
+                    <><Mail className="h-4 w-4" /> Send Welcome Email</>
+                  )}
+                </Button>
+                <Button className="w-full font-semibold" onClick={resetCreateModal}>
+                  Done
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
+
         </DialogContent>
       </Dialog>
 

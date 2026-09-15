@@ -119,7 +119,7 @@ export const setMemberActive = createServerFn({ method: "POST" })
   });
 
 // ---------------------------------------------------------------------------
-// Create member account (admin-initiated, sends welcome email with temp password)
+// Create member account (admin-initiated — does NOT auto-send email)
 // ---------------------------------------------------------------------------
 
 const createMemberSchema = z.object({
@@ -127,7 +127,7 @@ const createMemberSchema = z.object({
   email: z.string().trim().email().max(255),
 });
 
-const TEMP_PASSWORD = "DCPG2026!";
+export const TEMP_PASSWORD = "DCPG2026!";
 
 export const createMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -156,80 +156,98 @@ export const createMember = createServerFn({ method: "POST" })
       throw new Error(createErr?.message ?? "Could not create account");
     }
 
-    // Send branded welcome email via Resend
-    try {
-      const { Resend } = await import("resend");
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      await resend.emails.send({
-        from: "Ryan Rieder - DCPG Teaching Library <noreply@dcpracticegrowth.com>",
-        to: data.email,
-        subject: "Welcome to the DCPG Teaching Library 🎉",
-        html: `<!DOCTYPE html>
+    return { ok: true, userId: created.user.id };
+  });
+
+// ---------------------------------------------------------------------------
+// Send welcome email to a newly created member (called separately by admin)
+// ---------------------------------------------------------------------------
+
+function buildWelcomeEmailHtml(fullName: string, email: string): string {
+  const firstName = fullName.split(" ")[0];
+  const year = new Date().getFullYear();
+  return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Welcome to DCPG</title></head>
 <body style="margin:0;padding:0;background:#f8f8f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f8f8;padding:32px 16px;">
     <tr><td align="center">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
-        <!-- Header -->
         <tr><td style="background:#0f2444;padding:32px 40px;text-align:center;">
           <p style="margin:0;font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">DCPG Teaching Library</p>
           <p style="margin:8px 0 0;font-size:14px;color:#c9a84c;font-weight:600;">Your account is ready</p>
         </td></tr>
-        <!-- Body -->
         <tr><td style="padding:36px 40px;">
-          <p style="margin:0 0 16px;font-size:16px;line-height:1.7;color:#374151;">Hi ${data.fullName.split(" ")[0]},</p>
+          <p style="margin:0 0 16px;font-size:16px;line-height:1.7;color:#374151;">Hi ${firstName},</p>
           <p style="margin:0 0 16px;font-size:16px;line-height:1.7;color:#374151;">Welcome to the <strong>DCPG Practice Growth Teaching Library</strong> — Ryan Rieder's complete library of practice-growth strategies, frameworks, and coaching content.</p>
           <p style="margin:0 0 24px;font-size:16px;line-height:1.7;color:#374151;">Your account has been created. Here are your login details:</p>
-
-          <!-- Credentials box -->
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4ff;border:2px solid #0f2444;border-radius:10px;margin-bottom:28px;">
             <tr><td style="padding:24px 28px;">
               <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td style="padding-bottom:14px;">
-                    <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Login Email</p>
-                    <p style="margin:0;font-size:16px;font-weight:600;color:#0f2444;">${data.email}</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Temporary Password</p>
-                    <p style="margin:0;font-size:20px;font-weight:800;color:#0f2444;letter-spacing:0.1em;font-family:monospace;">${TEMP_PASSWORD}</p>
-                  </td>
-                </tr>
+                <tr><td style="padding-bottom:14px;">
+                  <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Login URL</p>
+                  <p style="margin:0;font-size:15px;font-weight:600;color:#0f2444;">learn.dcpracticegrowth.com/login</p>
+                </td></tr>
+                <tr><td style="padding-bottom:14px;">
+                  <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Login Email</p>
+                  <p style="margin:0;font-size:16px;font-weight:600;color:#0f2444;">${email}</p>
+                </td></tr>
+                <tr><td>
+                  <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Temporary Password</p>
+                  <p style="margin:0;font-size:20px;font-weight:800;color:#0f2444;letter-spacing:0.1em;font-family:monospace;">${TEMP_PASSWORD}</p>
+                </td></tr>
               </table>
             </td></tr>
           </table>
-
-          <!-- CTA button -->
           <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
             <tr><td align="center">
               <a href="https://learn.dcpracticegrowth.com/login" style="display:inline-block;background:#c9a84c;color:#0f2444;font-weight:800;font-size:16px;text-decoration:none;padding:14px 36px;border-radius:8px;">Log In Now →</a>
             </td></tr>
           </table>
-
           <p style="margin:0 0 12px;font-size:15px;line-height:1.7;color:#374151;background:#fffbeb;border-left:4px solid #c9a84c;padding:14px 18px;border-radius:4px;">
             <strong>Important:</strong> Please change your password after your first login. Go to your <strong>Profile</strong> page and update it to something memorable.
           </p>
         </td></tr>
-        <!-- Footer -->
         <tr><td style="background:#f8f8f8;padding:20px 40px;text-align:center;border-top:1px solid #e5e7eb;">
           <p style="margin:0;font-size:13px;color:#9ca3af;">Questions? Reply to this email or contact your DCPG coach.</p>
-          <p style="margin:8px 0 0;font-size:12px;color:#d1d5db;">© ${new Date().getFullYear()} DC Practice Growth. All rights reserved.</p>
+          <p style="margin:8px 0 0;font-size:12px;color:#d1d5db;">© ${year} DC Practice Growth. All rights reserved.</p>
         </td></tr>
       </table>
     </td></tr>
   </table>
 </body>
-</html>`,
-      });
-    } catch (emailErr) {
-      console.error("[createMember] welcome email failed:", emailErr);
-      // Don't throw — account was created successfully
+</html>`;
+}
+
+const sendWelcomeEmailSchema = z.object({
+  fullName: z.string().trim().min(1).max(120),
+  email: z.string().trim().email().max(255),
+});
+
+export const sendWelcomeEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => sendWelcomeEmailSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    if (!(roles ?? []).some((r) => r.role === "super_admin")) {
+      throw new Error("Forbidden");
     }
 
-    return { ok: true, userId: created.user.id };
+    const { Resend } = await import("resend");
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    await resend.emails.send({
+      from: "Ryan Rieder - DCPG Teaching Library <noreply@dcpracticegrowth.com>",
+      to: data.email,
+      subject: "Welcome to the DCPG Teaching Library 🎉",
+      html: buildWelcomeEmailHtml(data.fullName, data.email),
+    });
+
+    return { ok: true };
   });
 
 // ---------------------------------------------------------------------------
