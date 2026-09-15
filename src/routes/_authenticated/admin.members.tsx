@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { listMembers, setMemberActive, setUserRole } from "@/lib/members.functions";
+import { listMembers, setMemberActive, setUserRole, createMember } from "@/lib/members.functions";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Search, UserCheck, UserX, Link2, Check, Users, Loader2, Copy, ShieldCheck } from "lucide-react";
+import { Search, UserCheck, UserX, Link2, Check, Users, Loader2, Copy, ShieldCheck, UserPlus } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/admin/members")({
   head: () => ({ meta: [{ title: "Members — DCPG Admin" }] }),
@@ -87,13 +88,29 @@ function MembersPage() {
   const listFn = useServerFn(listMembers);
   const toggleFn = useServerFn(setMemberActive);
   const roleFn = useServerFn(setUserRole);
+  const createFn = useServerFn(createMember);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createEmail, setCreateEmail] = useState("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   // Track which user's role select is pending
   const [pendingRole, setPendingRole] = useState<string | null>(null);
   const [pendingToggle, setPendingToggle] = useState<string | null>(null);
+
+  const createMut = useMutation({
+    mutationFn: () => createFn({ data: { fullName: createName.trim(), email: createEmail.trim() } }),
+    onSuccess: () => {
+      toast.success(`Account created for ${createName}! Welcome email sent with login details.`);
+      setCreateOpen(false);
+      setCreateName("");
+      setCreateEmail("");
+      qc.invalidateQueries({ queryKey: ["admin", "members"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   const membersQ = useQuery({
     queryKey: ["admin", "members"],
@@ -164,12 +181,21 @@ function MembersPage() {
                 : `${members.length} member${members.length !== 1 ? "s" : ""} total`}
             </p>
           </div>
-          <Button
-            onClick={() => setInviteOpen(true)}
-            className="bg-gold text-gold-foreground hover:bg-gold/90 font-semibold gap-2 w-full sm:w-auto h-12 sm:h-10"
-          >
-            <Link2 className="h-4 w-4" /> Invite Member
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button
+              onClick={() => setCreateOpen(true)}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold gap-2 w-full sm:w-auto h-12 sm:h-10"
+            >
+              <UserPlus className="h-4 w-4" /> Create Account
+            </Button>
+            <Button
+              onClick={() => setInviteOpen(true)}
+              variant="outline"
+              className="font-semibold gap-2 w-full sm:w-auto h-12 sm:h-10"
+            >
+              <Link2 className="h-4 w-4" /> Invite Link
+            </Button>
+          </div>
         </div>
 
         {/* Search */}
@@ -327,6 +353,78 @@ function MembersPage() {
           </div>
         )}
       </main>
+
+      {/* ── Create Account Modal ─────────────────────────────────────── */}
+      <Dialog open={createOpen} onOpenChange={(open) => { if (!createMut.isPending) setCreateOpen(open); }}>
+        <DialogContent className="max-w-[calc(100%-32px)] sm:max-w-[480px] p-0 overflow-hidden border-border bg-card">
+          <div className="bg-primary text-primary-foreground px-6 pt-6 pb-5">
+            <DialogHeader>
+              <DialogTitle className="font-display text-xl font-extrabold flex items-center gap-2">
+                <UserPlus className="h-5 w-5 text-gold" /> Create Member Account
+              </DialogTitle>
+              <p className="text-sm text-primary-foreground/70 mt-1">
+                Creates the account instantly and emails login details to the member.
+              </p>
+            </DialogHeader>
+          </div>
+
+          <div className="p-5 sm:p-6 space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="create-name" className="text-sm font-semibold">Full Name</Label>
+              <Input
+                id="create-name"
+                placeholder="e.g. Dr. Sarah Johnson"
+                value={createName}
+                onChange={(e) => setCreateName(e.target.value)}
+                disabled={createMut.isPending}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="create-email" className="text-sm font-semibold">Email Address</Label>
+              <Input
+                id="create-email"
+                type="email"
+                placeholder="e.g. sarah@example.com"
+                value={createEmail}
+                onChange={(e) => setCreateEmail(e.target.value)}
+                disabled={createMut.isPending}
+              />
+            </div>
+
+            <div className="rounded-lg bg-gold/10 border border-gold/30 p-3 text-sm text-foreground/80">
+              <p className="font-semibold text-foreground mb-1">What happens next:</p>
+              <ul className="space-y-0.5 list-disc list-inside text-xs">
+                <li>Account created immediately with temporary password <span className="font-mono font-bold">DCPG2026!</span></li>
+                <li>Welcome email sent with login link and password</li>
+                <li>Member appears instantly in this list as Active</li>
+                <li>They can log in right now and change their password</li>
+              </ul>
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setCreateOpen(false)}
+                disabled={createMut.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold gap-2"
+                onClick={() => createMut.mutate()}
+                disabled={createMut.isPending || !createName.trim() || !createEmail.trim()}
+              >
+                {createMut.isPending ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Creating…</>
+                ) : (
+                  <><UserPlus className="h-4 w-4" /> Create &amp; Send Email</>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Invite Modal ──────────────────────────────────────────────── */}
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
